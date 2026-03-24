@@ -1,0 +1,435 @@
+// てらログ - Prisma Schema
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// 寺院
+// ==========================================
+model Temple {
+  id           String   @id @default(uuid())
+  name         String
+  denomination String? // 宗派
+  address      String?
+  phone        String?
+  email        String?
+  logoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        User[]
+  members      Member[]
+  reservations Reservation[]
+  events       Event[]
+  ofuse        Ofuse[]
+  announcements Announcement[]
+  annualEvents AnnualEvent[]
+  gojikaiRules GojikaiRule[]
+
+  @@map("temples")
+}
+
+// ==========================================
+// ユーザー（認証アカウント）
+// ==========================================
+model User {
+  id           String   @id @default(uuid())
+  templeId     String
+  role         Role     @default(MEMBER)
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String?
+  authProvider AuthProvider @default(EMAIL)
+  pushToken    String?
+  pushEnabled  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  temple  Temple  @relation(fields: [templeId], references: [id])
+  member  Member?
+
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+  MEMBER
+
+  @@map("role")
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  LINE
+
+  @@map("auth_provider")
+}
+
+// ==========================================
+// 会員（檀家 + ご縁さん統合）
+// ==========================================
+model Member {
+  id               String     @id @default(uuid())
+  templeId         String
+  userId           String     @unique
+  type             MemberType @default(GOEN)
+  familyName       String
+  address          String?
+  postalCode       String?
+  phone            String?
+  email            String?
+  joinedDate       DateTime   @default(now())
+  interestTags     Json?      // ["zazen","shakyo","yoga"]
+  referralSource   ReferralSource?
+  engagementScore  Int        @default(0)
+  promotedAt       DateTime?  // ご縁さん→檀家に昇格した日時
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  temple           Temple     @relation(fields: [templeId], references: [id])
+  user             User       @relation(fields: [userId], references: [id])
+  deceasedPersons  DeceasedPerson[]
+  reservations     Reservation[]
+  ofuse            Ofuse[]
+  gojikaiPayments  GojikaiPayment[]
+  eventParticipations EventParticipation[]
+  interactions     MemberInteraction[]
+
+  @@map("members")
+}
+
+enum MemberType {
+  DANKA // 檀家
+  GOEN  // ご縁さん
+
+  @@map("member_type")
+}
+
+enum ReferralSource {
+  SNS
+  WEB
+  EVENT
+  INTRODUCTION
+  WALK_IN
+  OTHER
+
+  @@map("referral_source")
+}
+
+// ==========================================
+// 故人（過去帳）
+// ==========================================
+model DeceasedPerson {
+  id            String    @id @default(uuid())
+  memberId      String
+  name          String    // 俗名
+  kaimyo        String?   // 戒名
+  deathDate     DateTime?
+  birthDate     DateTime?
+  relationship  String?   // 続柄
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  member        Member    @relation(fields: [memberId], references: [id])
+  reservations  Reservation[]
+
+  @@map("deceased_persons")
+}
+
+// ==========================================
+// 予約（法要・供養）
+// ==========================================
+model Reservation {
+  id                String            @id @default(uuid())
+  templeId          String
+  memberId          String
+  type              ReservationType
+  scheduledAt       DateTime
+  durationMin       Int               @default(60)
+  deceasedPersonId  String?
+  status            ReservationStatus @default(PENDING)
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  temple          Temple          @relation(fields: [templeId], references: [id])
+  member          Member          @relation(fields: [memberId], references: [id])
+  deceasedPerson  DeceasedPerson? @relation(fields: [deceasedPersonId], references: [id])
+  ofuse           Ofuse[]
+
+  @@map("reservations")
+}
+
+enum ReservationType {
+  ANNUAL_MEMORIAL  // 年忌法要
+  MONTHLY_MEMORIAL // 月命日
+  NIBON            // 新盆
+  KUYO             // 供養
+  FUNERAL          // 葬儀
+  OTHER
+
+  @@map("reservation_type")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+
+  @@map("reservation_status")
+}
+
+// ==========================================
+// イベント
+// ==========================================
+model Event {
+  id          String        @id @default(uuid())
+  templeId    String
+  title       String
+  description String?
+  category    EventCategory
+  eventDate   DateTime
+  startTime   String        // HH:MM
+  endTime     String        // HH:MM
+  location    String?
+  capacity    Int?          // NULL = 無制限
+  fee         Int           @default(0)
+  visibility  EventVisibility @default(PUBLIC)
+  imageUrl    String?
+  shareUrl    String?
+  status      EventStatus   @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  temple        Temple       @relation(fields: [templeId], references: [id])
+  participations EventParticipation[]
+
+  @@map("events")
+}
+
+enum EventCategory {
+  ZAZEN        // 坐禅
+  SHAKYO       // 写経
+  YOGA
+  MINDFULNESS
+  LECTURE      // 仏事講座
+  SEASONAL     // 季節行事
+  OTHER
+
+  @@map("event_category")
+}
+
+enum EventVisibility {
+  PUBLIC         // 誰でも
+  MEMBERS_ONLY   // 会員限定
+  DANKA_ONLY     // 檀家限定
+
+  @@map("event_visibility")
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  COMPLETED
+  CANCELLED
+
+  @@map("event_status")
+}
+
+// ==========================================
+// イベント参加申込
+// ==========================================
+model EventParticipation {
+  id              String            @id @default(uuid())
+  eventId         String
+  memberId        String
+  numGuests       Int               @default(1)
+  status          ParticipationStatus @default(APPLIED)
+  paymentStatus   PaymentStatus     @default(NOT_REQUIRED)
+  paymentAmount   Int               @default(0)
+  feedbackScore   Int?              // 1-5
+  feedbackComment String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  event   Event  @relation(fields: [eventId], references: [id])
+  member  Member @relation(fields: [memberId], references: [id])
+
+  @@unique([eventId, memberId])
+  @@map("event_participations")
+}
+
+enum ParticipationStatus {
+  APPLIED      // 申込
+  CONFIRMED    // 確定
+  WAITLISTED   // キャンセル待ち
+  ATTENDED     // 参加済
+  NO_SHOW      // 不参加
+  CANCELLED
+
+  @@map("participation_status")
+}
+
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+// ==========================================
+// お布施
+// ==========================================
+model Ofuse {
+  id              String        @id @default(uuid())
+  templeId        String
+  memberId        String
+  reservationId   String?
+  type            OfuseType
+  amount          Int
+  paidAt          DateTime
+  paymentMethod   PaymentMethod @default(CASH)
+  receiptIssued   Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  temple      Temple       @relation(fields: [templeId], references: [id])
+  member      Member       @relation(fields: [memberId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+
+  @@map("ofuse")
+}
+
+enum OfuseType {
+  HOUYO      // 法要
+  GOJIKAI    // 護持会費
+  KIFU       // 寄付
+  EVENT_FEE  // イベント参加費
+  OTHER
+
+  @@map("ofuse_type")
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  ONLINE
+
+  @@map("payment_method")
+}
+
+// ==========================================
+// 護持会費
+// ==========================================
+model GojikaiRule {
+  id         String   @id @default(uuid())
+  templeId   String
+  amount     Int
+  dueMonth   Int      @default(3) // 毎年何月に請求
+  createdAt  DateTime @default(now())
+
+  temple   Temple           @relation(fields: [templeId], references: [id])
+
+  @@map("gojikai_rules")
+}
+
+model GojikaiPayment {
+  id          String        @id @default(uuid())
+  memberId    String
+  fiscalYear  Int
+  amount      Int
+  status      GojikaiStatus @default(UNPAID)
+  paidAt      DateTime?
+  dueDate     DateTime?
+  createdAt   DateTime      @default(now())
+
+  member  Member @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, fiscalYear])
+  @@map("gojikai_payments")
+}
+
+enum GojikaiStatus {
+  UNPAID
+  PAID
+  EXEMPT
+
+  @@map("gojikai_status")
+}
+
+// ==========================================
+// お知らせ
+// ==========================================
+model Announcement {
+  id            String           @id @default(uuid())
+  templeId      String
+  title         String
+  body          String
+  targetSegment AnnouncementTarget @default(ALL)
+  publishedAt   DateTime?
+  pushSent      Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  temple  Temple @relation(fields: [templeId], references: [id])
+
+  @@map("announcements")
+}
+
+enum AnnouncementTarget {
+  ALL
+  DANKA
+  GOEN
+
+  @@map("announcement_target")
+}
+
+// ==========================================
+// 年中行事
+// ==========================================
+model AnnualEvent {
+  id         String   @id @default(uuid())
+  templeId   String
+  name       String
+  month      Int
+  day        Int
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  temple  Temple @relation(fields: [templeId], references: [id])
+
+  @@map("annual_events")
+}
+
+// ==========================================
+// 対応履歴（CRMメモ）
+// ==========================================
+model MemberInteraction {
+  id        String   @id @default(uuid())
+  memberId  String
+  staffNote String
+  category  String?
+  createdAt DateTime @default(now())
+
+  member  Member @relation(fields: [memberId], references: [id])
+
+  @@map("member_interactions")
+}

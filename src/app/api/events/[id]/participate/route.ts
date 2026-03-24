@@ -1,0 +1,127 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authUser = await requireAuth();
+    if (!authUser.member) {
+      return NextResponse.json({ error: "会員情報が見つかりません" }, { status: 403 });
+    }
+
+    const { id: eventId } = await params;
+    const { numGuests = 1 } = await request.json();
+
+    if (numGuests < 1 || numGuests > 6) {
+      return NextResponse.json({ error: "参加人数は1〜6名で指定してください" }, { status: 400 });
+    }
+
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, templeId: authUser.templeId, status: "PUBLISHED" },
+    });
+    if (!event) return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
+
+    // Visibility check
+    if (event.visibility === "DANKA_ONLY" && authUser.member.type !== "DANKA") {
+      return NextResponse.json({ error: "このイベントは檀家会員のみ申込できます" }, { status: 403 });
+    }
+    if (event.visibility === "MEMBERS_ONLY" && !authUser.member) {
+      return NextResponse.json({ error: "会員のみ申込できます" }, { status: 403 });
+    }
+
+    // Duplicate check
+    const existing = await prisma.eventParticipation.findUnique({
+      where: { eventId_memberId: { eventId, memberId: authUser.member.id } },
+    });
+    if (existing && existing.status !== "CANCELLED") {
+      return NextResponse.json({ error: "既にこのイベントに申込済みです" }, { status: 400 });
+    }
+
+    // Capacity check
+    let participationStatus: "APPLIED" | "WAITLISTED" = "APPLIED";
+    if (event.capacity != null) {
+      const currentTotal = await prisma.eventParticipation.aggregate({
+        where: { eventId, status: { notIn: ["CANCELLED", "WAITLISTED"] } },
+        _sum: { numGuests: true },
+      });
+      const usedSeats = currentTotal._sum.numGuests ?? 0;
+      if (usedSeats + numGuests > event.capacity) {
+        participationStatus = "WAITLISTED";
+      }
+    }
+
+    // Upsert (re-apply if previously cancelled)
+    const participation = existing
+      ? await prisma.eventParticipation.update({
+          where: { id: existing.id },
+          data: { numGuests, status: participationStatus, paymentStatus: "NOT_REQUIRED" },
+        })
+      : await prisma.eventParticipation.create({
+          data: {
+            eventId,
+            memberId: authUser.member.id,
+            numGuests,
+            status: participationStatus,
+            paymentStatus: event.fee > 0 ? "PENDING" : "NOT_REQUIRED",
+            paymentAmount: event.fee > 0 ? event.fee * numGuests : 0,
+          },
+        });
+
+    return NextResponse.json({ participation, status: participationStatus }, { status: 201 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    return NextResponse.json({ error: "申込に失敗しました" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authUser = await requireAuth();
+    if (!authUser.member) {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+
+    const { id: eventId } = await params;
+
+    const participation = await prisma.eventParticipation.findUnique({
+      where: { eventId_memberId: { eventId, memberId: authUser.member.id } },
+    });
+    if (!participation || participation.status === "CANCELLED") {
+      return NextResponse.json({ error: "申込が見つかりません" }, { status: 404 });
+    }
+
+    const wasCounted = participation.status !== "WAITLISTED";
+
+    await prisma.eventParticipation.update({
+      where: { id: participation.id },
+      data: { status: "CANCELLED" },
+    });
+
+    // Promote first waitlisted if capacity freed
+    if (wasCounted) {
+      const firstWaitlisted = await prisma.eventParticipation.findFirst({
+        where: { eventId, status: "WAITLISTED" },
+        orderBy: { createdAt: "asc" },
+      });
+      if (firstWaitlisted) {
+        await prisma.eventParticipation.update({
+          where: { id: firstWaitlisted.id },
+          data: { status: "APPLIED" },
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    return NextResponse.json({ error: "キャンセルに失敗しました" }, { status: 500 });
+  }
+}

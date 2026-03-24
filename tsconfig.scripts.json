@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "outDir": ".scripts-out"
+  },
+  "include": ["prisma/seed.ts", "scripts/**/*.ts"]
+}

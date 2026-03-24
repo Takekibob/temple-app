@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# てらログ
 
-## Getting Started
+> お寺DX管理アプリ — 法要予約・会員管理・イベント参加をデジタル化
 
-First, run the development server:
+## 技術スタック
+
+| レイヤー | 技術 |
+|---|---|
+| フレームワーク | Next.js 16 (App Router) + TypeScript |
+| UI | Tailwind CSS v4 + shadcn/ui |
+| 認証 | Supabase Auth（メール / Google / Apple / LINE） |
+| データベース | Supabase PostgreSQL + Prisma ORM v7 |
+| ストレージ | Supabase Storage |
+| PWA | next-pwa |
+
+## セットアップ手順
+
+### 1. リポジトリのクローン & 依存インストール
+
+```bash
+git clone <repository-url>
+cd temple-app
+npm install
+```
+
+### 2. 環境変数の設定
+
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` を編集して Supabase の値を入力:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+```
+
+> Supabase プロジェクト作成: https://supabase.com/dashboard
+
+### 3. Prisma クライアント生成
+
+```bash
+npx prisma generate
+```
+
+### 4. データベースマイグレーション
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 5. 開発サーバー起動
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+http://localhost:3000 でアクセスできます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ディレクトリ構成
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── (auth)/        # ログイン・登録ページ
+│   ├── (app)/         # 利用者側（檀家・ご縁さん）
+│   └── (admin)/       # 管理画面
+├── components/
+│   ├── ui/            # shadcn/ui コンポーネント
+│   ├── shared/        # 共通コンポーネント
+│   ├── danka/         # 檀家専用コンポーネント
+│   ├── goen/          # ご縁さん専用コンポーネント
+│   └── admin/         # 管理画面コンポーネント
+├── lib/
+│   ├── supabase.ts        # Supabase クライアント（Client Component用）
+│   ├── supabase-server.ts # Supabase クライアント（Server Component用）
+│   ├── prisma.ts          # Prisma クライアント（@prisma/adapter-pg使用）
+│   └── auth.ts            # 認証ユーティリティ
+├── hooks/
+│   └── useAuth.ts     # 認証フック（useAuth）
+├── types/
+│   ├── index.ts       # 型定義
+│   └── next-pwa.d.ts  # next-pwa 型宣言
+└── generated/
+    └── prisma/        # Prisma 生成ファイル（自動生成・.gitignore済）
+```
 
-## Learn More
+## URL 設計
 
-To learn more about Next.js, take a look at the following resources:
+### 利用者側 (`/app` 配下)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| パス | 説明 | 対象 |
+|---|---|---|
+| `/app` | ホーム | 全員 |
+| `/app/events` | イベント一覧 | 全員 |
+| `/app/news` | お知らせ | 全員 |
+| `/app/reservations` | 予約一覧・履歴 | 檀家のみ |
+| `/app/ofuse` | お布施履歴 | 檀家のみ |
+| `/app/kuyo` | 供養申込（簡易） | ご縁さんのみ |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 管理側 (`/admin` 配下)
 
-## Deploy on Vercel
+| パス | 説明 |
+|---|---|
+| `/admin` | ダッシュボード |
+| `/admin/members` | 会員一覧（CRM） |
+| `/admin/reservations` | 予約カレンダー |
+| `/admin/events` | イベント管理 |
+| `/admin/ofuse` | お布施・収入管理 |
+| `/admin/reports` | 会計レポート |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 会員タイプ
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| タイプ | 説明 |
+|---|---|
+| `danka`（檀家） | 護持会費を納める家。法要予約・過去帳・お布施履歴にアクセス可 |
+| `goen`（ご縁さん） | 一般会員。SBNRを含むイベント参加が主な用途。檀家への昇格フロー有 |
+
+## ロール
+
+| ロール | 説明 |
+|---|---|
+| `SUPER_ADMIN` | システム管理者 |
+| `ADMIN` | 住職・寺院運営者 |
+| `STAFF` | スタッフ |
+| `MEMBER` | 一般会員（檀家・ご縁さん） |
+
+## 開発コマンド
+
+```bash
+# 型チェック
+npx tsc --noEmit
+
+# Prisma スキーマ変更後
+npx prisma generate
+npx prisma migrate dev --name <変更内容>
+
+# shadcn/ui コンポーネント追加
+npx shadcn@latest add <component-name>
+```

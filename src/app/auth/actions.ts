@@ -1,0 +1,171 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/prisma";
+import { MemberType } from "@/generated/prisma/enums";
+
+// ============================================================
+// ログイン (メール + パスワード)
+// ============================================================
+export async function loginWithEmail(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    if (error.message?.toLowerCase().includes("email not confirmed")) {
+      return { error: "メールアドレスの認証が完了していません。登録時に届いたメールのリンクをクリックしてください。" };
+    }
+    return { error: "メールアドレスまたはパスワードが正しくありません。" };
+  }
+
+  // DB にユーザーレコードがない場合（登録が途中で失敗した等）
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (authUser) {
+    const { prisma } = await import("@/lib/prisma");
+    const dbUser = await prisma.user.findUnique({ where: { email: authUser.email! }, select: { id: true } });
+    if (!dbUser) {
+      await supabase.auth.signOut();
+      return { error: "アカウントの登録が完了していません。お手数ですが再度新規登録をお試しください。" };
+    }
+  }
+
+  redirect("/app");
+}
+
+// ============================================================
+// 新規登録 (メール + パスワード)
+// ============================================================
+export async function registerWithEmail(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const name = formData.get("name") as string;
+  const memberTypeRaw = formData.get("memberType") as string;
+  const familyName = formData.get("familyName") as string;
+  const address = formData.get("address") as string | null;
+  const phone = formData.get("phone") as string | null;
+
+  if (!email || !password || !name || !memberTypeRaw) {
+    return { error: "必須項目を入力してください。" };
+  }
+
+  const memberType =
+    memberTypeRaw === "DANKA" ? MemberType.DANKA : MemberType.GOEN;
+
+  // 檀家の場合は追加フィールドが必須
+  if (memberType === MemberType.DANKA && (!familyName || !address || !phone)) {
+    return { error: "檀家登録には氏名・住所・電話番号が必要です。" };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // Supabase Auth にユーザー作成
+  const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback`,
+    },
+  });
+
+  if (signUpError || !authData.user) {
+    if (signUpError?.message?.includes("already registered")) {
+      return { error: "このメールアドレスは既に登録されています。" };
+    }
+    return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
+  }
+
+  // デフォルト寺院IDを取得（本番では寺院選択フローが必要）
+  const temple = await prisma.temple.findFirst();
+  if (!temple) {
+    return { error: "寺院情報が見つかりません。管理者にお問い合わせください。" };
+  }
+
+  // DB に users レコードを作成（CSVインポート済みの場合は id を更新）
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  let user;
+  if (existingUser) {
+    user = await prisma.user.update({
+      where: { email },
+      data: { id: authData.user.id, name },
+    });
+  } else {
+    user = await prisma.user.create({
+      data: {
+        id: authData.user.id,
+        templeId: temple.id,
+        email,
+        name,
+        role: "MEMBER",
+      },
+    });
+  }
+
+  // DB に members レコードを作成
+  await prisma.member.create({
+    data: {
+      templeId: temple.id,
+      userId: user.id,
+      type: memberType,
+      familyName: familyName || name,
+      address: address || undefined,
+      phone: phone || undefined,
+    },
+  });
+
+  redirect("/app");
+}
+
+// ============================================================
+// Google ログイン (OAuth リダイレクト URL を返す)
+// ============================================================
+export async function getGoogleLoginUrl(next?: string) {
+  const supabase = await createServerSupabaseClient();
+  const redirectTo =
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback` +
+    (next ? `?next=${encodeURIComponent(next)}` : "");
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
+  });
+
+  if (error || !data.url) {
+    return { error: "Google ログインの準備に失敗しました。" };
+  }
+
+  return { url: data.url };
+}
+
+// ============================================================
+// LINE ログイン (OAuth リダイレクト URL を返す)
+// ============================================================
+export async function getLineLoginUrl(next?: string) {
+  const supabase = await createServerSupabaseClient();
+  const redirectTo =
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback` +
+    (next ? `?next=${encodeURIComponent(next)}` : "");
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "line" as Parameters<typeof supabase.auth.signInWithOAuth>[0]["provider"],
+    options: { redirectTo },
+  });
+
+  if (error || !data.url) {
+    return { error: "LINE ログインの準備に失敗しました。" };
+  }
+
+  return { url: data.url };
+}
+
+// ============================================================
+// ログアウト
+// ============================================================
+export async function logout() {
+  const supabase = await createServerSupabaseClient();
+  await supabase.auth.signOut();
+  redirect("/auth/login");
+}

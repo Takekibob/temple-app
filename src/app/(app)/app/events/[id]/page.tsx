@@ -1,0 +1,172 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import CancelButton from "./CancelButton";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
+  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
+  SEASONAL: "季節行事", OTHER: "その他",
+};
+
+const PARTICIPATION_STATUS_LABELS: Record<string, string> = {
+  APPLIED: "申込済み（確認待ち）",
+  CONFIRMED: "参加確定",
+  WAITLISTED: "キャンセル待ち登録済み",
+  ATTENDED: "参加済み",
+  NO_SHOW: "不参加",
+};
+
+export default async function AppEventDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const authUser = await getAuthUser();
+  if (!authUser) redirect("/auth/login");
+
+  const { id } = await params;
+  const isDanka = authUser.member?.type === "DANKA";
+
+  const event = await prisma.event.findFirst({
+    where: { id, templeId: authUser.templeId, status: "PUBLISHED" },
+    include: {
+      _count: {
+        select: { participations: { where: { status: { notIn: ["CANCELLED", "WAITLISTED"] } } } },
+      },
+    },
+  });
+
+  if (!event) notFound();
+
+  // Visibility check
+  if (event.visibility === "DANKA_ONLY" && !isDanka) {
+    redirect("/app/events");
+  }
+
+  // My participation
+  let myParticipation = null;
+  if (authUser.member) {
+    myParticipation = await prisma.eventParticipation.findUnique({
+      where: { eventId_memberId: { eventId: id, memberId: authUser.member.id } },
+      select: { id: true, status: true, numGuests: true },
+    });
+    if (myParticipation?.status === "CANCELLED") myParticipation = null;
+  }
+
+  const isFull = event.capacity != null && event._count.participations >= event.capacity;
+  const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
+
+  return (
+    <div className="max-w-lg mx-auto">
+      {/* Cover image */}
+      {event.imageUrl ? (
+        <div className="h-48 bg-stone-200 overflow-hidden">
+          <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="h-24 bg-gradient-to-b from-amber-50 to-stone-50" />
+      )}
+
+      <div className="p-4">
+        <Link href="/app/events" className="text-sm text-stone-400 hover:text-stone-600 mb-3 inline-block">
+          ← イベント一覧
+        </Link>
+
+        <div className="flex items-start gap-2 mb-1">
+          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+            {CATEGORY_LABELS[event.category]}
+          </span>
+          {event.visibility === "DANKA_ONLY" && (
+            <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+              檀家限定
+            </span>
+          )}
+        </div>
+
+        <h1 className="text-xl font-bold text-stone-800 mt-2">{event.title}</h1>
+
+        {/* Info */}
+        <div className="bg-white rounded-xl border border-stone-200 p-4 mt-4 space-y-3 text-sm">
+          <div className="flex gap-3">
+            <span className="text-stone-400 w-16">日時</span>
+            <span className="text-stone-800">
+              {event.eventDate.toLocaleDateString("ja-JP", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "short",
+              })}
+              <br />
+              {event.startTime} 〜 {event.endTime}
+            </span>
+          </div>
+          {event.location && (
+            <div className="flex gap-3">
+              <span className="text-stone-400 w-16">会場</span>
+              <span className="text-stone-800">{event.location}</span>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <span className="text-stone-400 w-16">参加費</span>
+            <span className="font-semibold text-amber-700">
+              {event.fee === 0 ? "無料" : `¥${event.fee.toLocaleString()}`}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <span className="text-stone-400 w-16">定員</span>
+            <span className="text-stone-800">
+              {event.capacity
+                ? `${event.capacity}名（残${Math.max(0, remaining ?? 0)}席）`
+                : "定員なし"}
+            </span>
+          </div>
+        </div>
+
+        {/* Description */}
+        {event.description && (
+          <div className="mt-4">
+            <h2 className="font-semibold text-stone-800 mb-2">詳細</h2>
+            <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">
+              {event.description}
+            </p>
+          </div>
+        )}
+
+        {/* Participation status / CTA */}
+        <div className="mt-6">
+          {!authUser.member ? (
+            <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-center text-sm text-stone-500">
+              参加申込には会員登録が必要です
+              <br />
+              <Link href="/auth/register" className="text-amber-700 font-medium hover:underline">
+                新規登録はこちら
+              </Link>
+            </div>
+          ) : myParticipation ? (
+            <div className="p-4 bg-teal-50 rounded-xl border border-teal-200">
+              <p className="text-sm font-medium text-teal-800">
+                {PARTICIPATION_STATUS_LABELS[myParticipation.status] ?? myParticipation.status}
+              </p>
+              <p className="text-xs text-teal-600 mt-0.5">{myParticipation.numGuests}名で申込済み</p>
+              <CancelButton eventId={id} />
+            </div>
+          ) : (
+            <Link
+              href={`/app/events/${id}/apply`}
+              className={`block w-full text-center py-3 rounded-xl text-sm font-semibold transition-colors ${
+                isFull
+                  ? "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  : "bg-amber-700 text-white hover:bg-amber-800"
+              }`}
+            >
+              {isFull ? "キャンセル待ちに登録する" : "参加申込する"}
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+

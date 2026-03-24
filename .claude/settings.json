@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
+      "/Users/haradatakeki/Developer/temple-app/src/app/(app)/app/news"
+    ]
+  }
+}
