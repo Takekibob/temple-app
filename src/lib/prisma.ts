@@ -7,8 +7,8 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL!;
-  // PrismaPg accepts a PoolConfig object directly (avoids @types/pg version conflicts)
-  const adapter = new PrismaPg({ connectionString });
+  // max: 1 はサーバーレス環境（Vercel）での接続枯渇を防ぐための推奨設定
+  const adapter = new PrismaPg({ connectionString, max: 1 });
   return new PrismaClient({ adapter });
 }
 
