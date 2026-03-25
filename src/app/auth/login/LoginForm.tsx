@@ -41,20 +41,35 @@ export default function LoginForm() {
   async function handleGoogleLogin() {
     setOauthPending("google");
     setErrorMsg(null);
-    // PWAスタンドアロンモードの場合は認証後に専用ページへ誘導
-    const nextUrl = isStandalone ? "/auth/pwa-return" : next;
-    const result = await getGoogleLoginUrl(nextUrl);
+
+    if (isStandalone) {
+      // iOS PWA対策:
+      // ① ユーザー操作の瞬間（同期）に空のSafariウィンドウを開く
+      //    → iOSは「ユーザー起因の操作」と判断してSafariを開く
+      // ② 非同期でOAuth URLを取得してからウィンドウのURLをセット
+      //    → window.open後のURLセットはユーザー操作内とみなされる
+      const safariWindow = window.open("", "_blank");
+      const result = await getGoogleLoginUrl("/auth/pwa-return");
+      if (result.error || !result.url) {
+        safariWindow?.close();
+        setErrorMsg(result.error ?? "エラーが発生しました");
+        setOauthPending(null);
+      } else if (safariWindow) {
+        safariWindow.location.href = result.url;
+      } else {
+        // ポップアップがブロックされた場合のフォールバック
+        window.location.href = result.url;
+      }
+      return;
+    }
+
+    // 通常のブラウザ（Safari / Chrome / PC）
+    const result = await getGoogleLoginUrl(next);
     if (result.error) {
       setErrorMsg(result.error);
       setOauthPending(null);
     } else if (result.url) {
-      // スタンドアロンモードでは window.location.href でSafariを開く
-      // （router.push はPWA内のWebViewのまま遷移するためGoogle OAuthに拒否される）
-      if (isStandalone) {
-        window.location.href = result.url;
-      } else {
-        router.push(result.url);
-      }
+      router.push(result.url);
     }
   }
 
