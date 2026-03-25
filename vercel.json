@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "regions": ["nrt1"],
+  "regions": ["hnd1"],
   "crons": [],
   "env": {
     "NODE_ENV": "production"
