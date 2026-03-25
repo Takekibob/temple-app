@@ -33,9 +33,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Turbopack config (Next.js 16 default bundler)
-  // next-pwa uses webpack; silence the conflict warning in dev since PWA is disabled there
-  turbopack: {},
   images: {
     remotePatterns: [
       {
