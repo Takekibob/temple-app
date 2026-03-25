@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithEmail, getGoogleLoginUrl, getLineLoginUrl } from "@/app/auth/actions";
@@ -22,6 +22,14 @@ export default function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [oauthPending, setOauthPending] = useState<"google" | "line" | null>(null);
 
+  // PWAスタンドアロンモードの検出（iOSのWebViewはGoogle OAuthを拒否するため）
+  const [isStandalone, setIsStandalone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(display-mode: standalone)").matches;
+    const nav = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setIsStandalone(mq || nav);
+  }, []);
+
   function handleEmailLogin(formData: FormData) {
     startTransition(async () => {
       setErrorMsg(null);
@@ -33,12 +41,20 @@ export default function LoginForm() {
   async function handleGoogleLogin() {
     setOauthPending("google");
     setErrorMsg(null);
-    const result = await getGoogleLoginUrl(next);
+    // PWAスタンドアロンモードの場合は認証後に専用ページへ誘導
+    const nextUrl = isStandalone ? "/auth/pwa-return" : next;
+    const result = await getGoogleLoginUrl(nextUrl);
     if (result.error) {
       setErrorMsg(result.error);
       setOauthPending(null);
     } else if (result.url) {
-      router.push(result.url);
+      // スタンドアロンモードでは window.location.href でSafariを開く
+      // （router.push はPWA内のWebViewのまま遷移するためGoogle OAuthに拒否される）
+      if (isStandalone) {
+        window.location.href = result.url;
+      } else {
+        router.push(result.url);
+      }
     }
   }
 
@@ -121,6 +137,11 @@ export default function LoginForm() {
         </div>
 
         {/* Google ログイン */}
+        {isStandalone && (
+          <p className="text-xs text-stone-400 text-center mb-2">
+            Googleログインはいったんブラウザが開きます
+          </p>
+        )}
         <Button
           type="button"
           variant="outline"
