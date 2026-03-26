@@ -25,6 +25,7 @@ export default function AnnouncementFormClient({
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sendPush, setSendPush] = useState(false);
+  const [sendLine, setSendLine] = useState(false);
 
   const isEdit = !!initial?.id;
   const isPublished = !!initial?.publishedAt;
@@ -40,7 +41,15 @@ export default function AnnouncementFormClient({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, targetSegment, publish, unpublish, sendPush: publish && sendPush }),
+        body: JSON.stringify({
+          title,
+          body,
+          targetSegment,
+          publish,
+          unpublish,
+          sendPush: publish && sendPush,
+          sendLine: publish && sendLine,
+        }),
       });
 
       const data = await res.json();
@@ -128,20 +137,35 @@ export default function AnnouncementFormClient({
           />
         </div>
 
-        {/* プッシュ通知オプション */}
+        {/* 通知オプション */}
         {!isPublished && (
-          <div className="flex items-center gap-2 pt-1 border-t border-stone-100">
-            <input
-              type="checkbox"
-              id="sendPush"
-              checked={sendPush}
-              onChange={(e) => setSendPush(e.target.checked)}
-              className="accent-amber-700 w-4 h-4 cursor-pointer"
-            />
-            <label htmlFor="sendPush" className="text-sm text-stone-700 cursor-pointer">
-              プッシュ通知も送信する
-              <span className="text-xs text-stone-400 ml-1">（公開時のみ）</span>
-            </label>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1 border-t border-stone-100">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="sendPush"
+                checked={sendPush}
+                onChange={(e) => setSendPush(e.target.checked)}
+                className="accent-amber-700 w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="sendPush" className="text-sm text-stone-700 cursor-pointer">
+                プッシュ通知も送信する
+                <span className="text-xs text-stone-400 ml-1">（公開時のみ）</span>
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="sendLine"
+                checked={sendLine}
+                onChange={(e) => setSendLine(e.target.checked)}
+                className="accent-green-600 w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="sendLine" className="text-sm text-stone-700 cursor-pointer">
+                LINE通知も送信する
+                <span className="text-xs text-stone-400 ml-1">（公開時のみ）</span>
+              </label>
+            </div>
           </div>
         )}
       </div>

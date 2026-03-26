@@ -3,6 +3,7 @@ import { getAuthUser, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { sendPushNotification } from "@/lib/push";
+import { sendLineNotification } from "@/lib/line";
 
 // GET /api/announcements — 会員向け: 自分のセグメントに合ったお知らせ一覧
 export async function GET() {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const authUser = await requireAdminOrStaff();
 
     const body = await request.json();
-    const { title, body: content, targetSegment, publish, sendPush } = body;
+    const { title, body: content, targetSegment, publish, sendPush, sendLine } = body;
 
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: "タイトルと本文は必須です" }, { status: 400 });
@@ -112,6 +113,32 @@ export async function POST(request: NextRequest) {
         where: { id: announcement.id },
         data: { pushSent: true },
       });
+    }
+
+    // LINE通知送信
+    if (publish && sendLine) {
+      const seg: AnnouncementTarget = targetSegment ?? "ALL";
+
+      const memberTypeFilter =
+        seg === "DANKA" ? { type: "DANKA" as const } :
+        seg === "GOEN"  ? { type: "GOEN" as const } :
+        undefined;
+
+      const lineMembers = await prisma.member.findMany({
+        where: {
+          templeId: authUser.templeId,
+          lineNotifyEnabled: true,
+          lineUserId: { not: null },
+          notifyAnnouncement: true,
+          ...(memberTypeFilter ?? {}),
+        },
+        select: { id: true },
+      });
+
+      const lineText = `【お知らせ】${title.trim()}\n\n${content.trim().slice(0, 200)}`;
+      await Promise.allSettled(
+        lineMembers.map((m) => sendLineNotification(m.id, lineText))
+      );
     }
 
     return NextResponse.json({ announcement }, { status: 201 });

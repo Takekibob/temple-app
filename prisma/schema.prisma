@@ -101,6 +101,15 @@ model Member {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
+  lineUserId          String?   // LINE連携後に設定されるLINEユーザーID
+  lineNotifyEnabled   Boolean   @default(false)
+  lineCode            String?   // 連携コード（一時保存）
+  lineCodeExpiresAt   DateTime? // 連携コード有効期限
+  notifyReservation   Boolean   @default(true)
+  notifyEvent         Boolean   @default(true)
+  notifyAnniversary   Boolean   @default(true)
+  notifyAnnouncement  Boolean   @default(true)
+
   temple           Temple     @relation(fields: [templeId], references: [id])
   user             User       @relation(fields: [userId], references: [id])
   deceasedPersons  DeceasedPerson[]

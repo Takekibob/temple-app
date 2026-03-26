@@ -19,6 +19,13 @@ const INTEREST_TAGS = [
   { value: "供養", label: "供養" },
 ];
 
+const NOTIFY_ITEMS = [
+  { key: "notifyReservation", label: "法要リマインダー" },
+  { key: "notifyEvent", label: "イベントリマインダー" },
+  { key: "notifyAnniversary", label: "命日リマインダー" },
+  { key: "notifyAnnouncement", label: "お知らせ" },
+] as const;
+
 interface Props {
   user: {
     name: string;
@@ -28,10 +35,17 @@ interface Props {
     role: string;
   };
   member: {
+    id: string;
     type: string;
     familyName: string;
     address: string;
     interestTags: string[];
+    lineLinked: boolean;
+    lineNotifyEnabled: boolean;
+    notifyReservation: boolean;
+    notifyEvent: boolean;
+    notifyAnniversary: boolean;
+    notifyAnnouncement: boolean;
   } | null;
 }
 
@@ -40,8 +54,27 @@ export default function MypageClient({ user, member }: Props) {
   const [isLogoutPending, startLogoutTransition] = useTransition();
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // プッシュ通知
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled);
   const [pushLoading, setPushLoading] = useState(false);
+
+  // LINE
+  const [lineLinked, setLineLinked] = useState(member?.lineLinked ?? false);
+  const [lineEnabled, setLineEnabled] = useState(member?.lineNotifyEnabled ?? false);
+  const [lineLoading, setLineLoading] = useState(false);
+  const [lineCode, setLineCode] = useState<string | null>(null);
+  const [lineAddUrl, setLineAddUrl] = useState<string>("");
+
+  // 通知種別
+  const [notifySettings, setNotifySettings] = useState({
+    notifyReservation: member?.notifyReservation ?? true,
+    notifyEvent: member?.notifyEvent ?? true,
+    notifyAnniversary: member?.notifyAnniversary ?? true,
+    notifyAnnouncement: member?.notifyAnnouncement ?? true,
+  });
+
+  // 興味タグ
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set(member?.interestTags ?? [])
   );
@@ -55,12 +88,13 @@ export default function MypageClient({ user, member }: Props) {
     });
   }
 
+  // ── プッシュ通知トグル ──────────────────────────────
   async function handlePushToggle() {
     if (pushLoading) return;
     setPushLoading(true);
+    setErrorMsg(null);
     try {
       if (!pushEnabled) {
-        // 有効化: 許可リクエスト → SW登録 → subscribe → API
         if (!("Notification" in window) || !("serviceWorker" in navigator)) {
           setErrorMsg("このブラウザはプッシュ通知に対応していません");
           return;
@@ -87,7 +121,6 @@ export default function MypageClient({ user, member }: Props) {
         });
         setPushEnabled(true);
       } else {
-        // 無効化: SW から subscription を取得して解除 → API
         if ("serviceWorker" in navigator) {
           const reg = await navigator.serviceWorker.ready;
           const sub = await reg.pushManager.getSubscription();
@@ -110,6 +143,59 @@ export default function MypageClient({ user, member }: Props) {
     }
   }
 
+  // ── LINE 連携開始 ────────────────────────────────────
+  async function handleLineConnect() {
+    setLineLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/line/generate-code", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setLineCode(data.code);
+      setLineAddUrl(data.addUrl);
+      if (data.addUrl) {
+        window.open(data.addUrl, "_blank");
+      }
+    } catch {
+      setErrorMsg("連携コードの生成に失敗しました");
+    } finally {
+      setLineLoading(false);
+    }
+  }
+
+  // ── LINE 通知 ON/OFF ─────────────────────────────────
+  async function handleLineToggle() {
+    if (!member || lineLoading) return;
+    setLineLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/members/${member.id}/line-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lineNotifyEnabled: !lineEnabled }),
+      });
+      if (!res.ok) throw new Error();
+      setLineEnabled((v) => !v);
+    } catch {
+      setErrorMsg("LINE通知設定の変更に失敗しました");
+    } finally {
+      setLineLoading(false);
+    }
+  }
+
+  // ── 通知種別トグル ────────────────────────────────────
+  async function handleNotifyToggle(key: keyof typeof notifySettings) {
+    if (!member) return;
+    const newVal = !notifySettings[key];
+    setNotifySettings((prev) => ({ ...prev, [key]: newVal }));
+    await fetch(`/api/members/${member.id}/line-settings`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: newVal }),
+    });
+  }
+
+  // ── プロフィール保存 ──────────────────────────────────
   function handleSubmit(formData: FormData) {
     formData.set("pushEnabled", String(pushEnabled));
     selectedTags.forEach((tag) => formData.set(`tag_${tag}`, "on"));
@@ -128,6 +214,14 @@ export default function MypageClient({ user, member }: Props) {
 
   const memberTypeLabel =
     member?.type === "DANKA" ? "檀家" : member?.type === "GOEN" ? "ご縁さん" : "—";
+
+  // iOS バージョン検出（Push API 非対応の古い iOS 向け案内）
+  const isOldIOS = (() => {
+    if (typeof window === "undefined") return false;
+    const m = navigator.userAgent.match(/OS (\d+)_/);
+    if (!m) return false;
+    return parseInt(m[1]) < 16;
+  })();
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -214,10 +308,7 @@ export default function MypageClient({ user, member }: Props) {
               <p className="text-sm font-medium text-stone-700">興味・関心</p>
               <div className="grid grid-cols-2 gap-2">
                 {INTEREST_TAGS.map((tag) => (
-                  <label
-                    key={tag.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
+                  <label key={tag.value} className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={selectedTags.has(tag.value)}
                       onCheckedChange={() => toggleTag(tag.value)}
@@ -229,28 +320,6 @@ export default function MypageClient({ user, member }: Props) {
               </div>
             </div>
 
-            {/* 通知設定 */}
-            <div className="flex items-center justify-between py-2 border-t border-stone-100">
-              <div>
-                <p className="text-sm font-medium text-stone-700">プッシュ通知</p>
-                <p className="text-xs text-stone-500">法要・イベントのお知らせを受け取る</p>
-              </div>
-              <button
-                type="button"
-                onClick={handlePushToggle}
-                disabled={pushLoading}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${
-                  pushEnabled ? "bg-amber-700" : "bg-stone-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    pushEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-
             <Button
               type="submit"
               disabled={isPending}
@@ -259,6 +328,133 @@ export default function MypageClient({ user, member }: Props) {
               {isPending ? "保存中…" : "変更を保存"}
             </Button>
           </form>
+        </div>
+
+        {/* 通知設定 */}
+        <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-4">
+          <h2 className="font-semibold text-stone-800">通知設定</h2>
+
+          {/* プッシュ通知 */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-stone-700">プッシュ通知</p>
+              {isOldIOS ? (
+                <p className="text-xs text-stone-400 mt-0.5">
+                  お使いの端末では非対応です（iOS 16.4以上が必要）
+                </p>
+              ) : (
+                <p className="text-xs text-stone-400 mt-0.5">ブラウザへの通知</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handlePushToggle}
+              disabled={pushLoading || isOldIOS}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${
+                pushEnabled && !isOldIOS ? "bg-amber-700" : "bg-stone-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  pushEnabled && !isOldIOS ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* LINE通知 */}
+          {member && (
+            <div className="border-t border-stone-100 pt-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-stone-700">LINE通知</p>
+                  {lineLinked ? (
+                    <p className="text-xs text-green-600 mt-0.5">連携済み ✓</p>
+                  ) : (
+                    <p className="text-xs text-stone-400 mt-0.5">LINEで通知を受け取る</p>
+                  )}
+                </div>
+
+                {lineLinked ? (
+                  <button
+                    type="button"
+                    onClick={handleLineToggle}
+                    disabled={lineLoading}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${
+                      lineEnabled ? "bg-green-500" : "bg-stone-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        lineEnabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleLineConnect}
+                    disabled={lineLoading}
+                    className="px-3 py-1.5 text-xs bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-40 flex-shrink-0"
+                  >
+                    {lineLoading ? "…" : "LINE連携する"}
+                  </button>
+                )}
+              </div>
+
+              {/* 連携コード表示 */}
+              {lineCode && !lineLinked && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-xs text-stone-600 mb-1">
+                    LINEでてらログ公式アカウントに友だち追加後、このコードを送信してください。
+                  </p>
+                  <p className="text-2xl font-mono font-bold text-green-700 tracking-widest text-center py-1">
+                    {lineCode}
+                  </p>
+                  <p className="text-xs text-stone-400 text-center mt-1">有効期限: 10分</p>
+                  {lineAddUrl && (
+                    <button
+                      type="button"
+                      onClick={() => window.open(lineAddUrl, "_blank")}
+                      className="mt-2 w-full py-2 text-xs bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium"
+                    >
+                      LINEで友だち追加を開く
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLineLinked(true);
+                      setLineEnabled(true);
+                      setLineCode(null);
+                    }}
+                    className="mt-2 w-full py-1.5 text-xs border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50"
+                  >
+                    連携が完了した場合はこちら
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 通知を受け取る内容 */}
+          {member && (
+            <div className="border-t border-stone-100 pt-4">
+              <p className="text-sm font-medium text-stone-700 mb-3">通知を受け取る内容</p>
+              <div className="space-y-2">
+                {NOTIFY_ITEMS.map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={notifySettings[key]}
+                      onCheckedChange={() => handleNotifyToggle(key)}
+                      className="border-stone-300 data-[state=checked]:bg-amber-700 data-[state=checked]:border-amber-700"
+                    />
+                    <span className="text-sm text-stone-700">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 檀家専用：住所情報 */}

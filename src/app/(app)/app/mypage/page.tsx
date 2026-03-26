@@ -34,10 +34,17 @@ export default async function MypagePage() {
       member={
         user.member
           ? {
+              id: user.member.id,
               type: user.member.type,
               familyName: user.member.familyName,
               address: user.member.address ?? "",
               interestTags,
+              lineLinked: !!user.member.lineUserId,
+              lineNotifyEnabled: user.member.lineNotifyEnabled,
+              notifyReservation: user.member.notifyReservation,
+              notifyEvent: user.member.notifyEvent,
+              notifyAnniversary: user.member.notifyAnniversary,
+              notifyAnnouncement: user.member.notifyAnnouncement,
             }
           : null
       }
