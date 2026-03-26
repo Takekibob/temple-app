@@ -24,10 +24,15 @@ export default function LoginForm() {
 
   // PWAスタンドアロンモードの検出（iOSのWebViewはGoogle OAuthを拒否するため）
   const [isStandalone, setIsStandalone] = useState(false);
+  // LINE・Instagram等のアプリ内ブラウザ検出（Google OAuthがWebView判定で拒否される）
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   useEffect(() => {
+    const ua = navigator.userAgent;
     const mq = window.matchMedia("(display-mode: standalone)").matches;
     const nav = (navigator as Navigator & { standalone?: boolean }).standalone === true;
     setIsStandalone(mq || nav);
+    // Line/ で始まるUA = LINEアプリ内ブラウザ、他にFB/Instagram等も同様に検出
+    setIsInAppBrowser(/Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(ua));
   }, []);
 
   function handleEmailLogin(formData: FormData) {
@@ -151,19 +156,32 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* Google ログイン */}
-        {isStandalone && (
-          <p className="text-xs text-stone-400 text-center mb-2">
-            Googleログインはいったんブラウザが開きます
-          </p>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleGoogleLogin}
-          disabled={oauthPending === "google"}
-          className="w-full border-stone-200 text-stone-700 hover:bg-stone-50 mb-3"
-        >
+        {/* LINE等のアプリ内ブラウザではGoogleログイン不可のため案内を表示 */}
+        {isInAppBrowser ? (
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <p className="font-medium mb-1">⚠️ Googleログインが使用できません</p>
+            <p className="text-xs text-amber-700 mb-2">
+              このブラウザでは Google ログインをご利用いただけません。
+              Safari で開いてからログインしてください。
+            </p>
+            <p className="text-xs text-amber-600 font-medium">
+              画面右下の「…」→「ブラウザで開く」をタップ
+            </p>
+          </div>
+        ) : (
+          <>
+            {isStandalone && (
+              <p className="text-xs text-stone-400 text-center mb-2">
+                Googleログインはいったんブラウザが開きます
+              </p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleLogin}
+              disabled={oauthPending === "google"}
+              className="w-full border-stone-200 text-stone-700 hover:bg-stone-50 mb-3"
+            >
           <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
@@ -197,6 +215,8 @@ export default function LoginForm() {
           </svg>
           LINE でログイン（準備中）
         </Button>
+          </>
+        )}
       </div>
 
       {/* 登録リンク */}
