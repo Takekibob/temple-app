@@ -24,6 +24,7 @@ export default function AnnouncementFormClient({
     initial?.targetSegment ?? "ALL"
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sendPush, setSendPush] = useState(false);
 
   const isEdit = !!initial?.id;
   const isPublished = !!initial?.publishedAt;
@@ -39,7 +40,7 @@ export default function AnnouncementFormClient({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, targetSegment, publish, unpublish }),
+        body: JSON.stringify({ title, body, targetSegment, publish, unpublish, sendPush: publish && sendPush }),
       });
 
       const data = await res.json();
@@ -126,6 +127,23 @@ export default function AnnouncementFormClient({
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
           />
         </div>
+
+        {/* プッシュ通知オプション */}
+        {!isPublished && (
+          <div className="flex items-center gap-2 pt-1 border-t border-stone-100">
+            <input
+              type="checkbox"
+              id="sendPush"
+              checked={sendPush}
+              onChange={(e) => setSendPush(e.target.checked)}
+              className="accent-amber-700 w-4 h-4 cursor-pointer"
+            />
+            <label htmlFor="sendPush" className="text-sm text-stone-700 cursor-pointer">
+              プッシュ通知も送信する
+              <span className="text-xs text-stone-400 ml-1">（公開時のみ）</span>
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between mt-5">

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
 const INTEREST_TAGS = [
   { value: "坐禅", label: "坐禅" },
   { value: "写経", label: "写経" },
@@ -39,6 +41,7 @@ export default function MypageClient({ user, member }: Props) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled);
+  const [pushLoading, setPushLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set(member?.interestTags ?? [])
   );
@@ -50,6 +53,61 @@ export default function MypageClient({ user, member }: Props) {
       else next.add(tag);
       return next;
     });
+  }
+
+  async function handlePushToggle() {
+    if (pushLoading) return;
+    setPushLoading(true);
+    try {
+      if (!pushEnabled) {
+        // 有効化: 許可リクエスト → SW登録 → subscribe → API
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+          setErrorMsg("このブラウザはプッシュ通知に対応していません");
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          setErrorMsg("通知の許可が必要です");
+          return;
+        }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: VAPID_PUBLIC_KEY,
+        });
+        const json = sub.toJSON();
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            p256dh: json.keys?.p256dh,
+            auth: json.keys?.auth,
+          }),
+        });
+        setPushEnabled(true);
+      } else {
+        // 無効化: SW から subscription を取得して解除 → API
+        if ("serviceWorker" in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            await fetch("/api/push/unsubscribe", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ endpoint: sub.endpoint }),
+            });
+            await sub.unsubscribe();
+          }
+        }
+        setPushEnabled(false);
+      }
+    } catch (e) {
+      setErrorMsg("通知設定の変更に失敗しました");
+      console.error(e);
+    } finally {
+      setPushLoading(false);
+    }
   }
 
   function handleSubmit(formData: FormData) {
@@ -179,8 +237,9 @@ export default function MypageClient({ user, member }: Props) {
               </div>
               <button
                 type="button"
-                onClick={() => setPushEnabled((v) => !v)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                onClick={handlePushToggle}
+                disabled={pushLoading}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${
                   pushEnabled ? "bg-amber-700" : "bg-stone-300"
                 }`}
               >

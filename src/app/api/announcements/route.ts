@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
+import { sendPushNotification } from "@/lib/push";
 
 // GET /api/announcements — 会員向け: 自分のセグメントに合ったお知らせ一覧
 export async function GET() {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     const authUser = await requireAdminOrStaff();
 
     const body = await request.json();
-    const { title, body: content, targetSegment, publish } = body;
+    const { title, body: content, targetSegment, publish, sendPush } = body;
 
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: "タイトルと本文は必須です" }, { status: 400 });
@@ -66,8 +67,52 @@ export async function POST(request: NextRequest) {
         body: content.trim(),
         targetSegment: targetSegment ?? "ALL",
         publishedAt: publish ? new Date() : null,
+        pushSent: false,
       },
     });
+
+    // プッシュ通知送信
+    if (publish && sendPush) {
+      const seg: AnnouncementTarget = targetSegment ?? "ALL";
+
+      const memberTypeFilter =
+        seg === "DANKA" ? { type: "DANKA" as const } :
+        seg === "GOEN"  ? { type: "GOEN" as const } :
+        undefined;
+
+      const subscriptions = await prisma.pushSubscription.findMany({
+        where: {
+          templeId: authUser.templeId,
+          user: {
+            pushEnabled: true,
+            ...(memberTypeFilter ? { member: memberTypeFilter } : {}),
+          },
+        },
+      });
+
+      const pushPayload = {
+        title: title.trim(),
+        body: content.trim().slice(0, 100),
+        url: "/app/news",
+      };
+
+      const staleIds: string[] = [];
+      await Promise.allSettled(
+        subscriptions.map(async (sub) => {
+          const ok = await sendPushNotification(sub, pushPayload);
+          if (!ok) staleIds.push(sub.id);
+        })
+      );
+
+      if (staleIds.length > 0) {
+        await prisma.pushSubscription.deleteMany({ where: { id: { in: staleIds } } });
+      }
+
+      await prisma.announcement.update({
+        where: { id: announcement.id },
+        data: { pushSent: true },
+      });
+    }
 
     return NextResponse.json({ announcement }, { status: 201 });
   } catch (e) {

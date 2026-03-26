@@ -4,7 +4,16 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "regions": ["hnd1"],
-  "crons": [],
+  "crons": [
+    {
+      "path": "/api/cron/reminders?type=evening",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/reminders?type=morning",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   },
