@@ -71,6 +71,7 @@ export default async function AdminEventParticipantsPage({
           status: p.status,
           numGuests: p.numGuests,
           paymentStatus: p.paymentStatus,
+          stripePaymentIntentId: p.stripePaymentIntentId ?? null,
           createdAt: p.createdAt.toISOString(),
           member: {
             familyName: p.member.familyName,

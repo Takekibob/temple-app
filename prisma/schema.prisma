@@ -262,7 +262,9 @@ model EventParticipation {
   numGuests       Int               @default(1)
   status          ParticipationStatus @default(APPLIED)
   paymentStatus   PaymentStatus     @default(NOT_REQUIRED)
-  paymentAmount   Int               @default(0)
+  paymentAmount         Int               @default(0)
+  stripeSessionId       String?
+  stripePaymentIntentId String?
   feedbackScore   Int?              // 1-5
   feedbackComment String?
   createdAt       DateTime          @default(now())
