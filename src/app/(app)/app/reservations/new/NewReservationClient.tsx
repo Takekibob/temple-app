@@ -12,6 +12,8 @@ interface DeceasedPerson {
 
 interface Props {
   deceasedPersons: DeceasedPerson[];
+  initialDeceasedPersonId?: string;
+  initialType?: string;
 }
 
 interface Slot {
@@ -30,17 +32,17 @@ const RESERVATION_TYPES = [
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
 
-export default function NewReservationClient({ deceasedPersons }: Props) {
+export default function NewReservationClient({ deceasedPersons, initialDeceasedPersonId, initialType }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialType ? 2 : 1);
 
   // Form state
-  const [type, setType] = useState("");
+  const [type, setType] = useState(initialType ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(60);
-  const [deceasedPersonId, setDeceasedPersonId] = useState("");
+  const [deceasedPersonId, setDeceasedPersonId] = useState(initialDeceasedPersonId ?? "");
   const [notes, setNotes] = useState("");
 
   // Slot loading

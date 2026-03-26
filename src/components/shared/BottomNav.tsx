@@ -30,6 +30,10 @@ export default function BottomNav({ isDanka }: BottomNavProps) {
             <span className="text-xl">📿</span>
             <span>法要予約</span>
           </Link>
+          <Link href="/app/deceased" className={linkClass("/app/deceased")}>
+            <span className="text-xl">📖</span>
+            <span>過去帳</span>
+          </Link>
           <Link href="/app/ofuse" className={linkClass("/app/ofuse")}>
             <span className="text-xl">💴</span>
             <span>お布施</span>

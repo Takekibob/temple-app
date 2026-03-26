@@ -2,9 +2,15 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import NewReservationClient from "./NewReservationClient";
 
-export default async function NewReservationPage() {
+export default async function NewReservationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deceasedPersonId?: string; type?: string }>;
+}) {
   const authUser = await getAuthUser();
   if (!authUser?.member) return null;
+
+  const { deceasedPersonId, type } = await searchParams;
 
   const deceasedPersons = await prisma.deceasedPerson.findMany({
     where: { memberId: authUser.member.id },
@@ -12,5 +18,11 @@ export default async function NewReservationPage() {
     orderBy: { name: "asc" },
   });
 
-  return <NewReservationClient deceasedPersons={deceasedPersons} />;
+  return (
+    <NewReservationClient
+      deceasedPersons={deceasedPersons}
+      initialDeceasedPersonId={deceasedPersonId}
+      initialType={type}
+    />
+  );
 }

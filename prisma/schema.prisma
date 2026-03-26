@@ -139,6 +139,7 @@ model DeceasedPerson {
   kaimyo        String?   // 戒名
   deathDate     DateTime?
   birthDate     DateTime?
+  age           Int?      // 享年
   relationship  String?   // 続柄
   notes         String?
   createdAt     DateTime  @default(now())
