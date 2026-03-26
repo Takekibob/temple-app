@@ -33,7 +33,14 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "📅", label: "予約", href: "/admin/reservations" },
       { icon: "👥", label: "会員", href: "/admin/members" },
       { icon: "📖", label: "過去帳", href: "/admin/deceased" },
-      { icon: "💰", label: "会計", href: "/admin/accounting" },
+    ],
+  },
+  {
+    title: "会計管理",
+    items: [
+      { icon: "💴", label: "お布施", href: "/admin/ofuse" },
+      { icon: "🏦", label: "護持会費", href: "/admin/gojikai" },
+      { icon: "📊", label: "レポート", href: "/admin/reports" },
     ],
   },
   {
