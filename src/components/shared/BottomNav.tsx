@@ -24,25 +24,14 @@ export default function BottomNav({ isDanka }: BottomNavProps) {
         <span className="text-xl">🏠</span>
         <span>ホーム</span>
       </Link>
-      {isDanka ? (
-        <>
-          <Link href="/app/reservations" className={linkClass("/app/reservations")}>
-            <span className="text-xl">📿</span>
-            <span>法要予約</span>
-          </Link>
-          <Link href="/app/deceased" className={linkClass("/app/deceased")}>
-            <span className="text-xl">📖</span>
-            <span>過去帳</span>
-          </Link>
-          <Link href="/app/ofuse" className={linkClass("/app/ofuse")}>
-            <span className="text-xl">💴</span>
-            <span>お布施</span>
-          </Link>
-        </>
-      ) : (
-        <Link href="/app/calendar" className={linkClass("/app/calendar")}>
-          <span className="text-xl">📆</span>
-          <span>カレンダー</span>
+      <Link href="/app/calendar" className={linkClass("/app/calendar")}>
+        <span className="text-xl">📆</span>
+        <span>カレンダー</span>
+      </Link>
+      {isDanka && (
+        <Link href="/app/reservations" className={linkClass("/app/reservations")}>
+          <span className="text-xl">📿</span>
+          <span>法要予約</span>
         </Link>
       )}
       <Link href="/app/events" className={linkClass("/app/events")}>
