@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import PromoteButton from "./PromoteButton";
 
 export default async function MemberDetailPage({
   params,
@@ -25,6 +26,7 @@ export default async function MemberDetailPage({
       },
       interactions: { orderBy: { createdAt: "desc" }, take: 20 },
       gojikaiPayments: { orderBy: { createdAt: "desc" }, take: 5 },
+      activities: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
 
@@ -35,6 +37,17 @@ export default async function MemberDetailPage({
 
   // 転換候補: ご縁さんでスコア70以上
   const isConversionCandidate = !isDanka && member.engagementScore >= 70;
+
+  const ACTIVITY_LABELS: Record<string, string> = {
+    LOGIN: "ログイン",
+    NEWS_VIEW: "お知らせ閲覧",
+    EVENT_APPLY: "イベント申込",
+    EVENT_ATTEND: "イベント参加",
+    EVENT_FEEDBACK: "フィードバック",
+    KUYO_APPLY: "法要予約",
+    CONTACT: "問い合わせ",
+    CONSECUTIVE_MONTH: "連続月アクティブ",
+  };
 
   return (
     <div className="p-6 max-w-4xl">
@@ -68,12 +81,17 @@ export default async function MemberDetailPage({
             </div>
           </div>
         </div>
-        <Link
-          href={`/admin/members/${id}/edit`}
-          className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
-        >
-          編集
-        </Link>
+        <div className="flex gap-2">
+          {isConversionCandidate && (
+            <PromoteButton memberId={id} memberName={member.user.name} />
+          )}
+          <Link
+            href={`/admin/members/${id}/edit`}
+            className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          >
+            編集
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -199,6 +217,26 @@ export default async function MemberDetailPage({
                 style={{ width: `${Math.min(100, member.engagementScore)}%` }}
               />
             </div>
+          </section>
+
+          {/* アクティビティログ */}
+          <section className="bg-white rounded-xl border border-stone-200 p-4">
+            <h2 className="font-semibold text-stone-800 mb-3">アクティビティ</h2>
+            {member.activities.length === 0 ? (
+              <p className="text-sm text-stone-400">記録なし</p>
+            ) : (
+              <ul className="space-y-2">
+                {member.activities.map((a) => (
+                  <li key={a.id} className="text-xs flex justify-between items-center">
+                    <span className="text-stone-600">{ACTIVITY_LABELS[a.type] ?? a.type}</span>
+                    <div className="text-right">
+                      <span className="text-amber-700 font-medium">+{a.score}pt</span>
+                      <p className="text-stone-300">{a.createdAt.toLocaleDateString("ja-JP")}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           {/* 対応履歴 */}

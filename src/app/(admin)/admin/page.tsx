@@ -20,6 +20,7 @@ export default async function AdminDashboardPage() {
     dankaCount,
     goenCount,
     monthlyEventSignups,
+    conversionCandidates,
     recentReservations,
     upcomingEvents,
   ] = await Promise.all([
@@ -46,6 +47,10 @@ export default async function AdminDashboardPage() {
         status: { in: ["APPLIED", "CONFIRMED", "ATTENDED"] },
         createdAt: { gte: firstOfMonth },
       },
+    }),
+    // 転換候補数（ご縁さんでスコア70以上）
+    prisma.member.count({
+      where: { templeId: authUser.templeId, type: "GOEN", engagementScore: { gte: 70 } },
     }),
     // 本日の予約一覧
     prisma.reservation.findMany({
@@ -95,7 +100,7 @@ export default async function AdminDashboardPage() {
       <h1 className="text-2xl font-bold text-stone-800 mb-6">ダッシュボード</h1>
 
       {/* KPI カード */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-stone-200 p-4">
           <p className="text-xs text-stone-500 mb-1">本日の予約</p>
           <p className="text-3xl font-bold text-stone-800">{todayReservations}</p>
@@ -115,6 +120,11 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-stone-500 mb-1">今月の申込</p>
           <p className="text-3xl font-bold text-stone-800">{monthlyEventSignups}</p>
           <p className="text-xs text-stone-400 mt-1">件（イベント）</p>
+        </div>
+        <div className="bg-white rounded-xl border border-stone-200 p-4">
+          <p className="text-xs text-stone-500 mb-1">転換候補</p>
+          <p className="text-3xl font-bold text-rose-600">{conversionCandidates}</p>
+          <p className="text-xs text-stone-400 mt-1">名（スコア70+）</p>
         </div>
       </div>
 
@@ -208,6 +218,12 @@ export default async function AdminDashboardPage() {
           </Link>
           <Link href="/admin/announcements/new" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
             お知らせ作成
+          </Link>
+          <Link href="/admin/conversion" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+            転換管理
+          </Link>
+          <Link href="/admin/events/analytics" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+            イベント分析
           </Link>
         </div>
       </div>

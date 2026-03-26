@@ -150,7 +150,17 @@ export default async function AppEventDetailPage({
                 {PARTICIPATION_STATUS_LABELS[myParticipation.status] ?? myParticipation.status}
               </p>
               <p className="text-xs text-teal-600 mt-0.5">{myParticipation.numGuests}名で申込済み</p>
-              <CancelButton eventId={id} />
+              <div className="flex gap-2 mt-3">
+                <CancelButton eventId={id} />
+                {["ATTENDED", "CONFIRMED", "APPLIED"].includes(myParticipation.status) && (
+                  <Link
+                    href={`/app/events/${id}/feedback`}
+                    className="text-xs px-3 py-1.5 border border-teal-300 text-teal-700 rounded-lg hover:bg-teal-100"
+                  >
+                    感想を書く
+                  </Link>
+                )}
+              </div>
             </div>
           ) : (
             <Link

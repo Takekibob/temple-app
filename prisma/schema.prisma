@@ -118,6 +118,7 @@ model Member {
   gojikaiPayments  GojikaiPayment[]
   eventParticipations EventParticipation[]
   interactions     MemberInteraction[]
+  activities       MemberActivity[]
 
   @@map("members")
 }
@@ -446,6 +447,36 @@ model MemberInteraction {
   member  Member @relation(fields: [memberId], references: [id])
 
   @@map("member_interactions")
+}
+
+// ==========================================
+// アクティビティログ（エンゲージメントスコア計算用）
+// ==========================================
+model MemberActivity {
+  id        String       @id @default(uuid())
+  memberId  String
+  type      ActivityType
+  metadata  Json?        // { eventId, title, etc. }
+  score     Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  member    Member       @relation(fields: [memberId], references: [id])
+
+  @@index([memberId, createdAt])
+  @@map("member_activities")
+}
+
+enum ActivityType {
+  LOGIN
+  NEWS_VIEW
+  EVENT_APPLY
+  EVENT_ATTEND
+  EVENT_FEEDBACK
+  KUYO_APPLY
+  CONTACT
+  CONSECUTIVE_MONTH
+
+  @@map("activity_type")
 }
 
 // ==========================================
