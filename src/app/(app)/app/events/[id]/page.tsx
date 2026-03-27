@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import CancelButton from "./CancelButton";
+import ShareButton from "@/components/shared/ShareButton";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
@@ -70,9 +71,12 @@ export default async function AppEventDetailPage({
       )}
 
       <div className="p-4">
-        <Link href="/app/events" className="text-sm text-stone-400 hover:text-stone-600 mb-3 inline-block">
-          ← イベント一覧
-        </Link>
+        <div className="flex items-center justify-between mb-3">
+          <Link href="/app/events" className="text-sm text-stone-400 hover:text-stone-600">
+            ← イベント一覧
+          </Link>
+          <ShareButton title={event.title} />
+        </div>
 
         <div className="flex items-start gap-2 mb-1">
           <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">

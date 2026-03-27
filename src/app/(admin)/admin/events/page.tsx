@@ -145,6 +145,12 @@ export default async function AdminEventsPage({
                           参加者
                         </Link>
                         <Link
+                          href={`/admin/events/${event.id}/analytics`}
+                          className="text-stone-500 hover:text-stone-800 text-xs"
+                        >
+                          分析
+                        </Link>
+                        <Link
                           href={`/admin/events/${event.id}/edit`}
                           className="text-amber-700 hover:text-amber-900 text-xs font-medium"
                         >
