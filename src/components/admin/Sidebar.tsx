@@ -10,6 +10,10 @@ interface NavItem {
   label: string;
   href: string;
   adminOnly?: boolean;
+  /** このプレフィックスで始まるパスでは active にしない */
+  excludePrefix?: string;
+  /** href の代わりにこのプレフィックスで active 判定する */
+  activePrefix?: string;
 }
 
 interface NavSection {
@@ -46,8 +50,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "イベント管理",
     items: [
-      { icon: "🎋", label: "イベント", href: "/admin/events" },
-      { icon: "📊", label: "分析", href: "/admin/analytics", adminOnly: true },
+      { icon: "🎋", label: "イベント", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
+      { icon: "📊", label: "分析", href: "/admin/events/analytics", adminOnly: true },
     ],
   },
   {
@@ -75,8 +79,12 @@ export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps)
     items: section.items.filter((item) => !item.adminOnly || isAdmin),
   })).filter((section) => section.items.length > 0);
 
-  const isActive = (href: string) =>
-    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+  const isActive = (item: NavItem) => {
+    const matchPath = item.activePrefix ?? item.href;
+    if (matchPath === "/admin") return pathname === "/admin";
+    if (item.excludePrefix && pathname.startsWith(item.excludePrefix)) return false;
+    return pathname.startsWith(matchPath);
+  };
 
   const content = (
     <div className="flex flex-col h-full">
@@ -101,7 +109,7 @@ export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps)
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors ${
-                  isActive(item.href)
+                  isActive(item)
                     ? "bg-amber-50 text-amber-800 font-medium"
                     : "text-stone-600 hover:bg-stone-100"
                 }`}
