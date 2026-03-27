@@ -54,14 +54,25 @@ export async function proxy(request: NextRequest) {
     (pathname.startsWith("/auth/login") ||
       pathname.startsWith("/auth/register"))
   ) {
-    // ロール確認してリダイレクト先を決定
+    // ロール・member有無を確認してリダイレクト先を決定
     const { prisma } = await import("@/lib/prisma");
     const dbUser = await prisma.user.findUnique({
       where: { email: user.email! },
-      select: { role: true, isActive: true },
+      select: { role: true, isActive: true, member: { select: { id: true } } },
     });
+
     const destUrl = request.nextUrl.clone();
-    if (dbUser?.isActive && ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+
+    if (!dbUser) {
+      // OAuthで認証済みだがDBレコードなし → オンボーディングへ
+      destUrl.pathname = "/auth/onboarding";
+    } else if (!dbUser.isActive) {
+      // 無効化アカウントはリダイレクトせずログインページに留める
+      return supabaseResponse;
+    } else if (!dbUser.member && dbUser.role === "MEMBER") {
+      // DBユーザーはあるがmembersレコードなし → オンボーディングへ
+      destUrl.pathname = "/auth/onboarding";
+    } else if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
       destUrl.pathname = "/admin";
     } else {
       destUrl.pathname = "/app";
