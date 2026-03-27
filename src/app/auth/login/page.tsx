@@ -1,10 +1,12 @@
-import { Suspense } from "react";
-import LoginForm from "./LoginForm";
+import { redirect } from "next/navigation";
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="w-full max-w-sm" />}>
-      <LoginForm />
-    </Suspense>
-  );
+// /auth/login は / (ルートページ) に統合されました
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const params = await searchParams;
+  const qs = new URLSearchParams(params).toString();
+  redirect(qs ? `/?${qs}` : "/");
 }

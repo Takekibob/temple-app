@@ -9,7 +9,7 @@ export default async function EventApplyPage({
   params: Promise<{ id: string }>;
 }) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (!authUser.member) redirect("/app");
 
   const { id } = await params;

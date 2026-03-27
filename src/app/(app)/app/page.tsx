@@ -21,7 +21,7 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
 
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const isDanka = authUser.member?.type === "DANKA";
   const isGoen = authUser.member?.type === "GOEN";

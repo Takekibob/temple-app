@@ -10,7 +10,7 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
 
   // 未認証
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/");
 
   // 既にmembersレコードがある場合はスキップ
   if (user.email) {

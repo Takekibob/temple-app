@@ -13,7 +13,7 @@ export default async function AcceptInvitePage() {
   const authUser = await getAuthUser();
 
   // 未認証 or 一般会員は対象外
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const temple = await prisma.temple.findUnique({

@@ -12,7 +12,7 @@ const SEGMENT_LABELS: Record<string, string> = {
 
 export default async function NewsPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const memberType = authUser.member?.type ?? null;
 

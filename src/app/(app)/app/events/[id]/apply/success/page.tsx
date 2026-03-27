@@ -10,7 +10,7 @@ interface Props {
 
 export default async function ApplySuccessPage({ params, searchParams }: Props) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const { id: eventId } = await params;
   const { session_id: sessionId } = await searchParams;

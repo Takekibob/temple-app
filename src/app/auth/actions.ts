@@ -180,5 +180,5 @@ export async function getLineLoginUrl(next?: string) {
 export async function logout() {
   const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
-  redirect("/auth/login");
+  redirect("/");
 }

@@ -34,7 +34,7 @@ export default async function AppEventsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const { category } = await searchParams;
   const isDanka = authUser.member?.type === "DANKA";

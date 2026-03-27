@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export default async function AdminDashboardPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const now = new Date();

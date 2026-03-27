@@ -25,7 +25,7 @@ export default function NotFound() {
             ホームへ戻る
           </Link>
           <Link
-            href="/auth/login"
+            href="/"
             className="inline-block px-6 py-3 border border-stone-200 text-stone-600 rounded-xl hover:bg-stone-100 transition-colors"
           >
             ログインページへ

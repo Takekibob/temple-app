@@ -5,7 +5,7 @@ import CalendarClient from "./CalendarClient";
 
 export default async function CalendarPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const now = new Date();
   const year = now.getFullYear();

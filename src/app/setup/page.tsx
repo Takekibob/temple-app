@@ -10,7 +10,7 @@ export default async function SetupPage() {
   ]);
 
   if (templeCount > 0 && adminCount > 0) {
-    redirect("/auth/login?message=setup-complete");
+    redirect("/?message=setup-complete");
   }
 
   return (

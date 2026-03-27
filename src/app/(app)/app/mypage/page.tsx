@@ -9,14 +9,14 @@ export default async function MypagePage() {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const user = await prisma.user.findUnique({
     where: { email: authUser.email! },
     include: { member: true },
   });
 
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/");
 
   const interestTags = Array.isArray(user.member?.interestTags)
     ? (user.member.interestTags as string[])

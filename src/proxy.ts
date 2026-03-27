@@ -31,10 +31,10 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // 未認証ユーザーを /auth/login へリダイレクト
+  // 未認証ユーザーを / (ログイン画面) へリダイレクト
   if (!user && (pathname.startsWith("/app") || pathname.startsWith("/admin"))) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/auth/login";
+    loginUrl.pathname = "/";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -42,16 +42,17 @@ export async function proxy(request: NextRequest) {
   // メール未確認ユーザーが /app に入ろうとしたらログインページへ
   if (user && !user.email_confirmed_at && pathname.startsWith("/app")) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/auth/login";
+    loginUrl.pathname = "/";
     loginUrl.searchParams.set("error", "email_not_confirmed");
     return NextResponse.redirect(loginUrl);
   }
 
-  // 認証済みユーザーがログイン/登録ページにアクセスしたら適切な画面へ
+  // 認証済みユーザーがログイン(/)または登録ページにアクセスしたら適切な画面へ
   if (
     user &&
     user.email_confirmed_at &&
-    (pathname.startsWith("/auth/login") ||
+    (pathname === "/" ||
+      pathname.startsWith("/auth/login") ||
       pathname.startsWith("/auth/register"))
   ) {
     // ロール・member有無を確認してリダイレクト先を決定

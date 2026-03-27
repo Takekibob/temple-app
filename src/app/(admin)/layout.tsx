@@ -6,7 +6,7 @@ import Sidebar from "@/components/admin/Sidebar";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const authUser = await getAuthUser();
 
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const temple = await prisma.temple.findUnique({

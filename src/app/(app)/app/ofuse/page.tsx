@@ -27,7 +27,7 @@ export default async function UserOfusePage({
   searchParams: Promise<SearchParams>;
 }) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   // 檀家のみアクセス可
   if (!authUser.member || authUser.member.type !== "DANKA") {

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         // アカウント無効
         if (dbUser && !dbUser.isActive) {
           await supabase.auth.signOut();
-          return NextResponse.redirect(new URL("/auth/login?error=account_disabled", origin));
+          return NextResponse.redirect(new URL("/?error=account_disabled", origin));
         }
 
         // DBユーザーなし or membersレコードなし → オンボーディングへ
@@ -52,5 +52,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL("/auth/login?error=callback", origin));
+  return NextResponse.redirect(new URL("/?error=callback", origin));
 }

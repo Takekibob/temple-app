@@ -5,7 +5,7 @@ import StaffClient from "./StaffClient";
 
 export default async function AdminStaffPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   // STAFF ロールはリダイレクト
   if (!["ADMIN", "SUPER_ADMIN"].includes(authUser.role)) redirect("/admin");
 

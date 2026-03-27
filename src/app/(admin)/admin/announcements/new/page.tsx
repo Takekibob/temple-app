@@ -5,7 +5,7 @@ import AnnouncementFormClient from "../AnnouncementFormClient";
 
 export default async function NewAnnouncementPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   return (

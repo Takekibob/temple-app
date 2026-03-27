@@ -1,33 +1,37 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/prisma";
+import LoginForm from "./auth/login/LoginForm";
 
-export default function RootPage() {
+export default async function RootPage() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user?.email) {
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true, isActive: true, member: { select: { id: true } } },
+    });
+
+    if (dbUser?.isActive) {
+      if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+        redirect("/admin");
+      }
+      if (!dbUser.member) {
+        redirect("/auth/onboarding");
+      }
+      redirect("/app");
+    }
+  }
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-stone-50 p-8">
-      <div className="text-center max-w-md">
-        <h1 className="text-4xl font-bold text-stone-800 mb-2">てらログ</h1>
-        <p className="text-stone-500 mb-8">お寺DX管理アプリ</p>
-
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/app"
-            className="block px-6 py-3 bg-amber-700 text-white rounded-lg hover:bg-amber-800 transition-colors"
-          >
-            利用者アプリへ
-          </Link>
-          <Link
-            href="/admin"
-            className="block px-6 py-3 border border-stone-400 text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
-          >
-            管理画面へ
-          </Link>
-          <Link
-            href="/login"
-            className="block px-6 py-3 text-stone-500 hover:text-stone-700 transition-colors text-sm"
-          >
-            ログイン
-          </Link>
-        </div>
-      </div>
-    </main>
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <Suspense fallback={<div className="w-full max-w-sm" />}>
+        <LoginForm />
+      </Suspense>
+    </div>
   );
 }

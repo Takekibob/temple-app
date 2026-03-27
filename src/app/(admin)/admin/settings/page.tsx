@@ -5,7 +5,7 @@ import SettingsClient from "./SettingsClient";
 
 export default async function AdminSettingsPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const temple = await prisma.temple.findUnique({

@@ -10,7 +10,7 @@ export default async function EditAnnouncementPage({
   params: Promise<{ id: string }>;
 }) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const { id } = await params;

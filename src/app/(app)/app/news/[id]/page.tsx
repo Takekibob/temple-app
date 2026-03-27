@@ -9,7 +9,7 @@ export default async function NewsDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   const { id } = await params;
   const memberType = authUser.member?.type ?? null;

@@ -193,7 +193,7 @@ export default function RegisterPage() {
       <p className="text-center text-sm text-stone-500 mt-5">
         既にアカウントをお持ちの方は{" "}
         <Link
-          href="/auth/login"
+          href="/"
           className="text-amber-700 hover:text-amber-800 font-medium"
         >
           ログインはこちら

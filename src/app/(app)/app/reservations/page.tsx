@@ -28,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function ReservationsPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
 
   // 檀家のみアクセス可
   if (!authUser.member || authUser.member.type !== "DANKA") {

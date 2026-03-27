@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function MyEventsPage() {
   const authUser = await getAuthUser();
-  if (!authUser) redirect("/auth/login");
+  if (!authUser) redirect("/");
   if (!authUser.member) redirect("/app");
 
   const participations = await prisma.eventParticipation.findMany({
