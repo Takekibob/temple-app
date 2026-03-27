@@ -21,6 +21,25 @@ model Temple {
   phone        String?
   email        String?
   logoUrl      String?
+  description  String? // 寺院紹介文
+
+  // 予約設定
+  bookingStartTime   String  @default("09:00")
+  bookingEndTime     String  @default("17:00")
+  bookingDuration    Int     @default(60)
+  bookingMaxSlots    Int     @default(1)
+  bookingAdvanceDays Int     @default(1)
+
+  // 通知設定
+  reminderDayBefore     Boolean @default(true)
+  reminderDayBeforeTime String  @default("18:00")
+  reminderDayOf         Boolean @default(true)
+  reminderDayOfTime     String  @default("09:00")
+  reminderMeinichi      Boolean @default(true)
+
+  // カスタムカテゴリ
+  customEventCategories Json    @default("[]")
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -51,6 +70,8 @@ model User {
   authProvider AuthProvider @default(EMAIL)
   pushToken    String?
   pushEnabled  Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

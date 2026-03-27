@@ -22,6 +22,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     include: { member: true },
   });
 
+  if (!dbUser || !dbUser.isActive) return null;
+
   return dbUser as AuthUser | null;
 }
 
