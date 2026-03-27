@@ -73,12 +73,14 @@ export async function GET(request: NextRequest) {
         where: {
           templeId: authUser.templeId,
           month,
+          showOnCalendar: true,
         },
         select: {
           id: true,
           name: true,
           month: true,
           day: true,
+          endDay: true,
           description: true,
         },
         orderBy: { day: "asc" },
@@ -122,14 +124,18 @@ export async function GET(request: NextRequest) {
         type: "reservation" as const,
         color: "purple",
       })),
-      annualEvents: annualEvents.map((a) => ({
-        id: a.id,
-        title: a.name,
-        date: `${year}-${String(month).padStart(2, "0")}-${String(a.day).padStart(2, "0")}`,
-        description: a.description,
-        type: "annual" as const,
-        color: "orange",
-      })),
+      annualEvents: annualEvents.flatMap((a) => {
+        const start = a.day;
+        const end = a.endDay ?? a.day;
+        return Array.from({ length: end - start + 1 }, (_, i) => ({
+          id: `${a.id}-${start + i}`,
+          title: a.name,
+          date: `${year}-${String(month).padStart(2, "0")}-${String(start + i).padStart(2, "0")}`,
+          description: a.description,
+          type: "annual" as const,
+          color: "orange",
+        }));
+      }),
     });
   } catch {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });

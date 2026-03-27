@@ -421,15 +421,17 @@ enum AnnouncementTarget {
 // 年中行事
 // ==========================================
 model AnnualEvent {
-  id          String   @id @default(uuid())
-  templeId    String
-  name        String
-  month       Int
-  day         Int
-  description String?
-  isRecurring Boolean  @default(true)
-  notes       String?
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  templeId       String
+  name           String
+  month          Int
+  day            Int
+  endDay         Int?     // 複数日イベントの最終日（同月内）
+  description    String?
+  isRecurring    Boolean  @default(true)
+  showOnCalendar Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
 
   temple  Temple @relation(fields: [templeId], references: [id])
 
