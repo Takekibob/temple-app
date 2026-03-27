@@ -199,6 +199,11 @@ export default function RegisterPage() {
           ログインはこちら
         </Link>
       </p>
+
+      {/* 管理者向け案内 */}
+      <p className="text-center text-xs text-stone-400 mt-3 px-2">
+        住職・スタッフの方は、寺院の管理者から招待を受けてください
+      </p>
     </div>
   );
 }

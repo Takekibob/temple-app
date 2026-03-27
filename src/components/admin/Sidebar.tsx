@@ -117,12 +117,21 @@ export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps)
       {/* ユーザー情報 */}
       <div className="px-4 py-4 border-t border-stone-200">
         <p className="text-xs text-stone-500 truncate">{userName}</p>
-        <button
-          onClick={async () => { await logout(); }}
-          className="text-xs text-stone-400 hover:text-stone-600 mt-1"
-        >
-          ログアウト
-        </button>
+        <div className="flex items-center gap-3 mt-1.5">
+          <Link
+            href="/app"
+            className="text-xs text-amber-700 hover:text-amber-900 font-medium"
+          >
+            👁 利用者画面を見る
+          </Link>
+          <span className="text-stone-200">|</span>
+          <button
+            onClick={async () => { await logout(); }}
+            className="text-xs text-stone-400 hover:text-stone-600"
+          >
+            ログアウト
+          </button>
+        </div>
       </div>
     </div>
   );
