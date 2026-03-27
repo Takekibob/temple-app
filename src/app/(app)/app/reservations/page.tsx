@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -27,7 +28,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function ReservationsPage() {
   const authUser = await getAuthUser();
-  if (!authUser?.member) return null;
+  if (!authUser) redirect("/auth/login");
+
+  // 檀家のみアクセス可
+  if (!authUser.member || authUser.member.type !== "DANKA") {
+    redirect("/app");
+  }
 
   const reservations = await prisma.reservation.findMany({
     where: { memberId: authUser.member.id },

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
@@ -63,8 +64,8 @@ export default async function AppEventDetailPage({
     <div className="max-w-lg mx-auto">
       {/* Cover image */}
       {event.imageUrl ? (
-        <div className="h-48 bg-stone-200 overflow-hidden">
-          <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+        <div className="relative h-48 bg-stone-200 overflow-hidden">
+          <Image src={event.imageUrl} alt={event.title} fill className="object-cover" />
         </div>
       ) : (
         <div className="h-24 bg-gradient-to-b from-amber-50 to-stone-50" />

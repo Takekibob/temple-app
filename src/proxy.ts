@@ -48,17 +48,25 @@ export async function proxy(request: NextRequest) {
   }
 
   // 認証済みユーザーがログイン/登録ページにアクセスしたら適切な画面へ
-  // ロール判定はサーバーコンポーネント側で行うため、ここでは /app へ転送
-  // （admin/staff は actions.ts のログイン処理で /admin にリダイレクト済み）
   if (
     user &&
     user.email_confirmed_at &&
     (pathname.startsWith("/auth/login") ||
       pathname.startsWith("/auth/register"))
   ) {
-    const appUrl = request.nextUrl.clone();
-    appUrl.pathname = "/app";
-    return NextResponse.redirect(appUrl);
+    // ロール確認してリダイレクト先を決定
+    const { prisma } = await import("@/lib/prisma");
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email! },
+      select: { role: true, isActive: true },
+    });
+    const destUrl = request.nextUrl.clone();
+    if (dbUser?.isActive && ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+      destUrl.pathname = "/admin";
+    } else {
+      destUrl.pathname = "/app";
+    }
+    return NextResponse.redirect(destUrl);
   }
 
   // /setup は認証済みの場合は /admin へリダイレクト

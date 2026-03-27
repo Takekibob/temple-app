@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
@@ -54,6 +55,7 @@ export default async function AppEventsPage({
   const events = await prisma.event.findMany({
     where,
     orderBy: { eventDate: "asc" },
+    take: 30,
     include: {
       _count: {
         select: { participations: { where: { status: { notIn: ["CANCELLED", "WAITLISTED"] } } } },
@@ -138,11 +140,12 @@ export default async function AppEventsPage({
                 className="block bg-white rounded-xl border border-stone-200 overflow-hidden hover:border-amber-200 hover:shadow-sm transition-all"
               >
                 {event.imageUrl && (
-                  <div className="h-36 overflow-hidden bg-stone-100">
-                    <img
+                  <div className="relative h-36 overflow-hidden bg-stone-100">
+                    <Image
                       src={event.imageUrl}
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                 )}
