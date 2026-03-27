@@ -47,7 +47,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 認証済みユーザーがログイン/登録ページにアクセスしたら /app へ
+  // 認証済みユーザーがログイン/登録ページにアクセスしたら適切な画面へ
+  // ロール判定はサーバーコンポーネント側で行うため、ここでは /app へ転送
+  // （admin/staff は actions.ts のログイン処理で /admin にリダイレクト済み）
   if (
     user &&
     user.email_confirmed_at &&
@@ -57,6 +59,14 @@ export async function proxy(request: NextRequest) {
     const appUrl = request.nextUrl.clone();
     appUrl.pathname = "/app";
     return NextResponse.redirect(appUrl);
+  }
+
+  // /setup は認証済みの場合は /admin へリダイレクト
+  // （未認証の場合はページ側で DB チェックして判断）
+  if (user && user.email_confirmed_at && pathname === "/setup") {
+    const adminUrl = request.nextUrl.clone();
+    adminUrl.pathname = "/admin";
+    return NextResponse.redirect(adminUrl);
   }
 
   return supabaseResponse;
