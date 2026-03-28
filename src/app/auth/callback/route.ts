@@ -11,6 +11,11 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // パスワードリセット等、/auth/ 配下への明示的な誘導はそのまま優先
+      if (next.startsWith("/auth/")) {
+        return NextResponse.redirect(new URL(next, origin));
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();

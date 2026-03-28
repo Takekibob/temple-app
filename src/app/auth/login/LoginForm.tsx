@@ -144,6 +144,12 @@ export default function LoginForm() {
           >
             {isPending ? "ログイン中…" : "ログイン"}
           </Button>
+
+          <div className="text-right">
+            <Link href="/auth/forgot-password" className="text-xs text-stone-400 hover:text-amber-700">
+              パスワードをお忘れの方はこちら
+            </Link>
+          </div>
         </form>
 
         {/* 区切り */}

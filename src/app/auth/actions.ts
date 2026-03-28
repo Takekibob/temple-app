@@ -76,6 +76,32 @@ export async function registerWithEmail(formData: FormData) {
 }
 
 // ============================================================
+// パスワードリセット（メール送信）
+// ============================================================
+export async function resetPassword(formData: FormData) {
+  const email = formData.get("email") as string;
+  if (!email) return { error: "メールアドレスを入力してください。" };
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback?next=/auth/new-password`,
+  });
+
+  if (error) return { error: "送信に失敗しました。しばらく経ってから再度お試しください。" };
+  return { success: true };
+}
+
+// ============================================================
+// 確認メール再送信
+// ============================================================
+export async function resendConfirmationEmail(email: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) return { error: "再送信に失敗しました。しばらく経ってから再度お試しください。" };
+  return { success: true };
+}
+
+// ============================================================
 // Google ログイン (OAuth リダイレクト URL を返す)
 // ============================================================
 export async function getGoogleLoginUrl(next?: string) {

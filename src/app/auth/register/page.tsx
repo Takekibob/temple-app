@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { registerWithEmail } from "@/app/auth/actions";
+import { registerWithEmail, resendConfirmationEmail } from "@/app/auth/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isResending, startResend] = useTransition();
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -42,6 +44,25 @@ export default function RegisterPage() {
           <p className="text-xs text-stone-400 pt-2">
             メールが届かない場合は迷惑メールフォルダもご確認ください。
           </p>
+          <div className="pt-3 border-t border-stone-100">
+            {resendMsg ? (
+              <p className="text-xs text-teal-600">{resendMsg}</p>
+            ) : (
+              <button
+                type="button"
+                disabled={isResending}
+                onClick={() => {
+                  startResend(async () => {
+                    const result = await resendConfirmationEmail(sentEmail!);
+                    setResendMsg(result?.error ?? "再送信しました。メールをご確認ください。");
+                  });
+                }}
+                className="text-xs text-amber-700 hover:text-amber-800 disabled:opacity-50"
+              >
+                {isResending ? "送信中…" : "メールが届かない場合は再送信する"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
