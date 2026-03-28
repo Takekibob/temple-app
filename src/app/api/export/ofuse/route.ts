@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 function escapeCsv(v: unknown): string {
@@ -30,10 +30,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 // GET /api/export/ofuse
 export async function GET() {
   try {
-    const authUser = await getAuthUser();
-    if (!authUser || authUser.role === "MEMBER") {
-      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
-    }
+    const authUser = await requireAdmin();
 
     const ofuse = await prisma.ofuse.findMany({
       where: { templeId: authUser.templeId },
