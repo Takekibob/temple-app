@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
-import { MemberType } from "@/generated/prisma/enums";
 
 // ============================================================
 // ログイン (メール + パスワード)
@@ -55,27 +54,14 @@ export async function loginWithEmail(formData: FormData) {
 export async function registerWithEmail(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
-  const memberTypeRaw = formData.get("memberType") as string;
-  const familyName = formData.get("familyName") as string;
-  const address = formData.get("address") as string | null;
-  const phone = formData.get("phone") as string | null;
 
-  if (!email || !password || !name || !memberTypeRaw) {
+  if (!email || !password) {
     return { error: "必須項目を入力してください。" };
-  }
-
-  const memberType =
-    memberTypeRaw === "DANKA" ? MemberType.DANKA : MemberType.GOEN;
-
-  // 檀家の場合は追加フィールドが必須
-  if (memberType === MemberType.DANKA && (!familyName || !address || !phone)) {
-    return { error: "檀家登録には氏名・住所・電話番号が必要です。" };
   }
 
   const supabase = await createServerSupabaseClient();
 
-  // Supabase Auth にユーザー作成
+  // Supabase Auth にユーザー作成のみ（DB書き込みはオンボーディングで行う）
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
@@ -91,45 +77,7 @@ export async function registerWithEmail(formData: FormData) {
     return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
   }
 
-  // デフォルト寺院IDを取得（本番では寺院選択フローが必要）
-  const temple = await prisma.temple.findFirst();
-  if (!temple) {
-    return { error: "寺院情報が見つかりません。管理者にお問い合わせください。" };
-  }
-
-  // DB に users レコードを作成（CSVインポート済みの場合は id を更新）
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  let user;
-  if (existingUser) {
-    user = await prisma.user.update({
-      where: { email },
-      data: { id: authData.user.id, name },
-    });
-  } else {
-    user = await prisma.user.create({
-      data: {
-        id: authData.user.id,
-        templeId: temple.id,
-        email,
-        name,
-        role: "MEMBER",
-      },
-    });
-  }
-
-  // DB に members レコードを作成
-  await prisma.member.create({
-    data: {
-      templeId: temple.id,
-      userId: user.id,
-      type: memberType,
-      familyName: familyName || name,
-      address: address || undefined,
-      phone: phone || undefined,
-    },
-  });
-
-  redirect("/app");
+  return { success: true, email };
 }
 
 // ============================================================
