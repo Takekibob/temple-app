@@ -39,16 +39,22 @@ export async function GET(request: NextRequest) {
     };
 
     if (tab === "monthly") {
-      // 命日月フィルター: deathDate のある全件を取得して JS でフィルタ
+      // 命日月フィルター: SQL の EXTRACT で月一致するIDを取得してからメンバー情報と結合
       const targetMonth = month ?? new Date().getMonth() + 1;
-      const all = await prisma.deceasedPerson.findMany({
-        where: { ...baseWhere, deathDate: { not: null } },
+      const matchingIdRows = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT dp.id
+        FROM "deceased_persons" dp
+        INNER JOIN "members" m ON dp."memberId" = m.id
+        WHERE m."templeId" = ${authUser.templeId}
+        AND dp."deathDate" IS NOT NULL
+        AND EXTRACT(MONTH FROM dp."deathDate") = ${targetMonth}
+      `;
+      const matchingIds = matchingIdRows.map((r) => r.id);
+      const filtered = await prisma.deceasedPerson.findMany({
+        where: { ...baseWhere, id: { in: matchingIds } },
         orderBy: [{ deathDate: "asc" }],
         include,
       });
-      const filtered = all.filter(
-        (d) => d.deathDate && d.deathDate.getMonth() + 1 === targetMonth
-      );
       return NextResponse.json({ deceased: filtered, total: filtered.length, tab });
     }
 
