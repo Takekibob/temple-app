@@ -1,8 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
+
+async function getSiteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
 
 // ============================================================
 // ログイン (メール + パスワード)
@@ -54,6 +63,7 @@ export async function registerWithEmail(formData: FormData) {
     return { error: "必須項目を入力してください。" };
   }
 
+  const siteUrl = await getSiteUrl();
   const supabase = await createServerSupabaseClient();
 
   // Supabase Auth にユーザー作成のみ（DB書き込みはオンボーディングで行う）
@@ -61,7 +71,7 @@ export async function registerWithEmail(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback`,
+      emailRedirectTo: `${siteUrl}/auth/callback`,
     },
   });
 
@@ -82,9 +92,14 @@ export async function resetPassword(formData: FormData) {
   const email = formData.get("email") as string;
   if (!email) return { error: "メールアドレスを入力してください。" };
 
+  // DB に登録済みかチェック
+  const dbUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!dbUser) return { error: "このメールアドレスは登録されていません。" };
+
+  const siteUrl = await getSiteUrl();
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback?next=/auth/new-password`,
+    redirectTo: `${siteUrl}/auth/callback?next=/auth/new-password`,
   });
 
   if (error) return { error: "送信に失敗しました。しばらく経ってから再度お試しください。" };
