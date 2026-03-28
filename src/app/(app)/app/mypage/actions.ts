@@ -23,6 +23,8 @@ export async function updateProfile(formData: FormData) {
 
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string | null;
+  const address = formData.get("address") as string | null;
+  const postalCode = formData.get("postalCode") as string | null;
   const pushEnabled = formData.get("pushEnabled") === "true";
   const selectedTags = INTEREST_TAG_VALUES.filter(
     (tag) => formData.get(`tag_${tag}`) === "on"
@@ -44,6 +46,8 @@ export async function updateProfile(formData: FormData) {
       where: { id: member.id },
       data: {
         interestTags: selectedTags,
+        address: address || undefined,
+        postalCode: postalCode || undefined,
       },
     });
   }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MemberFilters from "./MemberFilters";
+import ExportButton from "@/components/admin/ExportButton";
 
 const PAGE_SIZE = 50;
 
@@ -59,6 +60,11 @@ export default async function MembersPage({
           <p className="text-sm text-stone-500 mt-0.5">全 {total} 件</p>
         </div>
         <div className="flex gap-2">
+          <ExportButton
+            href="/api/export/members"
+            label="CSVエクスポート"
+            filename="members.csv"
+          />
           <Link
             href="/admin/members/import"
             className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"

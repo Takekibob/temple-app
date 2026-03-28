@@ -209,17 +209,18 @@ export default function LoginForm() {
           {oauthPending === "google" ? "リダイレクト中…" : "Google でログイン"}
         </Button>
 
-        {/* LINE ログイン（準備中） */}
+        {/* LINE ログイン */}
         <Button
           type="button"
           variant="outline"
-          disabled
-          className="w-full border-stone-200 text-stone-400 cursor-not-allowed"
+          onClick={handleLineLogin}
+          disabled={oauthPending === "line"}
+          className="w-full border-stone-200 text-stone-700 hover:bg-stone-50"
         >
-          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="#9ca3af">
+          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="#06C755">
             <path d="M12 2C6.48 2 2 5.93 2 10.8c0 3.32 2.09 6.23 5.25 7.9-.22.83-.8 3.01-.92 3.47-.14.56.21.55.44.4.19-.13 2.97-1.96 4.17-2.76.35.05.7.08 1.06.08 5.52 0 10-3.93 10-8.79C22 5.93 17.52 2 12 2z" />
           </svg>
-          LINE でログイン（準備中）
+          {oauthPending === "line" ? "リダイレクト中…" : "LINE でログイン"}
         </Button>
           </>
         )}

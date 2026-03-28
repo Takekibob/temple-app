@@ -38,6 +38,7 @@ export default async function MypagePage() {
               type: user.member.type,
               familyName: user.member.familyName,
               address: user.member.address ?? "",
+              postalCode: user.member.postalCode ?? "",
               interestTags,
               lineLinked: !!user.member.lineUserId,
               lineNotifyEnabled: user.member.lineNotifyEnabled,

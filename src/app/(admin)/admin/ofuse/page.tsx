@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import ExportButton from "@/components/admin/ExportButton";
 
 const TYPE_LABELS: Record<string, string> = {
   HOUYO: "法要",
@@ -88,12 +89,19 @@ export default async function AdminOfusePage({
             {selectedYear}年 全 {total} 件 / 合計 {(totalAmount._sum.amount ?? 0).toLocaleString()} 円
           </p>
         </div>
-        <Link
-          href="/admin/ofuse/new"
-          className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
-        >
-          ＋ 新規記録
-        </Link>
+        <div className="flex gap-2">
+          <ExportButton
+            href="/api/export/ofuse"
+            label="CSVエクスポート"
+            filename="ofuse.csv"
+          />
+          <Link
+            href="/admin/ofuse/new"
+            className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          >
+            ＋ 新規記録
+          </Link>
+        </div>
       </div>
 
       {/* 年度フィルター */}

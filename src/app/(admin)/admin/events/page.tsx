@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import ExportButton from "@/components/admin/ExportButton";
 
 const STATUS_TABS = [
   { value: "", label: "すべて" },
@@ -71,12 +72,19 @@ export default async function AdminEventsPage({
           <h1 className="text-2xl font-bold text-stone-800">イベント管理</h1>
           <p className="text-sm text-stone-500 mt-0.5">全 {events.length} 件</p>
         </div>
-        <Link
-          href="/admin/events/new"
-          className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
-        >
-          ＋ 新規作成
-        </Link>
+        <div className="flex gap-2">
+          <ExportButton
+            href="/api/export/events"
+            label="CSVエクスポート"
+            filename="events.csv"
+          />
+          <Link
+            href="/admin/events/new"
+            className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          >
+            ＋ 新規作成
+          </Link>
+        </div>
       </div>
 
       {/* Status tab filter */}

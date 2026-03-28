@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { updateProfile } from "./actions";
 import { logout } from "@/app/auth/actions";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ interface Props {
     type: string;
     familyName: string;
     address: string;
+    postalCode: string;
     interestTags: string[];
     lineLinked: boolean;
     lineNotifyEnabled: boolean;
@@ -58,6 +60,10 @@ export default function MypageClient({ user, member }: Props) {
   // プッシュ通知
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled);
   const [pushLoading, setPushLoading] = useState(false);
+
+  // 昇格申請
+  const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
 
   // LINE
   const [lineLinked, setLineLinked] = useState(member?.lineLinked ?? false);
@@ -195,6 +201,26 @@ export default function MypageClient({ user, member }: Props) {
     });
   }
 
+  // ── 檀家昇格申請 ─────────────────────────────────────
+  async function handlePromoteRequest() {
+    if (!member || promoteLoading) return;
+    setPromoteLoading(true);
+    setPromoteMsg(null);
+    try {
+      const res = await fetch(`/api/members/${member.id}/promote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requested: true }),
+      });
+      if (!res.ok) throw new Error();
+      setPromoteMsg("申請を受け付けました。お寺の担当者がご確認します。");
+    } catch {
+      setPromoteMsg("申請に失敗しました。もう一度お試しください。");
+    } finally {
+      setPromoteLoading(false);
+    }
+  }
+
   // ── プロフィール保存 ──────────────────────────────────
   function handleSubmit(formData: FormData) {
     formData.set("pushEnabled", String(pushEnabled));
@@ -303,6 +329,32 @@ export default function MypageClient({ user, member }: Props) {
               />
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="postalCode" className="text-stone-700">
+                郵便番号
+              </Label>
+              <Input
+                id="postalCode"
+                name="postalCode"
+                defaultValue={member?.postalCode ?? ""}
+                placeholder="000-0000"
+                className="border-stone-200 focus-visible:ring-amber-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="address" className="text-stone-700">
+                住所
+              </Label>
+              <Input
+                id="address"
+                name="address"
+                defaultValue={member?.address ?? ""}
+                placeholder="東京都〇〇区..."
+                className="border-stone-200 focus-visible:ring-amber-500"
+              />
+            </div>
+
             {/* 興味・関心タグ */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-stone-700">興味・関心</p>
@@ -328,6 +380,15 @@ export default function MypageClient({ user, member }: Props) {
               {isPending ? "保存中…" : "変更を保存"}
             </Button>
           </form>
+
+          <div className="mt-4 pt-4 border-t border-stone-100">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm text-amber-700 hover:text-amber-800"
+            >
+              パスワードを変更する →
+            </Link>
+          </div>
         </div>
 
         {/* 通知設定 */}
@@ -471,6 +532,30 @@ export default function MypageClient({ user, member }: Props) {
                 <span className="text-stone-800">{member.address || "—"}</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ご縁さん：檀家昇格申請 */}
+        {member?.type === "GOEN" && (
+          <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-3">
+            <h2 className="font-semibold text-stone-800">檀家として登録する</h2>
+            <p className="text-sm text-stone-500">
+              このお寺の檀家としてご登録を希望される場合は、申請してください。
+              お寺の担当者が確認後、ご連絡いたします。
+            </p>
+            {promoteMsg ? (
+              <p className="text-sm text-green-600">{promoteMsg}</p>
+            ) : (
+              <Button
+                type="button"
+                onClick={handlePromoteRequest}
+                disabled={promoteLoading}
+                variant="outline"
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                {promoteLoading ? "申請中…" : "檀家登録を申請する"}
+              </Button>
+            )}
           </div>
         )}
       </div>
