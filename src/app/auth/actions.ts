@@ -27,6 +27,11 @@ export async function loginWithEmail(formData: FormData) {
     if (error.message?.toLowerCase().includes("email not confirmed")) {
       return { error: "メールアドレスの認証が完了していません。登録時に届いたメールのリンクをクリックしてください。" };
     }
+    // Google 等 OAuth ユーザーがメール/パスワードでログインしようとした場合に案内
+    const dbUser = await prisma.user.findUnique({ where: { email }, select: { authProvider: true } });
+    if (dbUser?.authProvider === "GOOGLE") {
+      return { error: "このアカウントは Google でログインしています。Googleのログインボタンをお使いください。" };
+    }
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }
 
@@ -61,6 +66,15 @@ export async function registerWithEmail(formData: FormData) {
 
   if (!email || !password) {
     return { error: "必須項目を入力してください。" };
+  }
+
+  // DB に既存ユーザーがいる場合はプロバイダーを確認
+  const existingUser = await prisma.user.findUnique({ where: { email }, select: { authProvider: true } });
+  if (existingUser) {
+    if (existingUser.authProvider === "GOOGLE") {
+      return { error: "このメールアドレスは Google アカウントで登録されています。Googleのログインボタンをお使いください。" };
+    }
+    return { error: "このメールアドレスは既に登録されています。ログインしてください。" };
   }
 
   const siteUrl = await getSiteUrl();
