@@ -24,7 +24,6 @@ export async function loginWithEmail(formData: FormData) {
   // DB にユーザーレコードがない or 無効化されている場合のチェック
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (authUser) {
-    const { prisma } = await import("@/lib/prisma");
     const dbUser = await prisma.user.findUnique({ where: { email: authUser.email! } });
     if (!dbUser) {
       await supabase.auth.signOut();
@@ -34,15 +33,11 @@ export async function loginWithEmail(formData: FormData) {
       await supabase.auth.signOut();
       return { error: "このアカウントは無効化されています。管理者にお問い合わせください。" };
     }
-    // 最終ログイン日時を更新
+    // 最終ログイン日時を更新・スタッフ管理者は管理画面へ
     await prisma.user.update({ where: { email: authUser.email! }, data: { lastLoginAt: new Date() } });
-  }
-
-  // スタッフ・管理者は管理画面へ
-  const { prisma } = await import("@/lib/prisma");
-  const finalUser = await prisma.user.findUnique({ where: { email }, select: { role: true } });
-  if (finalUser && ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(finalUser.role)) {
-    redirect("/admin");
+    if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+      redirect("/admin");
+    }
   }
 
   redirect("/app");

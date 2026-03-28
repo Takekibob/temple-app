@@ -58,6 +58,14 @@ export async function POST(request: NextRequest) {
     let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
 
     if (!dbUser) {
+      // Supabase の app_metadata からプロバイダーを判定
+      const provider = user.app_metadata?.provider;
+      const authProvider =
+        provider === "google" ? AuthProvider.GOOGLE :
+        provider === "apple"  ? AuthProvider.APPLE  :
+        provider === "line"   ? AuthProvider.LINE   :
+        AuthProvider.EMAIL;
+
       dbUser = await prisma.user.create({
         data: {
           id: user.id,
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
           email: user.email,
           name: name.trim(),
           role: "MEMBER",
-          authProvider: AuthProvider.GOOGLE,
+          authProvider,
           lastLoginAt: new Date(),
         },
       });
