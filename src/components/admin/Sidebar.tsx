@@ -25,6 +25,7 @@ interface SidebarProps {
   templeName: string;
   userName: string;
   isAdmin: boolean;
+  planStatus?: string;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -66,11 +67,12 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: "⚙️", label: "設定", href: "/admin/settings" },
       { icon: "👥", label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
+      { icon: "💳", label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
     ],
   },
 ];
 
-export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps) {
+export default function Sidebar({ templeName, userName, isAdmin, planStatus }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -121,6 +123,31 @@ export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps)
           </div>
         ))}
       </nav>
+
+      {/* プランステータス */}
+      {planStatus && planStatus !== "ACTIVE" && (
+        <div className="px-3 pb-2">
+          <Link
+            href="/admin/billing"
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border w-full ${
+              planStatus === "TRIAL"
+                ? "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100"
+                : planStatus === "PAST_DUE"
+                ? "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100"
+                : "text-red-700 bg-red-50 border-red-200 hover:bg-red-100"
+            }`}
+          >
+            <span>💳</span>
+            <span>
+              {planStatus === "TRIAL" && "トライアル中"}
+              {planStatus === "PAST_DUE" && "支払い遅延"}
+              {planStatus === "CANCELLED" && "解約済み"}
+              {planStatus === "SUSPENDED" && "停止中"}
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* ユーザー情報 */}
       <div className="px-4 py-4 border-t border-stone-200">

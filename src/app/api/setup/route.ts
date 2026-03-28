@@ -55,12 +55,17 @@ export async function POST(request: NextRequest) {
     // ── 2. 寺院レコードを作成（または既存を取得） ─────────────────────
     let temple = await prisma.temple.findFirst();
     if (!temple) {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+
       temple = await prisma.temple.create({
         data: {
           name: templeName.trim(),
           denomination: denomination?.trim() || null,
           address: address.trim(),
           phone: phone.trim(),
+          planStatus: "TRIAL",
+          trialEndsAt,
         },
       });
     }

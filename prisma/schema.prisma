@@ -46,6 +46,12 @@ model Temple {
   // カスタムカテゴリ
   customEventCategories Json    @default("[]")
 
+  // サブスクリプション管理
+  planStatus           PlanStatus @default(TRIAL)
+  trialEndsAt          DateTime?
+  stripeCustomerId     String?    @unique
+  stripeSubscriptionId String?    @unique
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -526,6 +532,19 @@ enum ActivityType {
   CONSECUTIVE_MONTH
 
   @@map("activity_type")
+}
+
+// ==========================================
+// プランステータス
+// ==========================================
+enum PlanStatus {
+  TRIAL       // トライアル中
+  ACTIVE      // 有効（課金中）
+  PAST_DUE    // 支払い遅延
+  CANCELLED   // 解約済み
+  SUSPENDED   // 停止（管理者による強制停止）
+
+  @@map("plan_status")
 }
 
 // ==========================================
