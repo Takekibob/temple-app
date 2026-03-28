@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isResending, startResend] = useTransition();
 
@@ -113,10 +114,25 @@ export default function RegisterPage() {
             />
           </div>
 
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-stone-300 accent-amber-700 cursor-pointer"
+            />
+            <span className="text-xs text-stone-500 leading-relaxed">
+              <Link href="/terms" target="_blank" className="text-amber-700 hover:underline font-medium">利用規約</Link>
+              および
+              <Link href="/privacy" target="_blank" className="text-amber-700 hover:underline font-medium mx-1">プライバシーポリシー</Link>
+              に同意します
+            </span>
+          </label>
+
           <Button
             type="submit"
-            disabled={isPending}
-            className="w-full bg-amber-700 hover:bg-amber-800 text-white mt-2"
+            disabled={isPending || !agreed}
+            className="w-full bg-amber-700 hover:bg-amber-800 text-white disabled:opacity-40 mt-1"
           >
             {isPending ? "送信中…" : "登録する"}
           </Button>
@@ -133,13 +149,6 @@ export default function RegisterPage() {
         </Link>
       </p>
 
-      <p className="text-center text-xs text-stone-400 mt-3 px-2">
-        登録することで
-        <a href="/terms" className="text-amber-700 hover:underline mx-1">利用規約</a>
-        および
-        <a href="/privacy" className="text-amber-700 hover:underline mx-1">プライバシーポリシー</a>
-        に同意したものとみなします
-      </p>
       <p className="text-center text-xs text-stone-400 mt-2 px-2">
         住職・スタッフの方は、寺院の管理者から招待を受けてください
       </p>
