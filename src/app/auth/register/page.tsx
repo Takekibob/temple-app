@@ -134,6 +134,13 @@ export default function RegisterPage() {
       </p>
 
       <p className="text-center text-xs text-stone-400 mt-3 px-2">
+        登録することで
+        <a href="/terms" className="text-amber-700 hover:underline mx-1">利用規約</a>
+        および
+        <a href="/privacy" className="text-amber-700 hover:underline mx-1">プライバシーポリシー</a>
+        に同意したものとみなします
+      </p>
+      <p className="text-center text-xs text-stone-400 mt-2 px-2">
         住職・スタッフの方は、寺院の管理者から招待を受けてください
       </p>
     </div>

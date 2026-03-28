@@ -235,6 +235,11 @@ export default function LoginForm() {
           新規登録はこちら
         </Link>
       </p>
+      <p className="text-center text-xs text-stone-400 mt-3">
+        <Link href="/terms" className="hover:text-stone-600">利用規約</Link>
+        {" · "}
+        <Link href="/privacy" className="hover:text-stone-600">プライバシーポリシー</Link>
+      </p>
     </div>
   );
 }
