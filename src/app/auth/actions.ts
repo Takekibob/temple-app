@@ -93,8 +93,14 @@ export async function resetPassword(formData: FormData) {
   if (!email) return { error: "メールアドレスを入力してください。" };
 
   // DB に登録済みかチェック
-  const dbUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  const dbUser = await prisma.user.findUnique({ where: { email }, select: { id: true, authProvider: true } });
   if (!dbUser) return { error: "このメールアドレスは登録されていません。" };
+
+  // Google 等の OAuth ログインユーザーにはパスワードがない
+  if (dbUser.authProvider !== "EMAIL") {
+    const providerLabel = dbUser.authProvider === "GOOGLE" ? "Google" : dbUser.authProvider === "LINE" ? "LINE" : "外部サービス";
+    return { error: `このアカウントは ${providerLabel} でログインしています。${providerLabel} のログインボタンからお進みください。` };
+  }
 
   const siteUrl = await getSiteUrl();
   const supabase = await createServerSupabaseClient();
