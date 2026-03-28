@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         );
       }
       return NextResponse.json(
-        { error: authError?.message ?? "アカウントの作成に失敗しました" },
+        { error: "アカウントの作成に失敗しました" },
         { status: 500 }
       );
     }

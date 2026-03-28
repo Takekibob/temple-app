@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
     if (!name || !email || !type || !familyName) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "メールアドレスの形式が正しくありません" }, { status: 400 });
+    }
+    if (name.length > 100 || familyName.length > 100) {
+      return NextResponse.json({ error: "名前は100文字以内で入力してください" }, { status: 400 });
+    }
+    if (!["DANKA", "GOEN"].includes(type)) {
+      return NextResponse.json({ error: "会員種別が不正です" }, { status: 400 });
+    }
 
     // User レコード作成
     const user = await prisma.user.create({

@@ -19,8 +19,11 @@ export async function GET(
     const deceased = await findDeceased(id, authUser.templeId);
     if (!deceased) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     return NextResponse.json({ deceased });
-  } catch {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    if (msg === "FORBIDDEN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

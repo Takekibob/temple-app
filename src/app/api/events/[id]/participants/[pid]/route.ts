@@ -15,6 +15,11 @@ export async function PATCH(
     const { id: eventId, pid } = await params;
     const { status } = await request.json();
 
+    const VALID_STATUSES = ["APPLIED", "CONFIRMED", "WAITLISTED", "ATTENDED", "NO_SHOW", "CANCELLED"];
+    if (!VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "不正なステータス値です" }, { status: 400 });
+    }
+
     const event = await prisma.event.findFirst({ where: { id: eventId, templeId: authUser.templeId } });
     if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -29,7 +34,10 @@ export async function PATCH(
     });
 
     return NextResponse.json({ participation: updated });
-  } catch {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    if (msg === "FORBIDDEN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

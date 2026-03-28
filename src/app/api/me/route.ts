@@ -17,12 +17,13 @@ export async function GET() {
     select: {
       id: true,
       role: true,
+      isActive: true,
       member: { select: { id: true, type: true } },
     },
   });
 
-  if (!user) {
-    return NextResponse.json({ user: null }, { status: 404 });
+  if (!user || !user.isActive) {
+    return NextResponse.json({ user: null }, { status: 401 });
   }
 
   return NextResponse.json({

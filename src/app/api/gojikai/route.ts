@@ -31,8 +31,11 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({ payments, rule, fiscalYear });
-  } catch {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    if (msg === "FORBIDDEN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -53,6 +56,9 @@ export async function POST(request: NextRequest) {
 
     const year = parseInt(fiscalYear);
     const amountInt = parseInt(amount);
+    if (isNaN(year) || isNaN(amountInt)) {
+      return NextResponse.json({ error: "年度・金額は数値で入力してください" }, { status: 400 });
+    }
     if (amountInt < 1) {
       return NextResponse.json({ error: "金額は1円以上を入力してください" }, { status: 400 });
     }
@@ -74,12 +80,13 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // ルールも更新/作成
-    await prisma.gojikaiRule.upsert({
-      where: { id: (await prisma.gojikaiRule.findFirst({ where: { templeId: authUser.templeId } }))?.id ?? "" },
-      create: { templeId: authUser.templeId, amount: amountInt },
-      update: { amount: amountInt },
-    });
+    // ルールも更新/作成（race condition を避けるため findFirst → update/create に分離）
+    const existingRule = await prisma.gojikaiRule.findFirst({ where: { templeId: authUser.templeId } });
+    if (existingRule) {
+      await prisma.gojikaiRule.update({ where: { id: existingRule.id }, data: { amount: amountInt } });
+    } else {
+      await prisma.gojikaiRule.create({ data: { templeId: authUser.templeId, amount: amountInt } });
+    }
 
     return NextResponse.json({ created: results.length }, { status: 201 });
   } catch (err) {

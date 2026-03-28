@@ -41,8 +41,11 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ reservations });
-  } catch {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    if (msg === "FORBIDDEN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
