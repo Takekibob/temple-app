@@ -20,17 +20,19 @@ export async function POST(
       return NextResponse.json({ error: "参加人数は1〜6名で指定してください" }, { status: 400 });
     }
 
+    // マルチテンプル対応: 全寺院のイベントを参照可能
     const event = await prisma.event.findFirst({
-      where: { id: eventId, templeId: authUser.templeId, status: "PUBLISHED" },
+      where: { id: eventId, status: "PUBLISHED" },
     });
     if (!event) return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
 
-    // Visibility check
-    if (event.visibility === "DANKA_ONLY" && authUser.member.type !== "DANKA") {
-      return NextResponse.json({ error: "このイベントは檀家会員のみ申込できます" }, { status: 403 });
-    }
-    if (event.visibility === "MEMBERS_ONLY" && !authUser.member) {
-      return NextResponse.json({ error: "会員のみ申込できます" }, { status: 403 });
+    // Visibility check: DANKA_ONLY は自寺院の檀家のみ
+    if (event.visibility === "DANKA_ONLY") {
+      const isMyTempleDanka =
+        authUser.member.type === "DANKA" && authUser.member.templeId === event.templeId;
+      if (!isMyTempleDanka) {
+        return NextResponse.json({ error: "このイベントは所属寺院の檀家会員のみ申込できます" }, { status: 403 });
+      }
     }
 
     // Duplicate check

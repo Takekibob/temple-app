@@ -25,7 +25,12 @@ export default async function AdminEventParticipantsPage({
     include: {
       participations: {
         include: {
-          member: { include: { user: { select: { name: true, email: true, phone: true } } } },
+          member: {
+            include: {
+              user: { select: { name: true, email: true, phone: true } },
+              temple: { select: { id: true, name: true } },
+            },
+          },
         },
         orderBy: { createdAt: "asc" },
       },

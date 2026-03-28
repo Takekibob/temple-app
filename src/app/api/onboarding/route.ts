@@ -14,13 +14,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { memberType, name, familyName, address, phone, interestTags } = body as {
+  const { memberType, name, familyName, address, phone, interestTags, templeId: selectedTempleId } = body as {
     memberType: string;
     name: string;
     familyName?: string;
     address?: string;
     phone?: string;
     interestTags?: string[];
+    templeId?: string;
   };
 
   if (!memberType || !name?.trim()) {
@@ -29,12 +30,29 @@ export async function POST(request: NextRequest) {
   if (memberType === "DANKA" && (!familyName?.trim() || !address?.trim() || !phone?.trim())) {
     return NextResponse.json({ error: "檀家登録には家名・住所・電話番号が必要です" }, { status: 400 });
   }
+  if (memberType === "DANKA" && !selectedTempleId) {
+    return NextResponse.json({ error: "所属するお寺を選択してください" }, { status: 400 });
+  }
 
   try {
-    const temple = await prisma.temple.findFirst();
-    if (!temple) {
+    // Userレコードにはデフォルト寺院（最初の寺院）を設定
+    const defaultTemple = await prisma.temple.findFirst({ where: { isActive: true } });
+    if (!defaultTemple) {
       return NextResponse.json({ error: "寺院情報が見つかりません" }, { status: 500 });
     }
+
+    // 檀家の場合は指定された寺院を検証
+    let memberTempleId: string | null = null;
+    if (memberType === "DANKA" && selectedTempleId) {
+      const selectedTemple = await prisma.temple.findFirst({
+        where: { id: selectedTempleId, isActive: true },
+      });
+      if (!selectedTemple) {
+        return NextResponse.json({ error: "指定されたお寺が見つかりません" }, { status: 400 });
+      }
+      memberTempleId = selectedTempleId;
+    }
+    // ご縁さんは templeId = null
 
     // DBユーザーを取得 or 作成
     let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
@@ -43,7 +61,7 @@ export async function POST(request: NextRequest) {
       dbUser = await prisma.user.create({
         data: {
           id: user.id,
-          templeId: temple.id,
+          templeId: memberTempleId ?? defaultTemple.id,
           email: user.email,
           name: name.trim(),
           role: "MEMBER",
@@ -54,7 +72,11 @@ export async function POST(request: NextRequest) {
     } else {
       dbUser = await prisma.user.update({
         where: { email: user.email },
-        data: { name: name.trim(), lastLoginAt: new Date() },
+        data: {
+          name: name.trim(),
+          lastLoginAt: new Date(),
+          ...(memberTempleId ? { templeId: memberTempleId } : {}),
+        },
       });
     }
 
@@ -68,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.member.create({
       data: {
-        templeId: temple.id,
+        templeId: memberTempleId,  // 檀家: 選択寺院, ご縁さん: null
         userId: dbUser.id,
         type,
         familyName: type === MemberType.DANKA ? familyName!.trim() : (familyName?.trim() || name.trim()),

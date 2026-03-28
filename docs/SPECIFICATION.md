@@ -4,6 +4,7 @@
 > 設計書v4との差分がある場合は**実装を正**とします。
 
 **作成日:** 2026-03-28
+**最終更新:** 2026-03-28（マルチテンプル対応・イベント横断表示を追加）
 **コードベースバージョン:** `work/harada` ブランチ
 
 ---
@@ -32,6 +33,8 @@
 **てらログ（teralog）**
 
 お寺の日常業務をデジタル化するDX管理アプリ。法要予約・過去帳・会員管理・お布施会計・イベント運営を一元管理する。会員を**檀家（DANKA）**と**ご縁さん（GOEN）**に分類し、SBNRと呼ばれる宗教に属さないが精神性を求める層の取り込みを想定した設計になっている。
+
+**マルチテンプル対応（2026-03-28追加）:** 複数寺院が同一プラットフォームに登録でき、ご縁さんは全寺院の公開イベントを横断的に閲覧・参加申込できる。檀家は自寺院イベント（公開＋檀家限定）を優先表示し、他寺院の公開イベントも参照可能。
 
 ### 1.2 技術スタック
 
@@ -661,11 +664,11 @@ temple-app/
 
 #### EventVisibility（公開範囲）
 
-| 値 | 説明 |
-|---|---|
-| `PUBLIC` | 誰でも閲覧・申込可（未ログインも閲覧可） |
-| `MEMBERS_ONLY` | 会員（DANKA+GOEN）のみ |
-| `DANKA_ONLY` | 檀家のみ |
+| 値 | 説明 | マルチテンプル対応 |
+|---|---|---|
+| `PUBLIC` | 誰でも閲覧・申込可（全寺院ユーザー・ご縁さん含む） | ✅ 全員参加可 |
+| `MEMBERS_ONLY` | **廃止予定**（既存データ互換のためenum残存、PUBLICと同等扱い） | ✅ 全員参加可 |
+| `DANKA_ONLY` | 自寺院に所属する檀家のみ参加可 | ❌ 他寺院・ご縁さん不可 |
 
 #### EventStatus
 
@@ -1133,7 +1136,17 @@ User.role = ADMIN / STAFF
 | GET | `/api/export/events` | ✓ | ADMIN/STAFF | イベントCSVエクスポート |
 | GET | `/api/export/ofuse` | ✓ | ADMIN/STAFF | お布施CSVエクスポート |
 
-### 6.12 スタッフ管理・設定
+### 6.12 寺院・お気に入り（マルチテンプル対応）
+
+| メソッド | パス | 認証 | ロール | 概要 |
+|---|---|:---:|---|---|
+| GET | `/api/temples` | ✗ | — | 有効な寺院一覧取得（`?search=` `?denomination=` フィルタ対応） |
+| GET | `/api/temples/[id]` | ✗ | — | 寺院プロフィール詳細 + 近日開催イベント |
+| GET | `/api/favorites/temples` | ✓ | MEMBER | お気に入り寺院一覧取得 |
+| POST | `/api/favorites/temples` | ✓ | MEMBER | 寺院をお気に入り登録（重複登録は無視） |
+| DELETE | `/api/favorites/temples/[id]` | ✓ | MEMBER | お気に入り登録解除 |
+
+### 6.13 スタッフ管理・設定
 
 | メソッド | パス | 認証 | ロール | 概要 |
 |---|---|:---:|---|---|
@@ -1702,6 +1715,69 @@ requireAdminOrStaff() // ADMIN/SUPER_ADMIN/STAFF以外で例外
 ### 10.6 レートリミット
 
 ❌ 実装なし（Vercelのデフォルト保護に依存）
+
+---
+
+## 10.5 マルチテンプル対応（2026-03-28実装）
+
+### 概要
+
+複数寺院が同一プラットフォームに登録でき、イベントを横断的に表示・参加できる仕組みを実装した。
+
+### DB変更
+
+| テーブル | 変更内容 |
+|---|---|
+| `temples` | `cover_image_url` / `latitude` / `longitude` / `is_active` を追加 |
+| `members` | `temple_id` を NULLable に変更（DANKA:必須 / GOEN:NULL） |
+| `member_favorite_temples` | 新規テーブル（ご縁さんのお気に入り寺院） |
+
+### member_favorite_temples テーブル
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | UUID | PK |
+| member_id | UUID (FK→members) | ご縁さんの会員ID |
+| temple_id | UUID (FK→temples) | お気に入り寺院ID |
+| created_at | TIMESTAMP | 登録日時 |
+| (unique) | (member_id, temple_id) | 重複登録防止 |
+
+### イベント表示ロジック
+
+| ユーザー種別 | 表示内容 |
+|---|---|
+| **ご縁さん（お気に入りなし）** | 全寺院のPUBLICイベントを日付順 |
+| **ご縁さん（お気に入りあり）** | お気に入り寺院イベント → その他寺院イベントの順 |
+| **檀家** | 自寺院イベント（PUBLIC+DANKA_ONLY） → 他寺院PUBLICイベントの順 |
+
+### イベント参加権限マトリクス
+
+| visibility | 自寺院の檀家 | 他寺院の檀家 | ご縁さん |
+|---|:---:|:---:|:---:|
+| `PUBLIC` | ✅ | ✅ | ✅ |
+| `MEMBERS_ONLY` | ✅（廃止予定・PUBLIC扱い） | ✅ | ✅ |
+| `DANKA_ONLY` | ✅ | ❌ | ❌ |
+
+### 新規API
+
+| エンドポイント | 説明 |
+|---|---|
+| `GET /api/temples` | アクティブ寺院一覧（認証不要・オンボーディング用） |
+| `GET /api/temples/[id]` | 寺院プロフィール詳細＋公開イベント一覧 |
+| `GET /api/favorites/temples` | お気に入り寺院一覧 |
+| `POST /api/favorites/temples` | お気に入り追加 |
+| `DELETE /api/favorites/temples/[id]` | お気に入り解除 |
+
+### 新規画面
+
+| パス | 説明 |
+|---|---|
+| `/app/temples/[id]` | 寺院プロフィールページ（ご縁さんがお気に入り登録可能） |
+
+### オンボーディング変更
+
+- **檀家選択時**: 寺院一覧から所属寺院を選択するステップを追加。`members.temple_id` に選択寺院のIDを保存。
+- **ご縁さん選択時**: 寺院選択不要。`members.temple_id = NULL`。
 
 ---
 

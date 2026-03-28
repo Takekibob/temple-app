@@ -31,9 +31,11 @@ export default async function AppEventDetailPage({
   const { id } = await params;
   const isDanka = authUser.member?.type === "DANKA";
 
+  // マルチテンプル対応: templeId フィルタを外し全寺院のイベントを参照可能に
   const event = await prisma.event.findFirst({
-    where: { id, templeId: authUser.templeId, status: "PUBLISHED" },
+    where: { id, status: "PUBLISHED" },
     include: {
+      temple: { select: { id: true, name: true, denomination: true } },
       _count: {
         select: { participations: { where: { status: { notIn: ["CANCELLED", "WAITLISTED"] } } } },
       },
@@ -42,9 +44,10 @@ export default async function AppEventDetailPage({
 
   if (!event) notFound();
 
-  // Visibility check
-  if (event.visibility === "DANKA_ONLY" && !isDanka) {
-    redirect("/app/events");
+  // Visibility check: DANKA_ONLY は自寺院の檀家のみ
+  if (event.visibility === "DANKA_ONLY") {
+    const isMyTempleDanka = isDanka && authUser.member?.templeId === event.templeId;
+    if (!isMyTempleDanka) redirect("/app/events");
   }
 
   // My participation
@@ -91,6 +94,11 @@ export default async function AppEventDetailPage({
         </div>
 
         <h1 className="text-xl font-bold text-stone-800 mt-2">{event.title}</h1>
+        <Link href={`/app/temples/${event.temple.id}`}
+          className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline mt-1">
+          🏯 {event.temple.name}
+          {event.temple.denomination && `（${event.temple.denomination}）`}
+        </Link>
 
         {/* Info */}
         <div className="bg-white rounded-xl border border-stone-200 p-4 mt-4 space-y-3 text-sm">

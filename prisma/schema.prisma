@@ -23,6 +23,12 @@ model Temple {
   logoUrl      String?
   description  String? // 寺院紹介文
 
+  // マルチテンプル対応（追加フィールド）
+  coverImageUrl String? // カバー画像URL
+  latitude      Decimal? // 緯度（将来の地図表示用）
+  longitude     Decimal? // 経度（将来の地図表示用）
+  isActive      Boolean  @default(true)
+
   // 予約設定
   bookingStartTime   String  @default("09:00")
   bookingEndTime     String  @default("17:00")
@@ -52,6 +58,7 @@ model Temple {
   annualEvents AnnualEvent[]
   gojikaiRules GojikaiRule[]
   pushSubscriptions PushSubscription[]
+  favoriteByMembers MemberFavoriteTemple[]
 
   @@map("temples")
 }
@@ -105,7 +112,7 @@ enum AuthProvider {
 // ==========================================
 model Member {
   id               String     @id @default(uuid())
-  templeId         String
+  templeId         String?    // NULLable: 檀家は必須、ご縁さんはNULL
   userId           String     @unique
   type             MemberType @default(GOEN)
   familyName       String
@@ -131,7 +138,7 @@ model Member {
   notifyAnniversary   Boolean   @default(true)
   notifyAnnouncement  Boolean   @default(true)
 
-  temple           Temple     @relation(fields: [templeId], references: [id])
+  temple           Temple?    @relation(fields: [templeId], references: [id])
   user             User       @relation(fields: [userId], references: [id])
   deceasedPersons  DeceasedPerson[]
   reservations     Reservation[]
@@ -140,6 +147,7 @@ model Member {
   eventParticipations EventParticipation[]
   interactions     MemberInteraction[]
   activities       MemberActivity[]
+  favoriteTemples  MemberFavoriteTemple[]
 
   @@map("members")
 }
@@ -160,6 +168,22 @@ enum ReferralSource {
   OTHER
 
   @@map("referral_source")
+}
+
+// ==========================================
+// お気に入り寺院（ご縁さんが寺院をフォロー）
+// ==========================================
+model MemberFavoriteTemple {
+  id        String   @id @default(uuid())
+  memberId  String
+  templeId  String
+  createdAt DateTime @default(now())
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, templeId])
+  @@map("member_favorite_temples")
 }
 
 // ==========================================
@@ -270,8 +294,8 @@ enum EventCategory {
 
 enum EventVisibility {
   PUBLIC         // 誰でも
-  MEMBERS_ONLY   // 会員限定
-  DANKA_ONLY     // 檀家限定
+  MEMBERS_ONLY   // 廃止予定（既存データ互換性のために残存）→ PUBLIC と同等に扱う
+  DANKA_ONLY     // 檀家限定（自寺院の檀家のみ）
 
   @@map("event_visibility")
 }
