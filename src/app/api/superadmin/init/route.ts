@@ -47,35 +47,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 1. Supabase Auth にユーザーを作成 ─────────────────────────────
+    // ── 1. Supabase Auth にユーザーを作成（既存なら再利用） ─────────────
     const supabaseAdmin = createAdminSupabaseClient();
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.toLowerCase(),
-      password,
-      email_confirm: true,
-    });
 
-    if (authError || !authData.user) {
-      if (authError?.message?.includes("already registered")) {
+    let supabaseUserId: string;
+
+    // メールアドレスで既存の Supabase ユーザーを検索
+    const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+    const existingSupabaseUser = listData?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingSupabaseUser) {
+      // 既存ユーザーがいれば ID を再利用（パスワードを更新）
+      await supabaseAdmin.auth.admin.updateUserById(existingSupabaseUser.id, {
+        password,
+        email_confirm: true,
+      });
+      supabaseUserId = existingSupabaseUser.id;
+    } else {
+      // 新規作成
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: email.toLowerCase(),
+        password,
+        email_confirm: true,
+      });
+
+      if (authError || !authData.user) {
+        console.error("[/api/superadmin/init] Supabase error:", authError);
         return NextResponse.json(
-          { error: "このメールアドレスは既に使用されています" },
-          { status: 409 }
+          { error: `アカウントの作成に失敗しました: ${authError?.message ?? "不明なエラー"}` },
+          { status: 500 }
         );
       }
-      return NextResponse.json(
-        { error: "アカウントの作成に失敗しました" },
-        { status: 500 }
-      );
+      supabaseUserId = authData.user.id;
     }
 
-    // ── 2. Prisma User レコードを作成（templeId = null）────────────────
-    await prisma.user.create({
-      data: {
-        id: authData.user.id,
-        templeId: null, // SUPER_ADMIN は特定のお寺に属さない
+    // ── 2. Prisma User レコードを作成（既存なら更新）────────────────────
+    await prisma.user.upsert({
+      where: { id: supabaseUserId },
+      create: {
+        id: supabaseUserId,
+        templeId: null,
         email: email.toLowerCase(),
         name: name.trim(),
         role: "SUPER_ADMIN",
+      },
+      update: {
+        role: "SUPER_ADMIN",
+        name: name.trim(),
+        templeId: null,
       },
     });
 
