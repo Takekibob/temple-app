@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser, requireAdminOrStaff } from "@/lib/auth";
+import { getAuthUser, requireAdmin, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/announcements/[id]
@@ -90,13 +90,13 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/announcements/[id] — 管理者: 削除
+// DELETE /api/announcements/[id] — 管理者のみ: 削除
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await requireAdminOrStaff();
+    const authUser = await requireAdmin();
     const { id } = await params;
 
     const existing = await prisma.announcement.findFirst({

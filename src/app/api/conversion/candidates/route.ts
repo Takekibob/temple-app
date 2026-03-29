@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAdminOrStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/conversion/candidates — 転換候補一覧（ご縁さんでスコア70以上）
 export async function GET() {
   try {
-    const authUser = await requireAdminOrStaff();
+    const authUser = await requireAdmin();
 
     const candidates = await prisma.member.findMany({
       where: {

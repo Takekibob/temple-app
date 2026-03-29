@@ -6,6 +6,7 @@ import ConversionClient from "./ConversionClient";
 export default async function ConversionPage() {
   const authUser = await getAuthUser();
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
+  if (authUser.role === "STAFF") redirect("/admin");
 
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

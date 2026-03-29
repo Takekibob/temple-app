@@ -74,7 +74,7 @@ model Temple {
 // ==========================================
 model User {
   id           String   @id @default(uuid())
-  templeId     String
+  templeId     String?  // NULL = SUPER_ADMIN（特定のお寺に属さない）
   role         Role     @default(MEMBER)
   name         String
   email        String   @unique
@@ -88,7 +88,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  temple  Temple  @relation(fields: [templeId], references: [id])
+  temple  Temple?  @relation(fields: [templeId], references: [id])
   member  Member?
   pushSubscriptions PushSubscription[]
 

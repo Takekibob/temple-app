@@ -50,6 +50,7 @@ export default async function AdminEventsPage({
   const authUser = await getAuthUser();
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
   const { status } = await searchParams;
 
   const where: Record<string, unknown> = { templeId: authUser.templeId };
@@ -73,11 +74,13 @@ export default async function AdminEventsPage({
           <p className="text-sm text-stone-500 mt-0.5">全 {events.length} 件</p>
         </div>
         <div className="flex gap-2">
-          <ExportButton
-            href="/api/export/events"
-            label="CSVエクスポート"
-            filename="events.csv"
-          />
+          {isAdmin && (
+            <ExportButton
+              href="/api/export/events"
+              label="CSVエクスポート"
+              filename="events.csv"
+            />
+          )}
           <Link
             href="/admin/events/new"
             className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"

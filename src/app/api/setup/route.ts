@@ -5,19 +5,6 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 // POST /api/setup — 初期セットアップ（寺院 + 管理者アカウント作成）
 export async function POST(request: NextRequest) {
   try {
-    // ── ガード: 既にセットアップ済みの場合は拒否 ──────────────────────
-    const [templeCount, adminCount] = await Promise.all([
-      prisma.temple.count(),
-      prisma.user.count({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } }),
-    ]);
-
-    if (templeCount > 0 && adminCount > 0) {
-      return NextResponse.json(
-        { error: "セットアップは既に完了しています" },
-        { status: 409 }
-      );
-    }
-
     const { templeName, denomination, address, phone, adminName, email, password } =
       await request.json();
 
@@ -52,23 +39,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 2. 寺院レコードを作成（または既存を取得） ─────────────────────
-    let temple = await prisma.temple.findFirst();
-    if (!temple) {
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+    // ── 2. 寺院レコードを新規作成 ──────────────────────────────────────
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
-      temple = await prisma.temple.create({
-        data: {
-          name: templeName.trim(),
-          denomination: denomination?.trim() || null,
-          address: address.trim(),
-          phone: phone.trim(),
-          planStatus: "TRIAL",
-          trialEndsAt,
-        },
-      });
-    }
+    const temple = await prisma.temple.create({
+      data: {
+        name: templeName.trim(),
+        denomination: denomination?.trim() || null,
+        address: address.trim(),
+        phone: phone.trim(),
+        planStatus: "TRIAL",
+        trialEndsAt,
+      },
+    });
 
     // ── 3. Prisma users レコードを作成 ────────────────────────────────
     const user = await prisma.user.create({
@@ -98,12 +82,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/setup — セットアップが必要かどうかを返す
+// GET /api/setup — (互換性のため残存)
 export async function GET() {
-  const [templeCount, adminCount] = await Promise.all([
-    prisma.temple.count(),
-    prisma.user.count({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } }),
-  ]);
-  const needsSetup = templeCount === 0 || adminCount === 0;
-  return NextResponse.json({ needsSetup });
+  return NextResponse.json({ needsSetup: false });
 }

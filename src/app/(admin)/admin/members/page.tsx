@@ -22,6 +22,7 @@ export default async function MembersPage({
   const authUser = await getAuthUser();
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
   const { type, search = "", page: pageStr = "1" } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
 
@@ -59,19 +60,21 @@ export default async function MembersPage({
           <h1 className="text-2xl font-bold text-stone-800">会員管理</h1>
           <p className="text-sm text-stone-500 mt-0.5">全 {total} 件</p>
         </div>
-        <div className="flex gap-2">
-          <ExportButton
-            href="/api/export/members"
-            label="CSVエクスポート"
-            filename="members.csv"
-          />
-          <Link
-            href="/admin/members/import"
-            className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
-          >
-            CSVインポート
-          </Link>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <ExportButton
+              href="/api/export/members"
+              label="CSVエクスポート"
+              filename="members.csv"
+            />
+            <Link
+              href="/admin/members/import"
+              className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
+            >
+              CSVインポート
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* フィルター */}

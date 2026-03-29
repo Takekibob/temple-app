@@ -7,6 +7,7 @@ export default async function AdminSettingsPage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
+  if (authUser.role === "STAFF") redirect("/admin");
 
   const temple = await prisma.temple.findUnique({
     where: { id: authUser.templeId },

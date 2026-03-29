@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAdminOrStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/conversion/stats — 転換KPI
 export async function GET() {
   try {
-    const authUser = await requireAdminOrStaff();
+    const authUser = await requireAdmin();
 
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

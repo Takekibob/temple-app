@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminOrStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // POST /api/members/[id]/promote — ご縁さんを檀家に昇格
@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await requireAdminOrStaff();
+    const authUser = await requireAdmin();
     const { id } = await params;
 
     const member = await prisma.member.findFirst({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminOrStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
 
@@ -17,7 +17,7 @@ interface CsvRow {
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAdminOrStaff();
+    const authUser = await requireAdmin();
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 

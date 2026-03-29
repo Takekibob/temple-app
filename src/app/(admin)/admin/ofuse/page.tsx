@@ -43,6 +43,7 @@ export default async function AdminOfusePage({
   const authUser = await getAuthUser();
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
   const { type, year, page: pageStr = "1" } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
   const currentYear = new Date().getFullYear();
@@ -90,11 +91,13 @@ export default async function AdminOfusePage({
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportButton
-            href="/api/export/ofuse"
-            label="CSVエクスポート"
-            filename="ofuse.csv"
-          />
+          {isAdmin && (
+            <ExportButton
+              href="/api/export/ofuse"
+              label="CSVエクスポート"
+              filename="ofuse.csv"
+            />
+          )}
           <Link
             href="/admin/ofuse/new"
             className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 function escapeCsv(v: unknown): string {
@@ -32,10 +32,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 // GET /api/export/events
 export async function GET() {
   try {
-    const authUser = await getAuthUser();
-    if (!authUser || authUser.role === "MEMBER") {
-      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
-    }
+    const authUser = await requireAdmin();
 
     const participations = await prisma.eventParticipation.findMany({
       where: { event: { templeId: authUser.templeId } },

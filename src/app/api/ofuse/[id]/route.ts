@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await requireAuth();
+    const authUser = await requireAdminOrStaff();
     const { id } = await params;
 
     const isAdmin = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
