@@ -52,6 +52,12 @@ model Temple {
   stripeCustomerId     String?    @unique
   stripeSubscriptionId String?    @unique
 
+  // --- v2追加：ステージ閾値カスタマイズ ---
+  thresholdGoen      Int @default(10)  // → PROSPECT遷移スコア
+  thresholdProspect  Int @default(50)  // → DANKA_CANDIDATE遷移スコア
+  thresholdCandidate Int @default(80)  // 住職通知スコア
+  dankaGoalAnnual    Int?              // 年間檀家増加目標
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -87,6 +93,12 @@ model User {
   pushEnabled  Boolean  @default(true)
   isActive     Boolean  @default(true)
   lastLoginAt  DateTime?
+
+  // --- v2追加：表示設定（高齢者対策） ---
+  displayMode  DisplayMode @default(STANDARD)
+  fontSize     FontSize    @default(MEDIUM)
+  highContrast Boolean     @default(false)
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -94,8 +106,24 @@ model User {
   member  Member?
   pushSubscriptions PushSubscription[]
   activityLogs ActivityLog[]
+  proxyMembers Member[] @relation("ProxyMembers")
 
   @@map("users")
+}
+
+enum DisplayMode {
+  STANDARD
+  SIMPLE
+
+  @@map("display_mode")
+}
+
+enum FontSize {
+  MEDIUM
+  LARGE
+  XLARGE
+
+  @@map("font_size")
 }
 
 enum Role {
@@ -149,6 +177,11 @@ model Member {
   totalDonations      Int       @default(0)
   totalPayments       Int       @default(0)
 
+  // --- v2追加：代理アカウント（高齢者対策） ---
+  proxyUserId   String?
+  proxyRelation String?  // 'child', 'grandchild', 'spouse', 'other'
+  sourceDetail  String?  // 流入経路の補足（紹介者名等）
+
   lineUserId          String?   // LINE連携後に設定されるLINEユーザーID
   lineNotifyEnabled   Boolean   @default(false)
   lineCode            String?   // 連携コード（一時保存）
@@ -160,6 +193,7 @@ model Member {
 
   temple           Temple?    @relation(fields: [templeId], references: [id])
   user             User       @relation(fields: [userId], references: [id])
+  proxyUser        User?      @relation("ProxyMembers", fields: [proxyUserId], references: [id])
   deceasedPersons  DeceasedPerson[]
   reservations     Reservation[]
   ofuse            Ofuse[]

@@ -6,7 +6,9 @@
       "Bash(node -e \"const { Prisma } = require\\(''@prisma/client''\\); console.log\\(typeof Prisma\\)\")",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/members/)",
       "Bash(cat \"/Users/haradatakeki/Developer/temple-app/src/app/\\(admin\\)/admin/members/[id]/PromoteButton.tsx\")",
-      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/page.tsx)"
+      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/page.tsx)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/api/members/[id]/)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

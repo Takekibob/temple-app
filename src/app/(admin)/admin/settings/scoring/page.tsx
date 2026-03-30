@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_SCORES, ACTIVITY_TYPE_LABELS, STAGE_THRESHOLDS, STAGE_LABELS } from "@/lib/scoring";
+import { DEFAULT_SCORES, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
 import ScoringClient from "./ScoringClient";
+import ThresholdClient from "./ThresholdClient";
 
 export default async function ScoringSettingsPage() {
   const authUser = await getAuthUser();
@@ -10,9 +11,13 @@ export default async function ScoringSettingsPage() {
   if (authUser.role === "MEMBER") redirect("/app");
   if (authUser.role === "STAFF") redirect("/admin");
 
-  const rules = await prisma.scoringRule.findMany({
-    where: { templeId: authUser.templeId },
-  });
+  const [rules, temple] = await Promise.all([
+    prisma.scoringRule.findMany({ where: { templeId: authUser.templeId } }),
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId },
+      select: { thresholdGoen: true, thresholdProspect: true, thresholdCandidate: true, dankaGoalAnnual: true },
+    }),
+  ]);
 
   const ruleMap: Record<string, number> = {};
   for (const r of rules) {
@@ -33,29 +38,19 @@ export default async function ScoringSettingsPage() {
         </a>
         <h1 className="text-2xl font-bold text-stone-800">スコアリング設定</h1>
         <p className="text-sm text-stone-500 mt-0.5">
-          各アクティビティに付与するポイントを設定します
+          各アクティビティに付与するポイント・ステージ閾値を設定します
         </p>
       </div>
 
-      {/* ステージ閾値（読み取り専用） */}
-      <div className="bg-stone-50 rounded-xl border border-stone-200 p-4 mb-6">
-        <h2 className="text-sm font-semibold text-stone-700 mb-3">ステージ自動昇格の閾値</h2>
-        <div className="space-y-2">
-          {(["PROSPECT", "DANKA_CANDIDATE"] as const).map((stage) => (
-            <div key={stage} className="flex items-center justify-between text-sm">
-              <span className="text-stone-600">
-                {STAGE_LABELS[stage]} へ昇格
-              </span>
-              <span className="font-medium text-stone-800">
-                {STAGE_THRESHOLDS[stage]} ポイント以上
-              </span>
-            </div>
-          ))}
-          <p className="text-xs text-stone-400 mt-2">
-            ※ 檀家への昇格は手動で行います
-          </p>
-        </div>
-      </div>
+      {/* ステージ閾値カスタマイズ（編集可能） */}
+      <ThresholdClient
+        initialThresholds={{
+          thresholdGoen: temple?.thresholdGoen ?? 10,
+          thresholdProspect: temple?.thresholdProspect ?? 50,
+          thresholdCandidate: temple?.thresholdCandidate ?? 80,
+          dankaGoalAnnual: temple?.dankaGoalAnnual ?? null,
+        }}
+      />
 
       <ScoringClient
         initialScores={initialScores}

@@ -8,6 +8,8 @@ const ALLOWED_FIELDS = [
   "bookingStartTime", "bookingEndTime", "bookingDuration", "bookingMaxSlots", "bookingAdvanceDays",
   "reminderDayBefore", "reminderDayBeforeTime", "reminderDayOf", "reminderDayOfTime",
   "reminderMeinichi", "customEventCategories",
+  // v2追加：ステージ閾値・目標
+  "thresholdGoen", "thresholdProspect", "thresholdCandidate", "dankaGoalAnnual",
 ] as const;
 
 // GET /api/settings
