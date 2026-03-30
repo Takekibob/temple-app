@@ -158,13 +158,18 @@ export async function changeStage(opts: {
     select: { stage: true },
   });
 
+  const now = new Date();
+  // Phase C: stage=DANKA のときは type も同期する
+  const typeSync = opts.toStage === "DANKA" ? { type: "DANKA" as const, promotedAt: now } : {};
+
   await prisma.$transaction([
     prisma.member.update({
       where: { id: opts.memberId },
       data: {
         stage: opts.toStage,
-        stageChangedAt: new Date(),
+        stageChangedAt: now,
         stageChangedBy: opts.triggeredBy,
+        ...typeSync,
       },
     }),
     prisma.stageTransition.create({

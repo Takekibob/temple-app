@@ -5,11 +5,15 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MemberFilters from "./MemberFilters";
 import ExportButton from "@/components/admin/ExportButton";
+import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
+import { MemberStage } from "@/generated/prisma/client";
 
 const PAGE_SIZE = 50;
+const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
 
 interface SearchParams {
   type?: string;
+  stage?: string;
   search?: string;
   page?: string;
 }
@@ -23,12 +27,14 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, search = "", page: pageStr = "1" } = await searchParams;
+  const { type, stage, search = "", page: pageStr = "1" } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
+  const stageFilter = VALID_STAGES.includes(stage as MemberStage) ? (stage as MemberStage) : undefined;
 
   const where = {
     templeId: authUser.templeId,
     ...(type === "DANKA" || type === "GOEN" ? { type: type as "DANKA" | "GOEN" } : {}),
+    ...(stageFilter ? { stage: stageFilter } : {}),
     ...(search
       ? {
           OR: [
@@ -58,7 +64,14 @@ export default async function MembersPage({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">会員管理</h1>
-          <p className="text-sm text-stone-500 mt-0.5">全 {total} 件</p>
+          <p className="text-sm text-stone-500 mt-0.5">
+            全 {total} 件
+            {stageFilter && (
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[stageFilter]}`}>
+                {STAGE_LABELS[stageFilter]}
+              </span>
+            )}
+          </p>
         </div>
         {isAdmin && (
           <div className="flex gap-2">
@@ -91,6 +104,7 @@ export default async function MembersPage({
                 <th className="text-left px-4 py-3 text-stone-500 font-medium">氏名</th>
                 <th className="text-left px-4 py-3 text-stone-500 font-medium">家名</th>
                 <th className="text-left px-4 py-3 text-stone-500 font-medium">種別</th>
+                <th className="text-left px-4 py-3 text-stone-500 font-medium">ステージ</th>
                 <th className="text-left px-4 py-3 text-stone-500 font-medium">登録日</th>
                 <th className="text-right px-4 py-3 text-stone-500 font-medium">スコア</th>
                 <th className="px-4 py-3" />
@@ -119,6 +133,11 @@ export default async function MembersPage({
                         }`}
                       >
                         {member.type === "DANKA" ? "檀家" : "ご縁さん"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[member.stage]}`}>
+                        {STAGE_LABELS[member.stage]}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-stone-500">
@@ -152,7 +171,7 @@ export default async function MembersPage({
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page - 1}`}
+                href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page - 1}`}
                 className="px-3 py-1.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
               >
                 前へ
@@ -160,7 +179,7 @@ export default async function MembersPage({
             )}
             {page < totalPages && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page + 1}`}
+                href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page + 1}`}
                 className="px-3 py-1.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
               >
                 次へ
