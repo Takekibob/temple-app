@@ -44,6 +44,17 @@ export default function SimpleBottomNav({ isDanka }: Props) {
           </Link>
         )}
         <Link
+          href="/app/events"
+          className={`${btnBase} flex-1 py-3 ${
+            pathname.startsWith("/app/events")
+              ? "bg-amber-700 text-white"
+              : "bg-stone-100 text-stone-700"
+          }`}
+        >
+          <span className="text-xl">📅</span>
+          <span>イベント</span>
+        </Link>
+        <Link
           href="/app/news"
           className={`${btnBase} flex-1 py-3 ${
             pathname.startsWith("/app/news")
