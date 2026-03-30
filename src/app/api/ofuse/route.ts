@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 export async function GET(request: NextRequest) {
   try {
@@ -111,6 +112,15 @@ export async function POST(request: NextRequest) {
         reservationId: reservationId || null,
         notes: notes || null,
       },
+    });
+
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "create",
+      targetType: "ofuse",
+      targetId: ofuse.id,
+      detail: { type, amount: parseInt(amount), memberId },
     });
 
     return NextResponse.json({ ofuse }, { status: 201 });

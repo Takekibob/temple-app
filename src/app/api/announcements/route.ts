@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { sendPushNotification } from "@/lib/push";
 import { sendLineNotification } from "@/lib/line";
@@ -140,6 +141,16 @@ export async function POST(request: NextRequest) {
         lineMembers.map((m) => sendLineNotification(m.id, lineText))
       );
     }
+
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "create",
+      targetType: "announcement",
+      targetId: announcement.id,
+      targetName: title.trim(),
+      detail: { targetSegment: targetSegment ?? "ALL", published: !!publish },
+    });
 
     return NextResponse.json({ announcement }, { status: 201 });
   } catch (e) {

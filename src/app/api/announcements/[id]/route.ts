@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireAdmin, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 // GET /api/announcements/[id]
 export async function GET(
@@ -78,6 +79,15 @@ export async function PATCH(
       },
     });
 
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "update",
+      targetType: "announcement",
+      targetId: id,
+      targetName: updated.title,
+    });
+
     return NextResponse.json({ announcement: updated });
   } catch (e) {
     if (e instanceof Error && e.message === "UNAUTHORIZED") {
@@ -107,6 +117,15 @@ export async function DELETE(
     }
 
     await prisma.announcement.delete({ where: { id } });
+
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "delete",
+      targetType: "announcement",
+      targetId: id,
+      targetName: existing.title,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(head -20 grep -n \"POST\\\\|DELETE\\\\|PATCH\\\\|export async\" \"/Users/haradatakeki/Developer/temple-app/src/app/api/members/[id]/route.ts\")",
-      "Bash(node -e \"const { Prisma } = require\\(''@prisma/client''\\); console.log\\(typeof Prisma\\)\")"
+      "Bash(node -e \"const { Prisma } = require\\(''@prisma/client''\\); console.log\\(typeof Prisma\\)\")",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/members/)",
+      "Bash(cat \"/Users/haradatakeki/Developer/temple-app/src/app/\\(admin\\)/admin/members/[id]/PromoteButton.tsx\")",
+      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/page.tsx)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

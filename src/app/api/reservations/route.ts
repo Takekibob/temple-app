@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 export async function GET(request: NextRequest) {
   try {
@@ -113,6 +114,15 @@ export async function POST(request: NextRequest) {
       include: {
         deceasedPerson: { select: { id: true, name: true } },
       },
+    });
+
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "create",
+      targetType: "reservation",
+      targetId: reservation.id,
+      targetName: `${type} ${start.toISOString().slice(0, 10)}`,
     });
 
     return NextResponse.json({ reservation }, { status: 201 });

@@ -13,6 +13,12 @@ export const DEFAULT_SCORES: Record<string, number> = {
   KUYO_APPLY: 20,
   CONTACT: 5,
   CONSECUTIVE_MONTH: 5,
+  // v2追加
+  DONATION: 10,
+  DONATION_LARGE: 30,
+  SUBSCRIPTION_START: 15,
+  REFERRAL: 20,
+  LINE_MESSAGE_OPEN: 1,
 };
 
 export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
@@ -24,6 +30,12 @@ export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   KUYO_APPLY: "法要予約",
   CONTACT: "問い合わせ",
   CONSECUTIVE_MONTH: "連続月アクティブ",
+  // v2追加
+  DONATION: "寄付",
+  DONATION_LARGE: "高額寄付",
+  SUBSCRIPTION_START: "サブスク開始",
+  REFERRAL: "紹介",
+  LINE_MESSAGE_OPEN: "LINEメッセージ開封",
 };
 
 export const STAGE_THRESHOLDS: Partial<Record<MemberStage, number>> = {

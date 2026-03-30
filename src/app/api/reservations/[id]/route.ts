@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 export async function GET(
   _request: NextRequest,
@@ -84,6 +85,15 @@ export async function PATCH(
         member: { include: { user: { select: { name: true } } } },
         deceasedPerson: { select: { id: true, name: true } },
       },
+    });
+
+    logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "update",
+      targetType: "reservation",
+      targetId: id,
+      detail: { changes: Object.keys(body) },
     });
 
     return NextResponse.json({ reservation: updated });
