@@ -29,6 +29,7 @@ export default async function TempleProfilePage({
       description: true,
       logoUrl: true,
       coverImageUrl: true,
+      templePage: { select: { slug: true, isPublished: true } },
     },
   });
 
@@ -117,6 +118,18 @@ export default async function TempleProfilePage({
               <a href={`mailto:${temple.email}`} className="text-amber-700 hover:underline text-xs">
                 {temple.email}
               </a>
+            </div>
+          )}
+          {temple.templePage?.isPublished && temple.templePage.slug && (
+            <div className="flex gap-2 items-center pt-1 border-t border-stone-100">
+              <span className="text-stone-400">🌐</span>
+              <Link
+                href={`/temples/p/${temple.templePage.slug}`}
+                target="_blank"
+                className="text-amber-700 hover:underline text-xs"
+              >
+                公式ページを見る
+              </Link>
             </div>
           )}
         </div>
