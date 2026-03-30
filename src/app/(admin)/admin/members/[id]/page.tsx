@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import PromoteButton from "./PromoteButton";
+import StageChanger from "./StageChanger";
+import { STAGE_LABELS, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
 
 export default async function MemberDetailPage({
   params,
@@ -25,6 +27,8 @@ export default async function MemberDetailPage({
         take: 10,
       },
       interactions: { orderBy: { createdAt: "desc" }, take: 20 },
+      stageTransitions: { orderBy: { createdAt: "desc" }, take: 10 },
+      scoringEvents: { orderBy: { createdAt: "desc" }, take: 20 },
       gojikaiPayments: {
         orderBy: { fiscalYear: "desc" },
         take: 5,
@@ -41,17 +45,6 @@ export default async function MemberDetailPage({
 
   // 転換候補: ご縁さんでスコア70以上
   const isConversionCandidate = !isDanka && member.engagementScore >= 70;
-
-  const ACTIVITY_LABELS: Record<string, string> = {
-    LOGIN: "ログイン",
-    NEWS_VIEW: "お知らせ閲覧",
-    EVENT_APPLY: "イベント申込",
-    EVENT_ATTEND: "イベント参加",
-    EVENT_FEEDBACK: "フィードバック",
-    KUYO_APPLY: "法要予約",
-    CONTACT: "問い合わせ",
-    CONSECUTIVE_MONTH: "連続月アクティブ",
-  };
 
   return (
     <div className="p-6 max-w-4xl">
@@ -75,6 +68,7 @@ export default async function MemberDetailPage({
                 >
                   {isDanka ? "檀家" : "ご縁さん"}
                 </span>
+                <StageChanger memberId={id} currentStage={member.stage} />
                 {isConversionCandidate && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
                     転換候補
@@ -246,7 +240,60 @@ export default async function MemberDetailPage({
                 style={{ width: `${Math.min(100, member.engagementScore)}%` }}
               />
             </div>
+            <div className="mt-3 flex justify-around text-xs text-stone-500">
+              <div>
+                <p className="font-semibold text-stone-700">{member.lifetimeScore}</p>
+                <p>累計スコア</p>
+              </div>
+              <div>
+                <p className="font-semibold text-stone-700">{member.totalEventsAttended}</p>
+                <p>参加イベント</p>
+              </div>
+            </div>
           </section>
+
+          {/* ステージ遷移履歴 */}
+          {member.stageTransitions.length > 0 && (
+            <section className="bg-white rounded-xl border border-stone-200 p-4">
+              <h2 className="font-semibold text-stone-800 mb-3">ステージ変更履歴</h2>
+              <ul className="space-y-2">
+                {member.stageTransitions.map((t) => (
+                  <li key={t.id} className="text-xs flex items-center justify-between">
+                    <span className="text-stone-600">
+                      {t.fromStage ? `${STAGE_LABELS[t.fromStage]} → ` : ""}
+                      {STAGE_LABELS[t.toStage]}
+                      {t.triggeredBy === "AUTO" && (
+                        <span className="ml-1 text-stone-300">自動</span>
+                      )}
+                    </span>
+                    <span className="text-stone-300">
+                      {t.createdAt.toLocaleDateString("ja-JP")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* スコアリングイベント */}
+          {member.scoringEvents.length > 0 && (
+            <section className="bg-white rounded-xl border border-stone-200 p-4">
+              <h2 className="font-semibold text-stone-800 mb-3">スコア獲得履歴</h2>
+              <ul className="space-y-2">
+                {member.scoringEvents.map((e) => (
+                  <li key={e.id} className="text-xs flex justify-between items-center">
+                    <span className="text-stone-600">
+                      {ACTIVITY_TYPE_LABELS[e.activityType] ?? e.activityType}
+                    </span>
+                    <div className="text-right">
+                      <span className="text-amber-700 font-medium">+{e.score}pt</span>
+                      <p className="text-stone-300">{e.createdAt.toLocaleDateString("ja-JP")}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {/* アクティビティログ */}
           <section className="bg-white rounded-xl border border-stone-200 p-4">
@@ -257,7 +304,7 @@ export default async function MemberDetailPage({
               <ul className="space-y-2">
                 {member.activities.map((a) => (
                   <li key={a.id} className="text-xs flex justify-between items-center">
-                    <span className="text-stone-600">{ACTIVITY_LABELS[a.type] ?? a.type}</span>
+                    <span className="text-stone-600">{ACTIVITY_TYPE_LABELS[a.type] ?? a.type}</span>
                     <div className="text-right">
                       <span className="text-amber-700 font-medium">+{a.score}pt</span>
                       <p className="text-stone-300">{a.createdAt.toLocaleDateString("ja-JP")}</p>
