@@ -77,6 +77,7 @@ export default async function AdminGojikaiPage({
       </div>
 
       <GojikaiClient
+        key={fiscalYear}
         payments={serializedPayments}
         fiscalYear={fiscalYear}
         ruleAmount={rule?.amount ?? null}
