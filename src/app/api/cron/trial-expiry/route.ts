@@ -44,7 +44,15 @@ export async function GET(request: NextRequest) {
     const msLeft = temple.trialEndsAt.getTime() - now.getTime();
     const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
 
-    // 残り7日 または 当日（0日）のみ送信
+    // トライアル期限切れ → SUSPENDED に自動移行
+    if (daysLeft <= 0) {
+      await prisma.temple.update({
+        where: { id: temple.id },
+        data: { planStatus: "SUSPENDED" },
+      });
+    }
+
+    // 残り7日 または 当日（0日）のみメール送信
     if (daysLeft !== 7 && daysLeft !== 0) {
       results.push({ templeId: temple.id, sent: false, reason: `daysLeft=${daysLeft}` });
       continue;

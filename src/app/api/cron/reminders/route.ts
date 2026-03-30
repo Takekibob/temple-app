@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPushNotification } from "@/lib/push";
 import { sendLineNotification } from "@/lib/line";
+import { sendReservationReminderEmail } from "@/lib/email";
+
+const RESERVATION_TYPE_LABELS: Record<string, string> = {
+  ANNUAL_MEMORIAL: "年忌法要",
+  MONTHLY_MEMORIAL: "月命日",
+  NIBON: "新盆",
+  KUYO: "供養",
+  FUNERAL: "葬儀",
+  OTHER: "法要",
+};
 
 // POST /api/cron/reminders
 // type=evening → 翌日の予約・イベントを通知 (JST 18:00 = UTC 09:00)
@@ -34,6 +44,7 @@ export async function POST(request: NextRequest) {
         status: "CONFIRMED",
       },
       include: {
+        temple: { select: { name: true } },
         member: {
           include: {
             user: { include: { pushSubscriptions: true } },
@@ -80,6 +91,18 @@ export async function POST(request: NextRequest) {
       if (r.member.lineUserId && r.member.lineNotifyEnabled) {
         const ok = await sendLineNotification(r.member.id, msg);
         if (ok) sent++;
+      }
+
+      // Email
+      if (r.member.user.email) {
+        await sendReservationReminderEmail({
+          to: r.member.user.email,
+          memberName: r.member.user.name ?? "",
+          reservationType: RESERVATION_TYPE_LABELS[r.type] ?? r.type,
+          scheduledAt: r.scheduledAt,
+          templeName: r.temple.name,
+        }).catch(() => {});
+        sent++;
       }
     }
 
