@@ -35,12 +35,17 @@ export default async function MyEventsPage() {
   });
 
   const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const upcoming = participations.filter(
     (p) => p.event.eventDate >= now && p.status !== "CANCELLED"
   );
-  const past = participations.filter(
+  const allPast = participations.filter(
     (p) => p.event.eventDate < now || p.status === "CANCELLED"
   );
+  const recentPast = allPast.filter((p) => p.event.eventDate >= oneYearAgo);
+  const olderCount = allPast.filter((p) => p.event.eventDate < oneYearAgo).length;
 
   return (
     <div className="p-4 max-w-lg mx-auto">
@@ -51,7 +56,7 @@ export default async function MyEventsPage() {
         </Link>
       </div>
 
-      {upcoming.length === 0 && past.length === 0 && (
+      {upcoming.length === 0 && allPast.length === 0 && (
         <div className="bg-white rounded-xl border border-stone-200 p-10 text-center text-stone-400 text-sm">
           申込中のイベントはありません
           <br />
@@ -98,11 +103,11 @@ export default async function MyEventsPage() {
         </div>
       )}
 
-      {past.length > 0 && (
+      {(recentPast.length > 0 || olderCount > 0) && (
         <div>
-          <h2 className="text-sm font-medium text-stone-500 mb-2">過去のイベント</h2>
+          <h2 className="text-sm font-medium text-stone-500 mb-2">過去のイベント（直近1年）</h2>
           <ul className="space-y-2">
-            {past.map((p) => (
+            {recentPast.map((p) => (
               <li key={p.id} className="bg-white rounded-xl border border-stone-100 p-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -118,6 +123,11 @@ export default async function MyEventsPage() {
               </li>
             ))}
           </ul>
+          {olderCount > 0 && (
+            <p className="text-xs text-stone-400 text-center mt-3">
+              他に{olderCount}件の参加履歴があります（1年以上前）
+            </p>
+          )}
         </div>
       )}
     </div>

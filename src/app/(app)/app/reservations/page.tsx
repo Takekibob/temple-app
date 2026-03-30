@@ -41,12 +41,18 @@ export default async function ReservationsPage() {
     orderBy: { scheduledAt: "desc" },
   });
 
+  const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const upcoming = reservations.filter(
-    (r) => r.status !== "CANCELLED" && r.status !== "COMPLETED" && r.scheduledAt > new Date()
+    (r) => r.status !== "CANCELLED" && r.status !== "COMPLETED" && r.scheduledAt > now
   );
-  const past = reservations.filter(
-    (r) => r.status === "COMPLETED" || r.status === "CANCELLED" || r.scheduledAt <= new Date()
+  const allPast = reservations.filter(
+    (r) => r.status === "COMPLETED" || r.status === "CANCELLED" || r.scheduledAt <= now
   );
+  const recentPast = allPast.filter((r) => r.scheduledAt >= oneYearAgo);
+  const olderCount = allPast.filter((r) => r.scheduledAt < oneYearAgo).length;
 
   return (
     <div className="p-4 max-w-lg mx-auto">
@@ -108,11 +114,11 @@ export default async function ReservationsPage() {
         </div>
       )}
 
-      {past.length > 0 && (
+      {(recentPast.length > 0 || olderCount > 0) && (
         <div>
-          <h2 className="text-sm font-medium text-stone-500 mb-2">過去の予約</h2>
+          <h2 className="text-sm font-medium text-stone-500 mb-2">過去の予約（直近1年）</h2>
           <ul className="space-y-2">
-            {past.map((r) => (
+            {recentPast.map((r) => (
               <li key={r.id} className="bg-white rounded-xl border border-stone-100 p-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -128,6 +134,11 @@ export default async function ReservationsPage() {
               </li>
             ))}
           </ul>
+          {olderCount > 0 && (
+            <p className="text-xs text-stone-400 text-center mt-3">
+              他に{olderCount}件の過去の予約があります（1年以上前）
+            </p>
+          )}
         </div>
       )}
     </div>
