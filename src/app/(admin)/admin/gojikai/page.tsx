@@ -17,8 +17,11 @@ export default async function AdminGojikaiPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const { year } = await searchParams;
-  const currentYear = new Date().getFullYear();
-  const fiscalYear = parseInt(year ?? String(currentYear));
+  // 日本の年度は4月始まり: 1〜3月は前年度
+  const now = new Date();
+  const currentFiscalYear =
+    now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const fiscalYear = parseInt(year ?? String(currentFiscalYear));
 
   const [payments, rule] = await Promise.all([
     prisma.gojikaiPayment.findMany({
@@ -34,7 +37,7 @@ export default async function AdminGojikaiPage({
     prisma.gojikaiRule.findFirst({ where: { templeId: authUser.templeId } }),
   ]);
 
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 5 }, (_, i) => currentFiscalYear - i);
 
   // Serialize Date objects for client component
   const serializedPayments = payments.map((p) => ({
@@ -49,7 +52,7 @@ export default async function AdminGojikaiPage({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">護持会費管理</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{fiscalYear}年度</p>
+          <p className="text-sm text-stone-500 mt-0.5">{fiscalYear}年度（{fiscalYear}/4〜{fiscalYear + 1}/3）</p>
         </div>
       </div>
 
@@ -67,7 +70,7 @@ export default async function AdminGojikaiPage({
                   : "text-stone-600 hover:bg-stone-100"
               }`}
             >
-              {y}年
+              {y}年度
             </Link>
           ))}
         </div>

@@ -25,7 +25,11 @@ export default async function MemberDetailPage({
         take: 10,
       },
       interactions: { orderBy: { createdAt: "desc" }, take: 20 },
-      gojikaiPayments: { orderBy: { createdAt: "desc" }, take: 5 },
+      gojikaiPayments: {
+        orderBy: { fiscalYear: "desc" },
+        take: 5,
+        select: { id: true, fiscalYear: true, amount: true, status: true, paidAt: true },
+      },
       activities: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
@@ -155,17 +159,34 @@ export default async function MemberDetailPage({
           {/* 檀家専用: 護持会費 */}
           {isDanka && (
             <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <h2 className="font-semibold text-stone-800 mb-3">護持会費</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold text-stone-800">護持会費</h2>
+                <Link href="/admin/gojikai" className="text-xs text-amber-700">
+                  一覧へ →
+                </Link>
+              </div>
               {member.gojikaiPayments.length === 0 ? (
                 <p className="text-sm text-stone-400">支払い記録なし</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="divide-y divide-stone-50">
                   {member.gojikaiPayments.map((p) => (
-                    <li key={p.id} className="text-sm flex justify-between">
-                      <span className="text-stone-800">
-                        {p.createdAt.toLocaleDateString("ja-JP")}
-                      </span>
-                      <span className="text-stone-600">¥{p.amount.toLocaleString()}</span>
+                    <li key={p.id} className="text-sm flex items-center justify-between py-2">
+                      <span className="text-stone-800 font-medium">{p.fiscalYear}年度</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-stone-500 text-xs">
+                          {p.paidAt ? new Date(p.paidAt).toLocaleDateString("ja-JP") : "—"}
+                        </span>
+                        <span className="text-stone-700">¥{p.amount.toLocaleString()}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          p.status === "PAID"
+                            ? "bg-teal-100 text-teal-800"
+                            : p.status === "EXEMPT"
+                            ? "bg-stone-100 text-stone-500"
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          {p.status === "PAID" ? "納付済" : p.status === "EXEMPT" ? "免除" : "未納"}
+                        </span>
+                      </div>
                     </li>
                   ))}
                 </ul>
