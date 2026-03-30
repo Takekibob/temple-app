@@ -47,42 +47,68 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const participationId = session.metadata?.participationId;
-  if (!participationId) {
-    console.error("checkout.session.completed: missing participationId in metadata");
+  const { eventId, memberId, numGuests: numGuestsStr } = session.metadata ?? {};
+  if (!eventId || !memberId) {
+    console.error("checkout.session.completed: missing eventId or memberId in metadata");
     return;
   }
+  const numGuests = Number(numGuestsStr ?? "1");
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : (session.payment_intent as Stripe.PaymentIntent | null)?.id ?? null;
 
-  // 参加レコードを CONFIRMED / PAID に更新
-  const participation = await prisma.eventParticipation.update({
-    where: { id: participationId },
-    data: {
-      status: "CONFIRMED",
-      paymentStatus: "PAID",
-      stripePaymentIntentId: paymentIntentId,
-    },
-    include: {
-      event: true,
-      member: true,
-    },
+  // 冪等性: 既に PAID なら処理しない
+  const existing = await prisma.eventParticipation.findUnique({
+    where: { eventId_memberId: { eventId, memberId } },
   });
+  if (existing?.paymentStatus === "PAID") return;
+
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) return;
+
+  const paymentAmount = event.fee * numGuests;
+
+  // 決済完了後に参加レコードを作成（またはキャンセル済みを更新）
+  const participation = existing
+    ? await prisma.eventParticipation.update({
+        where: { id: existing.id },
+        data: {
+          numGuests,
+          status: "CONFIRMED",
+          paymentStatus: "PAID",
+          paymentAmount,
+          stripeSessionId: session.id,
+          stripePaymentIntentId: paymentIntentId,
+        },
+        include: { event: true },
+      })
+    : await prisma.eventParticipation.create({
+        data: {
+          eventId,
+          memberId,
+          numGuests,
+          status: "CONFIRMED",
+          paymentStatus: "PAID",
+          paymentAmount,
+          stripeSessionId: session.id,
+          stripePaymentIntentId: paymentIntentId,
+        },
+        include: { event: true },
+      });
 
   // お布施テーブルに EVENT_FEE として記録
   await prisma.ofuse.create({
     data: {
       templeId: participation.event.templeId,
-      memberId: participation.memberId,
+      memberId,
       type: "EVENT_FEE",
-      amount: participation.paymentAmount,
+      amount: paymentAmount,
       paidAt: new Date(),
       paymentMethod: "ONLINE",
       receiptIssued: false,
-      notes: `イベント「${participation.event.title}」参加費 ${participation.numGuests}名`,
+      notes: `イベント「${participation.event.title}」参加費 ${numGuests}名`,
     },
   });
 }

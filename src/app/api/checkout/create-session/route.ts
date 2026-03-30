@@ -52,29 +52,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 参加レコードを PENDING で作成/更新
-    const participation = existing
-      ? await prisma.eventParticipation.update({
-          where: { id: existing.id },
-          data: {
-            numGuests,
-            status: "APPLIED",
-            paymentStatus: "PENDING",
-            paymentAmount: event.fee * numGuests,
-          },
-        })
-      : await prisma.eventParticipation.create({
-          data: {
-            eventId,
-            memberId: authUser.member.id,
-            numGuests,
-            status: "APPLIED",
-            paymentStatus: "PENDING",
-            paymentAmount: event.fee * numGuests,
-          },
-        });
-
-    // Stripe Checkout Session 作成
+    // 参加レコードは決済完了後(Webhook)に作成するため、ここでは作らない
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ??
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
@@ -89,7 +67,7 @@ export async function POST(request: NextRequest) {
               name: event.title,
               description: `${event.eventDate.toLocaleDateString("ja-JP")} ${event.startTime}〜${event.endTime}`,
             },
-            unit_amount: event.fee, // JPY は小数なし
+            unit_amount: event.fee,
           },
           quantity: numGuests,
         },
@@ -99,16 +77,10 @@ export async function POST(request: NextRequest) {
       cancel_url: `${baseUrl}/app/events/${eventId}/apply`,
       locale: "ja",
       metadata: {
-        participationId: participation.id,
         eventId,
         memberId: authUser.member.id,
+        numGuests: String(numGuests),
       },
-    });
-
-    // Session ID を参加レコードに保存
-    await prisma.eventParticipation.update({
-      where: { id: participation.id },
-      data: { stripeSessionId: session.id },
     });
 
     return NextResponse.json({ url: session.url });
