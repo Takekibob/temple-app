@@ -36,6 +36,7 @@ export default function TemplePageEditor({
   const [publishing, setPublishing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isPublished, setIsPublished] = useState(existingPage?.isPublished ?? false);
+  const [pageExists, setPageExists] = useState(!!existingPage);
   const [error, setError] = useState("");
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://teralog.app";
@@ -58,6 +59,7 @@ export default function TemplePageEditor({
       const d = await res.json();
       setError(d.error === "SLUG_TAKEN" ? "このスラッグは既に使用されています" : "保存に失敗しました");
     } else {
+      setPageExists(true);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
@@ -91,7 +93,7 @@ export default function TemplePageEditor({
           </button>
           <button
             onClick={handlePublish}
-            disabled={publishing || !existingPage}
+            disabled={publishing || !pageExists}
             className={`px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 ${
               isPublished
                 ? "bg-stone-100 text-stone-700 hover:bg-stone-200"
