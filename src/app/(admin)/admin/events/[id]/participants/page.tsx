@@ -4,11 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ParticipantsClient from "./ParticipantsClient";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 export default async function AdminEventParticipantsPage({
   params,
@@ -53,7 +49,7 @@ export default async function AdminEventParticipantsPage({
         <div>
           <h1 className="text-xl font-bold text-stone-800">{event.title}</h1>
           <p className="text-sm text-stone-500 mt-0.5">
-            {CATEGORY_LABELS[event.category]} ·{" "}
+            {getCategoryLabel(event.category)} ·{" "}
             {event.eventDate.toLocaleDateString("ja-JP")} {event.startTime}〜{event.endTime}
           </p>
           <p className="text-sm text-stone-600 mt-1">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { STANDARD_CATEGORY_OPTIONS } from "@/lib/eventCategories";
 
 interface EventData {
   id?: string;
@@ -26,17 +27,8 @@ interface EventData {
 interface Props {
   initialData?: EventData;
   isEdit?: boolean;
+  customCategories?: string[];
 }
-
-const CATEGORIES = [
-  { value: "ZAZEN", label: "坐禅" },
-  { value: "SHAKYO", label: "写経" },
-  { value: "YOGA", label: "ヨガ" },
-  { value: "MINDFULNESS", label: "マインドフルネス" },
-  { value: "LECTURE", label: "仏事講座" },
-  { value: "SEASONAL", label: "季節行事" },
-  { value: "OTHER", label: "その他" },
-];
 
 const VISIBILITIES = [
   { value: "PUBLIC", label: "公開（誰でも）" },
@@ -44,7 +36,7 @@ const VISIBILITIES = [
   { value: "DANKA_ONLY", label: "檀家限定" },
 ];
 
-export default function EventFormClient({ initialData, isEdit }: Props) {
+export default function EventFormClient({ initialData, isEdit, customCategories = [] }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -142,9 +134,18 @@ export default function EventFormClient({ initialData, isEdit }: Props) {
                 required
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
+                <optgroup label="標準カテゴリ">
+                  {STANDARD_CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </optgroup>
+                {customCategories.length > 0 && (
+                  <optgroup label="カスタムカテゴリ">
+                    {customCategories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
             <div className="space-y-1.5">

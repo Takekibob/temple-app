@@ -3,15 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import EventAnalyticsClient from "./EventAnalyticsClient";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅",
-  SHAKYO: "写経",
-  YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス",
-  LECTURE: "仏事講座",
-  SEASONAL: "季節行事",
-  OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 const REFERRAL_LABELS: Record<string, string> = {
   SNS: "SNS",
@@ -141,7 +133,7 @@ export default async function EventAnalyticsPage() {
     categoryMap.set(e.category, (categoryMap.get(e.category) ?? 0) + attended);
   }
   const categoryRanking = [...categoryMap.entries()]
-    .map(([cat, count]) => ({ category: CATEGORY_LABELS[cat] ?? cat, count }))
+    .map(([cat, count]) => ({ category: getCategoryLabel(cat), count }))
     .sort((a, b) => b.count - a.count);
 
   // ── リピーター分析（3階層）───────────────────
@@ -177,7 +169,7 @@ export default async function EventAnalyticsPage() {
       id: e.id,
       title: e.title,
       date: e.eventDate.toISOString().slice(0, 10),
-      category: CATEGORY_LABELS[e.category] ?? e.category,
+      category: getCategoryLabel(e.category),
       capacity: e.capacity,
       applied,
       attended,

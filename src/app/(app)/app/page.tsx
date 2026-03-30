@@ -4,11 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -161,7 +157,7 @@ export default async function AppHomePage() {
                   href={`/app/events/${p.event.id}`}
                   className="block bg-white rounded-xl border border-stone-200 p-3 hover:border-amber-200 transition-colors"
                 >
-                  <p className="text-xs text-amber-700 font-medium">{CATEGORY_LABELS[p.event.category]}</p>
+                  <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(p.event.category)}</p>
                   <p className="font-medium text-stone-800 text-sm">{p.event.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">
                     {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
@@ -192,7 +188,7 @@ export default async function AppHomePage() {
                   href={`/app/events/${e.id}`}
                   className="block bg-white rounded-xl border border-stone-200 p-3 hover:border-amber-200 transition-colors"
                 >
-                  <p className="text-xs text-amber-700 font-medium">{CATEGORY_LABELS[e.category]}</p>
+                  <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(e.category)}</p>
                   <p className="font-medium text-stone-800 text-sm">{e.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">
                     {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}

@@ -266,7 +266,7 @@ model Event {
   templeId    String
   title       String
   description String?
-  category    EventCategory
+  category    String        // 標準: ZAZEN/SHAKYO/YOGA/MINDFULNESS/LECTURE/SEASONAL/OTHER、カスタム: 日本語名
   eventDate   DateTime
   startTime   String        // HH:MM
   endTime     String        // HH:MM
@@ -286,17 +286,6 @@ model Event {
   @@map("events")
 }
 
-enum EventCategory {
-  ZAZEN        // 坐禅
-  SHAKYO       // 写経
-  YOGA
-  MINDFULNESS
-  LECTURE      // 仏事講座
-  SEASONAL     // 季節行事
-  OTHER
-
-  @@map("event_category")
-}
 
 enum EventVisibility {
   PUBLIC         // 誰でも

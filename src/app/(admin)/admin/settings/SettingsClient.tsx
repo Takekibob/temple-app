@@ -182,6 +182,7 @@ export default function SettingsClient({
   const [categories, setCategories] = useState<string[]>(initialSettings.customEventCategories);
   const [newCat, setNewCat] = useState("");
   const [catSaving, startCat] = useTransition();
+  const [removeConfirm, setRemoveConfirm] = useState<{ name: string; count: number } | null>(null);
 
   function addCategory() {
     if (!newCat.trim() || categories.includes(newCat.trim())) return;
@@ -189,8 +190,21 @@ export default function SettingsClient({
     setNewCat("");
   }
 
-  function removeCategory(cat: string) {
-    setCategories((prev) => prev.filter((c) => c !== cat));
+  async function handleRemoveClick(cat: string) {
+    // 使用件数を確認してから警告表示
+    const res = await fetch(`/api/settings/category-usage?name=${encodeURIComponent(cat)}`);
+    const { count } = await res.json() as { count: number };
+    if (count > 0) {
+      setRemoveConfirm({ name: cat, count });
+    } else {
+      setCategories((prev) => prev.filter((c) => c !== cat));
+    }
+  }
+
+  function confirmRemove() {
+    if (!removeConfirm) return;
+    setCategories((prev) => prev.filter((c) => c !== removeConfirm.name));
+    setRemoveConfirm(null);
   }
 
   function handleCatSave(e: React.FormEvent) {
@@ -480,7 +494,7 @@ export default function SettingsClient({
                   <span key={c} className="flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-full">
                     {c}
                     {isAdmin && (
-                      <button type="button" onClick={() => removeCategory(c)} className="text-amber-400 hover:text-amber-700 leading-none">×</button>
+                      <button type="button" onClick={() => handleRemoveClick(c)} className="text-amber-400 hover:text-amber-700 leading-none">×</button>
                     )}
                   </span>
                 ))}
@@ -511,6 +525,38 @@ export default function SettingsClient({
             </div>
           )}
         </form>
+      )}
+
+      {/* カテゴリ削除確認ダイアログ */}
+      {removeConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-stone-800 mb-2">カテゴリを削除しますか？</h3>
+            <p className="text-sm text-stone-600 mb-1">
+              「<strong>{removeConfirm.name}</strong>」は現在
+              <strong className="text-rose-600"> {removeConfirm.count}件</strong>
+              のイベントで使用されています。
+            </p>
+            <p className="text-xs text-stone-400 mb-5">
+              削除してもイベントのカテゴリは変更されず、そのまま残ります。
+              アプリ側では「その他」として表示されます。
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setRemoveConfirm(null)}
+                className="px-4 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={confirmRemove}
+                className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── データ出力 ────────────────────────────── */}

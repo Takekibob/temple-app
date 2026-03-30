@@ -16,7 +16,6 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import {
   Role,
   MemberType,
-  EventCategory,
   EventStatus,
   EventVisibility,
   AnnouncementTarget,
@@ -144,7 +143,7 @@ async function main() {
       title: "はじめての坐禅体験会",
       description:
         "初心者の方でも気軽に参加できる坐禅体験会です。禅の基礎や座り方を丁寧にご指導いたします。終了後は住職との茶話会もございます。",
-      category: EventCategory.ZAZEN,
+      category: "ZAZEN",
       eventDate: new Date("2026-04-19T00:00:00Z"),
       startTime: "10:00",
       endTime: "12:00",
@@ -160,7 +159,7 @@ async function main() {
       title: "写経体験 ～心を静める時間～",
       description:
         "般若心経の写経体験です。筆ペンを使って丁寧に文字を書くことで、日常の喧騒を忘れ、心を静める時間をお過ごしいただけます。道具はすべてご用意しております。",
-      category: EventCategory.SHAKYO,
+      category: "SHAKYO",
       eventDate: new Date("2026-05-03T00:00:00Z"),
       startTime: "14:00",
       endTime: "16:00",
@@ -176,7 +175,7 @@ async function main() {
       title: "花まつり（仏誕会）",
       description:
         "4月8日はお釈迦様のお誕生日。お花で飾った花御堂に甘茶をかけてお祝いします。子どもから大人まで楽しめる春の恒例行事です。甘茶のふるまいもございます。",
-      category: EventCategory.SEASONAL,
+      category: "SEASONAL",
       eventDate: new Date("2026-04-08T00:00:00Z"),
       startTime: "10:00",
       endTime: "15:00",

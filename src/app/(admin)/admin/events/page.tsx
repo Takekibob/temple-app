@@ -12,15 +12,7 @@ const STATUS_TABS = [
   { value: "COMPLETED", label: "完了" },
 ] as const;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅",
-  SHAKYO: "写経",
-  YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス",
-  LECTURE: "仏事講座",
-  SEASONAL: "季節行事",
-  OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-stone-100 text-stone-600",
@@ -130,7 +122,7 @@ export default async function AdminEventsPage({
                   <tr key={event.id} className="border-b border-stone-50 hover:bg-stone-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-stone-800">{event.title}</td>
                     <td className="px-4 py-3 text-stone-600">
-                      {CATEGORY_LABELS[event.category] ?? event.category}
+                      {getCategoryLabel(event.category)}
                     </td>
                     <td className="px-4 py-3 text-stone-600">
                       {event.eventDate.toLocaleDateString("ja-JP")}

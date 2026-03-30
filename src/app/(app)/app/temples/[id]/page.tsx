@@ -5,11 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import FavoriteButton from "./FavoriteButton";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 export default async function TempleProfilePage({
   params,
@@ -148,7 +144,7 @@ export default async function TempleProfilePage({
                   <div>
                     <p className="text-sm font-medium text-stone-800">{event.title}</p>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      {CATEGORY_LABELS[event.category]} ·{" "}
+                      {getCategoryLabel(event.category)} ·{" "}
                       {event.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}{" "}
                       {event.startTime}
                     </p>

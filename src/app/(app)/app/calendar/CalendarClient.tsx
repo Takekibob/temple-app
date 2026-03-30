@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 // ============================================================
 // Types
@@ -79,11 +80,6 @@ const COLOR_ICON: Record<string, string> = {
   orange: "🏮",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
 
 // ============================================================
 // Helpers
@@ -366,7 +362,7 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
                           {item.type === "event" && (
                             <>
                               <span className="text-xs text-stone-400">
-                                {CATEGORY_LABELS[item.category] ?? item.category}
+                                {getCategoryLabel(item.category)}
                               </span>
                               <span className="text-xs text-stone-400">
                                 {item.fee === 0 ? "無料" : `¥${item.fee.toLocaleString()}`}
@@ -440,7 +436,7 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
                         <p className="text-sm text-stone-800 truncate">{item.title}</p>
                         {item.type === "event" && (
                           <p className="text-xs text-stone-400">
-                            {CATEGORY_LABELS[item.category] ?? item.category}
+                            {getCategoryLabel(item.category)}
                             {item.fee === 0 ? " · 無料" : ` · ¥${item.fee.toLocaleString()}`}
                           </p>
                         )}

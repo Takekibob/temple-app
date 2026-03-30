@@ -24,10 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
   APPLIED: "申込", CONFIRMED: "確定", WAITLISTED: "キャンセル待ち",
   ATTENDED: "参加済", NO_SHOW: "不参加", CANCELLED: "キャンセル",
 };
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ", MINDFULNESS: "マインドフルネス",
-  LECTURE: "仏事講座", SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 // GET /api/export/events
 export async function GET() {
@@ -46,7 +43,7 @@ export async function GET() {
     const rows = participations.map((p) => ({
       イベントID: p.eventId,
       イベント名: p.event.title,
-      カテゴリ: CATEGORY_LABELS[p.event.category] ?? p.event.category,
+      カテゴリ: getCategoryLabel(p.event.category),
       開催日: p.event.eventDate.toISOString().slice(0, 10),
       参加者氏名: p.member.user.name,
       メールアドレス: p.member.user.email,

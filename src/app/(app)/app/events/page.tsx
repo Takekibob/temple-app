@@ -3,19 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { EventCategory, EventVisibility } from "@/generated/prisma/enums";
+import type { EventVisibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
-
-const CATEGORY_ICONS: Record<string, string> = {
-  ZAZEN: "🧘", SHAKYO: "✍️", YOGA: "🌿",
-  MINDFULNESS: "🕯️", LECTURE: "📖", SEASONAL: "🌸", OTHER: "🎋",
-};
+import { getCategoryLabel, getCategoryIcon, STANDARD_CATEGORY_KEYS } from "@/lib/eventCategories";
 
 type EventRow = Prisma.EventGetPayload<{
   include: {
@@ -51,7 +41,7 @@ function EventCard({
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
               <span className="text-xs text-amber-700 font-medium">
-                {CATEGORY_ICONS[event.category]} {CATEGORY_LABELS[event.category]}
+                {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
               </span>
               {event.visibility === "DANKA_ONLY" && (
                 <span className="text-xs text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">
@@ -112,10 +102,19 @@ export default async function AppEventsPage({
   const myTempleId = authUser.member?.templeId ?? null;
   const today = new Date(new Date().toDateString());
 
+  // "OTHER" フィルターは「その他 + カスタムカテゴリ（標準外）」をまとめて表示
+  const STANDARD_NON_OTHER = STANDARD_CATEGORY_KEYS.filter((k) => k !== "OTHER");
+  const categoryFilter: Prisma.EventWhereInput =
+    category === "OTHER"
+      ? { category: { notIn: STANDARD_NON_OTHER } }
+      : category
+      ? { category }
+      : {};
+
   const baseWhere: Prisma.EventWhereInput = {
     status: "PUBLISHED",
     eventDate: { gte: today },
-    ...(category ? { category: category as EventCategory } : {}),
+    ...categoryFilter,
     ...(denomination ? { temple: { denomination } } : {}),
   };
 
@@ -229,7 +228,7 @@ export default async function AppEventsPage({
               category === c ? "bg-amber-700 text-white border-amber-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
             }`}
           >
-            {CATEGORY_ICONS[c]} {CATEGORY_LABELS[c]}
+            {getCategoryIcon(c)} {getCategoryLabel(c)}
           </Link>
         ))}
       </div>

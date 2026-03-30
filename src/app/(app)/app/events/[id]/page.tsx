@@ -6,11 +6,7 @@ import { prisma } from "@/lib/prisma";
 import CancelButton from "./CancelButton";
 import ShareButton from "@/components/shared/ShareButton";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 const PARTICIPATION_STATUS_LABELS: Record<string, string> = {
   APPLIED: "申込済み（確認待ち）",
@@ -84,7 +80,7 @@ export default async function AppEventDetailPage({
 
         <div className="flex items-start gap-2 mb-1">
           <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
-            {CATEGORY_LABELS[event.category]}
+            {getCategoryLabel(event.category)}
           </span>
           {event.visibility === "DANKA_ONLY" && (
             <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">

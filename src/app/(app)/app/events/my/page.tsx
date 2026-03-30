@@ -3,11 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅", SHAKYO: "写経", YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス", LECTURE: "仏事講座",
-  SEASONAL: "季節行事", OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 const STATUS_LABELS: Record<string, string> = {
   APPLIED: "確認待ち",
@@ -78,7 +74,7 @@ export default async function MyEventsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs text-amber-700 font-medium mb-0.5">
-                        {CATEGORY_LABELS[p.event.category]}
+                        {getCategoryLabel(p.event.category)}
                       </p>
                       <p className="font-semibold text-stone-800">{p.event.title}</p>
                       <p className="text-xs text-stone-500 mt-1">

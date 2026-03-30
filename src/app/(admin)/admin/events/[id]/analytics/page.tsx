@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import EventDetailAnalyticsClient from "./EventDetailAnalyticsClient";
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 export default async function AdminEventAnalyticsPage({
   params,
@@ -134,16 +135,6 @@ export default async function AdminEventAnalyticsPage({
       comment: p.feedbackComment,
     }));
 
-  const CATEGORY_LABELS: Record<string, string> = {
-    ZAZEN: "坐禅",
-    SHAKYO: "写経",
-    YOGA: "ヨガ",
-    MINDFULNESS: "マインドフルネス",
-    LECTURE: "仏事講座",
-    SEASONAL: "季節行事",
-    OTHER: "その他",
-  };
-
   const data = {
     event: {
       id: event.id,
@@ -152,7 +143,7 @@ export default async function AdminEventAnalyticsPage({
       startTime: event.startTime,
       endTime: event.endTime,
       capacity: event.capacity,
-      category: CATEGORY_LABELS[event.category] ?? event.category,
+      category: getCategoryLabel(event.category),
       fee: event.fee,
       status: event.status,
     },

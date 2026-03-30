@@ -13,15 +13,22 @@ export default async function AdminEventEditPage({
 
   const { id } = await params;
 
-  const event = await prisma.event.findFirst({
-    where: { id, templeId: authUser.templeId },
-  });
+  const [event, temple] = await Promise.all([
+    prisma.event.findFirst({ where: { id, templeId: authUser.templeId } }),
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId },
+      select: { customEventCategories: true },
+    }),
+  ]);
 
   if (!event) notFound();
+
+  const customCategories = (temple?.customEventCategories as string[]) ?? [];
 
   return (
     <EventFormClient
       isEdit
+      customCategories={customCategories}
       initialData={{
         id: event.id,
         title: event.title,

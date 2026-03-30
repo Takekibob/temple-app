@@ -4,15 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ZAZEN: "坐禅",
-  SHAKYO: "写経",
-  YOGA: "ヨガ",
-  MINDFULNESS: "マインドフルネス",
-  LECTURE: "仏事講座",
-  SEASONAL: "季節行事",
-  OTHER: "その他",
-};
+import { getCategoryLabel } from "@/lib/eventCategories";
 
 export async function generateMetadata({
   params,
@@ -118,7 +110,7 @@ export default async function PublicEventPage({
       {/* カテゴリバッジ */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
-          {CATEGORY_LABELS[event.category] ?? event.category}
+          {getCategoryLabel(event.category)}
         </span>
       </div>
 
