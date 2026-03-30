@@ -648,6 +648,31 @@ export default function MypageClient({ user, member }: Props) {
           </div>
         )}
 
+        {/* 寄付・サポート */}
+        {member && (
+          <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-2">
+            <h2 className="font-semibold text-stone-800 mb-1">寄付・サポート</h2>
+            <Link
+              href="/app/donations"
+              className="flex items-center justify-between w-full py-2.5 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors"
+            >
+              <span className="text-sm text-stone-700 flex items-center gap-2">
+                <span>🙏</span> 寄付・お布施
+              </span>
+              <span className="text-stone-400 text-sm">→</span>
+            </Link>
+            <Link
+              href="/app/subscriptions"
+              className="flex items-center justify-between w-full py-2.5 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors"
+            >
+              <span className="text-sm text-stone-700 flex items-center gap-2">
+                <span>💳</span> 会員プラン
+              </span>
+              <span className="text-stone-400 text-sm">→</span>
+            </Link>
+          </div>
+        )}
+
         {/* ご縁さん：檀家昇格申請 */}
         {member?.type === "GOEN" && (
           <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-3">

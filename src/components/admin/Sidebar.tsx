@@ -60,12 +60,23 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: "📢", label: "お知らせ", href: "/admin/announcements" },
       { icon: "📅", label: "行事", href: "/admin/annual-events" },
+      { icon: "💚", label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },
   {
-    title: "CRM",
+    title: "CRM・収益",
     items: [
       { icon: "📈", label: "パイプライン", href: "/admin/pipeline" },
+      { icon: "💰", label: "収益管理", href: "/admin/revenue", adminOnly: true },
+      { icon: "📊", label: "経営分析", href: "/admin/analytics/retention", adminOnly: true },
+    ],
+  },
+  {
+    title: "ブランディング",
+    items: [
+      { icon: "🌐", label: "寺院公開LP", href: "/admin/temple-page", adminOnly: true },
+      { icon: "📷", label: "OCR取り込み", href: "/admin/ocr", adminOnly: true },
+      { icon: "📦", label: "導入サポート", href: "/admin/onboarding-pack", adminOnly: true },
     ],
   },
   {
