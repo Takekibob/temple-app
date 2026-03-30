@@ -31,22 +31,36 @@ export async function POST(request: NextRequest) {
     });
 
     let sent = 0;
+    let noEmail = 0;
+    let failed = 0;
+    let firstError = "";
+
     await Promise.allSettled(
       unpaidPayments.map(async (p) => {
         const email = p.member.user.email;
-        if (!email) return;
-        await sendGojikaiReminderEmail({
-          to: email,
-          memberName: p.member.user.name,
-          templeName: temple.name,
-          fiscalYear: p.fiscalYear,
-          amount: p.amount,
-        });
-        sent++;
+        if (!email) {
+          noEmail++;
+          return;
+        }
+        try {
+          await sendGojikaiReminderEmail({
+            to: email,
+            memberName: p.member.user.name,
+            templeName: temple.name,
+            fiscalYear: p.fiscalYear,
+            amount: p.amount,
+          });
+          sent++;
+        } catch (err) {
+          failed++;
+          if (!firstError) {
+            firstError = err instanceof Error ? err.message : String(err);
+          }
+        }
       })
     );
 
-    return NextResponse.json({ sent });
+    return NextResponse.json({ sent, noEmail, failed, firstError: firstError || null });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
     if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
