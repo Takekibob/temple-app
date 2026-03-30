@@ -1,11 +1,11 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(git add:*)"
+    ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
       "/Users/haradatakeki/Developer/temple-app/src/app/(app)/app/news"
-    ],
-    "allow": [
-      "Bash(ls \"/Users/haradatakeki/Developer/temple-app/src/app/\\(admin\\)/admin/events/[id]/edit/\")"
     ]
   }
 }
