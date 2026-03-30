@@ -15,7 +15,7 @@ export default function SimpleBottomNav({ isDanka }: Props) {
   const canGoBack = !isHome;
 
   const btnBase =
-    "flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[64px] rounded-2xl text-sm font-semibold transition-colors";
+    "flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[56px] rounded-2xl text-xs font-semibold transition-colors";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-200 safe-area-pb">
@@ -39,7 +39,7 @@ export default function SimpleBottomNav({ isDanka }: Props) {
                 : "bg-amber-100 text-amber-800"
             }`}
           >
-            <span className="text-2xl">📿</span>
+            <span className="text-xl">📿</span>
             <span>法要予約</span>
           </Link>
         )}
@@ -51,10 +51,10 @@ export default function SimpleBottomNav({ isDanka }: Props) {
               : "bg-stone-100 text-stone-700"
           }`}
         >
-          <span className="text-2xl">📢</span>
+          <span className="text-xl">📢</span>
           <span>お知らせ</span>
         </Link>
-<Link
+        <Link
           href="/app/mypage"
           className={`${btnBase} flex-1 py-3 ${
             pathname === "/app/mypage"
@@ -62,7 +62,7 @@ export default function SimpleBottomNav({ isDanka }: Props) {
               : "bg-stone-100 text-stone-700"
           }`}
         >
-          <span className="text-2xl">👤</span>
+          <span className="text-xl">👤</span>
           <span>マイページ</span>
         </Link>
       </div>
