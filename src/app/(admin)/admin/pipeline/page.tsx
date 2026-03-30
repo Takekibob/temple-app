@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { STAGE_LABELS, STAGE_COLORS, STAGE_THRESHOLDS } from "@/lib/scoring";
+import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
 import { MemberStage } from "@/generated/prisma/client";
 
 const STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
@@ -12,6 +12,14 @@ export default async function PipelinePage() {
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const templeId = authUser.templeId;
+
+  const temple = await prisma.temple.findUnique({
+    where: { id: templeId },
+    select: { thresholdGoen: true, thresholdProspect: true, thresholdCandidate: true },
+  });
+  const thresholdGoen = temple?.thresholdGoen ?? 10;
+  const thresholdProspect = temple?.thresholdProspect ?? 50;
+  const thresholdCandidate = temple?.thresholdCandidate ?? 80;
 
   // 各ステージのメンバー（上位10件 + 総数）
   const stageData = await Promise.all(
@@ -58,10 +66,11 @@ export default async function PipelinePage() {
             </span>
             <p className="text-3xl font-bold text-stone-800">{count}</p>
             <p className="text-xs text-stone-400 mt-0.5">名</p>
-            {STAGE_THRESHOLDS[stage] !== undefined && (
+            {(stage === "GOEN" || stage === "PROSPECT" || stage === "DANKA_CANDIDATE") && (
               <p className="text-xs text-stone-400 mt-1">
-                {stage === "PROSPECT" && `スコア ${STAGE_THRESHOLDS.PROSPECT}〜`}
-                {stage === "DANKA_CANDIDATE" && `スコア ${STAGE_THRESHOLDS.DANKA_CANDIDATE}〜`}
+                {stage === "GOEN" && `スコア ${thresholdGoen}〜`}
+                {stage === "PROSPECT" && `スコア ${thresholdProspect}〜`}
+                {stage === "DANKA_CANDIDATE" && `スコア ${thresholdCandidate}〜`}
               </p>
             )}
           </div>
