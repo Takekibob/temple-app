@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MemberStage } from "@/generated/prisma/client";
-import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
+import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoringMeta";
 
 const STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
 
