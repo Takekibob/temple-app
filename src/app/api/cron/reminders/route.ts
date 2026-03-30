@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPushNotification } from "@/lib/push";
 import { sendLineNotification } from "@/lib/line";
-import { sendReservationReminderEmail } from "@/lib/email";
+import { sendReservationReminderEmail, sendNenkiReminderEmail } from "@/lib/email";
+import { calcNenki } from "@/lib/nenki";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -103,6 +104,71 @@ export async function POST(request: NextRequest) {
           templeName: r.temple.name,
         }).catch(() => {});
         sent++;
+      }
+    }
+
+    // ── 年忌リマインダー（30日前・7日前・前日） ──────────────────────────
+    const NENKI_REMIND_DAYS = [30, 7, 1];
+    const allDeceased = await prisma.deceasedPerson.findMany({
+      where: { deathDate: { not: null } },
+      include: {
+        member: {
+          include: {
+            user: { include: { pushSubscriptions: true } },
+            temple: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    for (const d of allDeceased) {
+      if (!d.deathDate || !d.member.notifyAnniversary) continue;
+      const nenkiList = calcNenki(d.deathDate);
+      for (const nenki of nenkiList) {
+        const diffMs = nenki.date.getTime() - tomorrowJST.getTime();
+        const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+        if (!NENKI_REMIND_DAYS.includes(diffDays)) continue;
+
+        const nenkiDateStr = nenki.date.toLocaleDateString("ja-JP", {
+          timeZone: "Asia/Tokyo",
+          month: "long",
+          day: "numeric",
+          weekday: "short",
+        });
+        const msg = `年忌のお知らせ\n${d.name} 様の${nenki.name}が${diffDays}日後（${nenkiDateStr}）に迎えます。`;
+
+        if (d.member.user.pushEnabled) {
+          for (const sub of d.member.user.pushSubscriptions) {
+            const ok = await sendPushNotification(sub, {
+              title: `${d.name} 様 ${nenki.name}のお知らせ`,
+              body: `${diffDays}日後（${nenkiDateStr}）に迎えます。法要のご予約をお忘れなく。`,
+              url: "/app/reservations",
+            });
+            if (!ok) {
+              await prisma.pushSubscription.deleteMany({
+                where: { userId: d.member.user.id, endpoint: sub.endpoint },
+              });
+            } else {
+              sent++;
+            }
+          }
+        }
+        if (d.member.lineUserId && d.member.lineNotifyEnabled) {
+          const ok = await sendLineNotification(d.member.id, msg);
+          if (ok) sent++;
+        }
+        if (d.member.user.email) {
+          await sendNenkiReminderEmail({
+            to: d.member.user.email,
+            memberName: d.member.user.name ?? "",
+            deceasedName: d.name,
+            nenkiName: nenki.name,
+            nenkiDate: nenki.date,
+            templeName: d.member.temple?.name ?? "お寺",
+            daysUntil: diffDays,
+          }).catch(() => {});
+          sent++;
+        }
       }
     }
 

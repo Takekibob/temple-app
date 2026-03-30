@@ -69,7 +69,7 @@ export async function awardScore(opts: {
     });
 
     // ステージ自動遷移を評価（DANKAは手動昇格のみ）
-    await evaluateStageTransition(updated.id, updated.stage, updated.lifetimeScore);
+    await evaluateStageTransition(updated.id, updated.stage, updated.lifetimeScore, opts.templeId);
   } catch {
     // サイレントに握りつぶす
   }
@@ -77,23 +77,40 @@ export async function awardScore(opts: {
 
 /**
  * lifetimeScore に基づきステージ遷移を評価する。
+ * templeId が指定された場合は DB のカスタム閾値を使用する（なければデフォルト）。
  * DANKA への昇格は行わない（手動のみ）。
  */
 export async function evaluateStageTransition(
   memberId: string,
   currentStage: MemberStage,
-  lifetimeScore: number
+  lifetimeScore: number,
+  templeId?: string
 ): Promise<void> {
+  // お寺ごとのカスタム閾値を取得
+  let thresholdGoen = STAGE_THRESHOLDS.PROSPECT ?? 10;
+  let thresholdProspect = STAGE_THRESHOLDS.DANKA_CANDIDATE ?? 50;
+  if (templeId) {
+    const temple = await prisma.temple.findUnique({
+      where: { id: templeId },
+      select: { thresholdGoen: true, thresholdProspect: true },
+    });
+    if (temple) {
+      thresholdGoen = temple.thresholdGoen;
+      thresholdProspect = temple.thresholdProspect;
+    }
+  }
+
   let nextStage: MemberStage | null = null;
 
-  if (currentStage === "GOEN" && lifetimeScore >= (STAGE_THRESHOLDS.PROSPECT ?? 10)) {
+  if (currentStage === "GOEN" && lifetimeScore >= thresholdGoen) {
     nextStage = "PROSPECT";
-  } else if (currentStage === "PROSPECT" && lifetimeScore >= (STAGE_THRESHOLDS.DANKA_CANDIDATE ?? 50)) {
+  } else if (currentStage === "PROSPECT" && lifetimeScore >= thresholdProspect) {
     nextStage = "DANKA_CANDIDATE";
   }
 
   if (!nextStage) return;
 
+  const threshold = nextStage === "PROSPECT" ? thresholdGoen : thresholdProspect;
   await prisma.$transaction([
     prisma.member.update({
       where: { id: memberId },
@@ -105,7 +122,7 @@ export async function evaluateStageTransition(
         fromStage: currentStage,
         toStage: nextStage,
         triggeredBy: "AUTO",
-        reason: `lifetimeScore >= ${STAGE_THRESHOLDS[nextStage]}`,
+        reason: `lifetimeScore >= ${threshold}`,
       },
     }),
   ]);

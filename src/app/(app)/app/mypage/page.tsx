@@ -30,6 +30,9 @@ export default async function MypagePage() {
         phone: user.phone ?? "",
         pushEnabled: user.pushEnabled,
         role: user.role,
+        displayMode: user.displayMode,
+        fontSize: user.fontSize,
+        highContrast: user.highContrast,
       }}
       member={
         user.member

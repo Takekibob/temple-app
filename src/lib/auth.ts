@@ -55,6 +55,7 @@ export async function requireAuth() {
 /**
  * 管理者権限チェック（お寺に紐づく ADMIN のみ）
  * SUPER_ADMIN はお寺を持たないため /superadmin/* を使用
+ * CANCELLED / SUSPENDED テナントは PAYMENT_REQUIRED を返す
  */
 export async function requireAdmin(): Promise<TempleAuthUser> {
   const authUser = await requireAuth();
@@ -63,6 +64,13 @@ export async function requireAdmin(): Promise<TempleAuthUser> {
   }
   if (!authUser.templeId) {
     throw new Error("FORBIDDEN");
+  }
+  const temple = await prisma.temple.findUnique({
+    where: { id: authUser.templeId },
+    select: { planStatus: true },
+  });
+  if (temple?.planStatus === "CANCELLED" || temple?.planStatus === "SUSPENDED") {
+    throw new Error("PAYMENT_REQUIRED");
   }
   return authUser;
 }

@@ -175,6 +175,50 @@ ${templeName}
   });
 }
 
+// ── 年忌リマインダーメール（N日前） ──────────────────────────────────────────
+export async function sendNenkiReminderEmail({
+  to,
+  memberName,
+  deceasedName,
+  nenkiName,
+  nenkiDate,
+  templeName,
+  daysUntil,
+}: {
+  to: string;
+  memberName: string;
+  deceasedName: string;
+  nenkiName: string;
+  nenkiDate: Date;
+  templeName: string;
+  daysUntil: number;
+}) {
+  const resend = getResend();
+  const dateStr = nenkiDate.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+  await resend.emails.send({
+    from: `てらログ <${FROM}>`,
+    to,
+    subject: `【${templeName}】${deceasedName} 様の${nenkiName}が近づいています`,
+    text: `
+${memberName} 様
+
+${deceasedName} 様の${nenkiName}が${daysUntil === 0 ? "本日" : `${daysUntil}日後（${dateStr}）`}に迎えます。
+
+法要のご予約がまだの場合は、${templeName}までお早めにご連絡ください。
+
+▼ 法要のご予約
+${process.env.NEXT_PUBLIC_SITE_URL ?? "https://teralog.app"}/app/reservations
+
+${templeName}
+`.trim(),
+  });
+}
+
 export async function sendTrialExpiryEmail({
   to,
   templeName,

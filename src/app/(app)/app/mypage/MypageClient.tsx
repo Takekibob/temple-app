@@ -34,6 +34,9 @@ interface Props {
     phone: string;
     pushEnabled: boolean;
     role: string;
+    displayMode: string;
+    fontSize: string;
+    highContrast: boolean;
   };
   member: {
     id: string;
@@ -80,6 +83,13 @@ export default function MypageClient({ user, member }: Props) {
     notifyAnnouncement: member?.notifyAnnouncement ?? true,
   });
 
+  // 表示設定
+  const [displayMode, setDisplayMode] = useState(user.displayMode);
+  const [fontSize, setFontSize] = useState(user.fontSize);
+  const [highContrast, setHighContrast] = useState(user.highContrast);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
   // 興味タグ
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set(member?.interestTags ?? [])
@@ -92,6 +102,28 @@ export default function MypageClient({ user, member }: Props) {
       else next.add(tag);
       return next;
     });
+  }
+
+  // ── 表示設定保存 ──────────────────────────────────────
+  async function handlePreferencesSave() {
+    setPrefsSaving(true);
+    setPrefsSaved(false);
+    try {
+      await fetch("/api/me/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayMode, fontSize, highContrast }),
+      });
+      setPrefsSaved(true);
+      // シンプルモード変更時はページリロードで即時反映
+      if (displayMode !== user.displayMode || fontSize !== user.fontSize || highContrast !== user.highContrast) {
+        window.location.reload();
+      }
+    } catch {
+      // silent
+    } finally {
+      setPrefsSaving(false);
+    }
   }
 
   // ── プッシュ通知トグル ──────────────────────────────
@@ -388,6 +420,87 @@ export default function MypageClient({ user, member }: Props) {
             >
               パスワードを変更する →
             </Link>
+          </div>
+        </div>
+
+        {/* 表示設定 */}
+        <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-4">
+          <h2 className="font-semibold text-stone-800">表示設定</h2>
+
+          {/* 表示モード */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-stone-700">表示モード</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([["STANDARD", "標準"], ["SIMPLE", "シンプル（大きな文字）"]] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setDisplayMode(val)}
+                  className={`py-2 rounded-xl text-sm border transition-colors ${
+                    displayMode === val
+                      ? "bg-amber-700 text-white border-amber-700"
+                      : "bg-stone-50 text-stone-700 border-stone-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* フォントサイズ */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-stone-700">文字サイズ</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([["MEDIUM", "標準"], ["LARGE", "大"], ["XLARGE", "特大"]] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setFontSize(val)}
+                  className={`py-2 rounded-xl text-sm border transition-colors ${
+                    fontSize === val
+                      ? "bg-amber-700 text-white border-amber-700"
+                      : "bg-stone-50 text-stone-700 border-stone-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ハイコントラスト */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-stone-700">ハイコントラスト</p>
+              <p className="text-xs text-stone-400">白背景・黒文字を強調表示</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHighContrast((v) => !v)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                highContrast ? "bg-amber-700" : "bg-stone-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  highContrast ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            {prefsSaved && <p className="text-sm text-teal-600">保存しました</p>}
+            {!prefsSaved && <span />}
+            <button
+              type="button"
+              onClick={handlePreferencesSave}
+              disabled={prefsSaving}
+              className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm rounded-xl disabled:opacity-50 transition-colors"
+            >
+              {prefsSaving ? "保存中…" : "表示設定を保存"}
+            </button>
           </div>
         </div>
 
