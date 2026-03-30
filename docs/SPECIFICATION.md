@@ -1,82 +1,119 @@
 # てらログ — システム仕様書
 
 > **Single Source of Truth: このドキュメントはコードベースを解析して生成されています。**
-> 設計書v4との差分がある場合は**実装を正**とします。
+> 実装と仕様書に差分がある場合は**実装を正**とします。
 
 **作成日:** 2026-03-28
-**最終更新:** 2026-03-28（マルチテンプル対応・イベント横断表示を追加）
+**最終更新:** 2026-03-30（機能①〜⑧追加: SUPER_ADMIN拡充・レート制限・グラフ・メール拡充・PDF領収書・一斉メール）
 **コードベースバージョン:** `work/harada` ブランチ
 
 ---
 
 ## 目次
 
-1. [システム概要](#1-システム概要)
-2. [ディレクトリ構成](#2-ディレクトリ構成)
-3. [データベース設計](#3-データベース設計)
-4. [認証・認可](#4-認証認可)
-5. [画面一覧・ルーティング](#5-画面一覧ルーティング)
-6. [API一覧](#6-api一覧)
-7. [主要機能の仕様](#7-主要機能の仕様)
-8. [コンポーネント設計](#8-コンポーネント設計)
+1. [システム概要・価値提案](#1-システム概要価値提案)
+2. [技術スタック](#2-技術スタック)
+3. [インフラ・環境変数](#3-インフラ環境変数)
+4. [データベース設計](#4-データベース設計)
+5. [認証・認可](#5-認証認可)
+6. [画面一覧・ルーティング](#6-画面一覧ルーティング)
+7. [API一覧](#7-api一覧)
+8. [主要機能の仕様詳細](#8-主要機能の仕様詳細)
 9. [外部サービス連携](#9-外部サービス連携)
-10. [セキュリティ](#10-セキュリティ)
-11. [未実装機能・既知の課題](#11-未実装機能既知の課題)
+10. [通知システム](#10-通知システム)
+11. [セキュリティ](#11-セキュリティ)
 12. [デプロイ・運用](#12-デプロイ運用)
+13. [未実装・課題・改善案](#13-未実装課題改善案)
 
 ---
 
-## 1. システム概要
+## 1. システム概要・価値提案
 
-### 1.1 アプリ名・概要
+### 1.1 サービス概要
 
 **てらログ（teralog）**
 
-お寺の日常業務をデジタル化するDX管理アプリ。法要予約・過去帳・会員管理・お布施会計・イベント運営を一元管理する。会員を**檀家（DANKA）**と**ご縁さん（GOEN）**に分類し、SBNRと呼ばれる宗教に属さないが精神性を求める層の取り込みを想定した設計になっている。
+お寺の日常業務をまるごとデジタル化するSaaS型DX管理アプリ。
+法要予約・過去帳・会員管理・お布施会計・イベント運営・メール/LINE/Push通知を一元管理する。
 
-**マルチテンプル対応（2026-03-28追加）:** 複数寺院が同一プラットフォームに登録でき、ご縁さんは全寺院の公開イベントを横断的に閲覧・参加申込できる。檀家は自寺院イベント（公開＋檀家限定）を優先表示し、他寺院の公開イベントも参照可能。
+### 1.2 対象顧客とペルソナ
 
-### 1.2 技術スタック
+| セグメント | 内容 |
+|---|---|
+| **プライマリ顧客** | 檀家管理・法要受付・イベント運営に課題を感じている中規模以下の寺院（住職・寺務担当者） |
+| **エンドユーザー（檀家）** | 法要を自分でネット予約したい・リマインダーが欲しい中高年層 |
+| **エンドユーザー（ご縁さん）** | SBNR（Spiritual But Not Religious）と呼ばれる精神性を求めるが特定の宗教に属さない20〜40代 |
 
-#### フレームワーク・ランタイム
+### 1.3 差別化ポイント
+
+| 特徴 | 内容 |
+|---|---|
+| **会員二分類** | 「檀家（DANKA）」と「ご縁さん（GOEN）」を分離し、それぞれに適した体験を提供 |
+| **エンゲージメントスコア** | ご縁さんの関与度を数値化し、檀家への転換候補を自動抽出 |
+| **マルチテンプル対応** | 複数寺院が同一プラットフォームに登録でき、ご縁さんは全寺院を横断的に閲覧できる |
+| **多チャネル通知** | Web Push・LINE・メール（Resend）を統合した通知基盤 |
+| **LINE連携** | 6桁コードで簡単紐付け。月命日・法要リマインダーをLINEで受け取れる |
+| **SUPER_ADMIN管理** | SaaS運営者がプラン・寺院・請求を一元管理できる管理画面 |
+| **MFA強制** | SUPER_ADMINはTOTP二段階認証必須 |
+
+### 1.4 収益モデル
+
+| プラン | 料金 | 内容 |
+|---|---|---|
+| **トライアル** | 無料（30日） | 全機能利用可能 |
+| **スタンダード** | ¥9,800/月（税込） | 檀家管理・イベント・お知らせ・通知・メールサポート |
+| **（将来）プレミアム** | 未定 | 大規模寺院向け（檀家1,000件以上・専用サポート） |
+
+決済はStripeサブスクリプション。サブスク管理はStripe Customer Portalへリダイレクト。
+
+---
+
+## 2. 技術スタック
+
+### 2.1 フレームワーク・ランタイム
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
-| `next` | 16.2.1 | App Router、Server Actions、API Routes、PWA |
+| `next` | 16.2.1 | App Router・Server Components・API Routes・PWA |
 | `react` | 19.2.4 | UIレンダリング |
-| `react-dom` | 19.2.4 | DOMレンダリング |
 | `typescript` | ^5 | 静的型付け |
 
-#### データベース・ORM
+> **注意:** Next.js 16ではMiddlewareが `middleware.ts` ではなく `src/proxy.ts` に変更。
+> `export async function proxy(req)` + `export const config` が規約。
+
+### 2.2 データベース・ORM
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
-| `prisma` | ^7.5.0 | ORM |
-| `@prisma/client` | ^7.5.0 | 型安全クライアント |
-| `@prisma/adapter-pg` | ^7.5.0 | Serverless用PostgreSQLアダプター |
+| `prisma` | ^7.5.0 | ORM・マイグレーション |
+| `@prisma/adapter-pg` | ^7.5.0 | Serverless用アダプター |
 | `pg` | ^8.20.0 | PostgreSQLドライバー |
 
-#### 認証・バックエンドサービス
+Prismaクライアントは `src/generated/prisma/client` に出力。
+型は `import type { ... } from "@/generated/prisma/client"` でインポート。
+
+### 2.3 認証
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
 | `@supabase/supabase-js` | ^2.99.3 | Supabase JSクライアント |
-| `@supabase/ssr` | ^0.9.0 | SSR用Supabase（Cookie管理） |
+| `@supabase/ssr` | ^0.9.0 | SSR用Cookie管理 |
 
-#### 決済
-
-| ライブラリ | バージョン | 用途 |
-|---|---|---|
-| `stripe` | ^20.4.1 | オンライン決済（イベント参加費） |
-
-#### 通知
+### 2.4 決済
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
+| `stripe` | ^20.4.1 | サブスクリプション・イベント決済 |
+
+### 2.5 通知・メール
+
+| ライブラリ | バージョン | 用途 |
+|---|---|---|
+| `resend` | — | トランザクションメール |
 | `web-push` | ^3.6.7 | Web Push通知（VAPID） |
 | `@line/bot-sdk` | ^10.6.0 | LINE Messaging API |
 
-#### UI・スタイリング
+### 2.6 UI・スタイリング
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
@@ -84,1539 +121,683 @@
 | `shadcn` | ^4.1.0 | UIコンポーネント基盤 |
 | `@base-ui/react` | ^1.3.0 | アクセシブルUIプリミティブ |
 | `lucide-react` | ^0.577.0 | アイコン |
-| `recharts` | ^3.8.1 | グラフ・チャート |
-| `clsx` | ^2.1.1 | クラス名結合ユーティリティ |
-| `tailwind-merge` | ^3.5.0 | Tailwindクラスのマージ |
-| `class-variance-authority` | ^0.7.1 | バリアントスタイル管理 |
-| `tw-animate-css` | ^1.4.0 | アニメーション |
+| `recharts` | ^3.8.1 | グラフ（ダッシュボード） |
 
-#### データ処理
+### 2.7 ドキュメント・データ処理
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
+| `@react-pdf/renderer` | ^4.3.2 | PDF領収書生成 |
 | `papaparse` | ^5.5.3 | CSVパース（会員インポート） |
-| `@types/papaparse` | ^5.5.2 | 型定義 |
 
-#### PWA
-
-| ライブラリ | バージョン | 用途 |
-|---|---|---|
-| `next-pwa` | ^5.6.0 | Service Worker、オフライン対応 |
-
-#### テスト
+### 2.8 レート制限
 
 | ライブラリ | バージョン | 用途 |
 |---|---|---|
+| `@upstash/redis` | — | Redisクライアント（スライディングウィンドウ） |
+| `@upstash/ratelimit` | — | レート制限ロジック |
+
+### 2.9 PWA・テスト
+
+| ライブラリ | バージョン | 用途 |
+|---|---|---|
+| `next-pwa` | ^5.6.0 | Service Worker・オフライン対応 |
 | `jest` | ^29.7.0 | 単体テスト |
-| `@testing-library/react` | ^16.3.2 | Reactテスト |
-| `@testing-library/user-event` | ^14.6.1 | ユーザー操作シミュレーション |
 | `@playwright/test` | ^1.58.2 | E2Eテスト |
-| `ts-jest` | ^29.4.6 | TypeScript対応Jest |
 
-### 1.3 ホスティング・インフラ
+---
+
+## 3. インフラ・環境変数
+
+### 3.1 ホスティング構成
 
 | 要素 | サービス |
 |---|---|
 | フロントエンド・API | **Vercel**（リージョン: `hnd1` 東京） |
 | データベース | **Supabase PostgreSQL** |
-| 認証 | **Supabase Auth**（JWT + Cookie） |
+| 認証 | **Supabase Auth**（JWT + Cookie + TOTP MFA） |
 | ファイルストレージ | **Supabase Storage** |
-| 決済 | **Stripe** |
+| キャッシュ・レート制限 | **Upstash Redis**（KV） |
+| 決済 | **Stripe**（サブスクリプション + 都度払い） |
+| メール | **Resend** |
 | プッシュ通知 | **Web Push API**（VAPID） |
 | メッセージング | **LINE Messaging API** |
 
-### 1.4 環境変数一覧
+### 3.2 環境変数一覧
 
-| 変数名 | 用途 | 必須/任意 |
+| 変数名 | 用途 | 必須 |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | SupabaseプロジェクトURL | **必須** |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase匿名キー | **必須** |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase管理者キー（サーバーのみ） | **必須** |
 | `DATABASE_URL` | PostgreSQL接続文字列 | **必須** |
 | `NEXT_PUBLIC_SITE_URL` | 本番サイトURL（OGP・OAuth・メール） | **必須** |
-| `CRON_SECRET` | Cronジョブ認証シークレット | **必須** |
+| `SUPER_ADMIN_EMAIL` | SUPER_ADMIN登録可能なメールアドレス | **必須** |
+| `CRON_SECRET` | Cronジョブ認証Bearer Token | **必須** |
 | `STRIPE_SECRET_KEY` | Stripeシークレットキー | **必須** |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe公開キー | **必須** |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Webhookシグニチャー | **必須** |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhookシグニチャー（イベント決済） | **必須** |
+| `STRIPE_BILLING_WEBHOOK_SECRET` | Stripe Webhookシグニチャー（サブスク） | **必須** |
+| `STRIPE_SUBSCRIPTION_PRICE_ID` | スタンダードプランのPrice ID | **必須** |
+| `RESEND_API_KEY` | Resend APIキー | **必須** |
+| `FROM_EMAIL` | 送信元メールアドレス（デフォルト: `noreply@teralog.app`） | 任意 |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID公開鍵 | **必須** |
 | `VAPID_PRIVATE_KEY` | Web Push VAPID秘密鍵 | **必須** |
-| `VAPID_SUBJECT` | Web Push件名（mailtoアドレス） | **必須** |
+| `VAPID_SUBJECT` | Web Push件名（`mailto:...`） | **必須** |
 | `LINE_CHANNEL_SECRET` | LINE Webhookシグニチャー検証 | **必須** |
 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE Bot APIアクセストークン | **必須** |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL | **必須** |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST Token | **必須** |
 | `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` | Storageバケット名（デフォルト: `teralog-assets`） | 任意 |
-| `NEXT_PUBLIC_APP_URL` | ローカル開発URL | 任意 |
-| `JWT_SECRET` | JWTシークレット（将来のカスタム認証用） | 任意 |
-| `JWT_EXPIRY` | アクセストークン有効期限（デフォルト: `30m`） | 任意 |
-| `JWT_REFRESH_EXPIRY` | リフレッシュトークン有効期限（デフォルト: `7d`） | 任意 |
-| `FCM_SERVER_KEY` | Firebase Cloud Messagingキー（将来用） | 任意 |
-| `SENDGRID_API_KEY` | SendGrid APIキー（将来用） | 任意 |
-| `FROM_EMAIL` | 送信元メールアドレス | 任意 |
-| `PILOT_ADMIN_EMAIL` | シードデータ用管理者メール | 任意（開発） |
-| `PILOT_DANKA_EMAIL` | シードデータ用檀家メール | 任意（開発） |
-| `PILOT_GOEN_EMAIL` | シードデータ用ご縁さんメール | 任意（開発） |
-| `SCREENSHOT_BASE_URL` | スクリーンショット取得用URL | 任意（開発） |
-| `SCREENSHOT_ADMIN_EMAIL` | スクリーンショット用管理者メール | 任意（開発） |
-| `SCREENSHOT_ADMIN_PASS` | スクリーンショット用管理者パスワード | 任意（開発） |
+| `NEXT_PUBLIC_APP_URL` | ローカル開発URL | 任意（開発） |
 
 ---
 
-## 2. ディレクトリ構成
+## 4. データベース設計
+
+### 4.1 ER図（概念）
 
 ```
-temple-app/
-├── prisma/
-│   └── schema.prisma          # DB定義（Single Source of Truth）
-├── docs/
-│   └── SPECIFICATION.md       # 本仕様書
-├── public/
-│   ├── manifest.json          # PWAマニフェスト
-│   └── icons/                 # アプリアイコン
-├── src/
-│   ├── app/
-│   │   ├── (admin)/           # 管理者向けルートグループ
-│   │   │   ├── layout.tsx     # 管理画面レイアウト（サイドバー）
-│   │   │   └── admin/
-│   │   │       ├── page.tsx               # ダッシュボード
-│   │   │       ├── analytics/             # /admin/analytics（→ events/analytics へリダイレクト）
-│   │   │       ├── announcements/         # お知らせ管理
-│   │   │       ├── annual-events/         # 年中行事管理
-│   │   │       ├── conversion/            # ご縁さん→檀家 転換管理
-│   │   │       ├── deceased/              # 過去帳管理
-│   │   │       ├── events/                # イベント管理
-│   │   │       │   ├── analytics/         # イベント分析ダッシュボード
-│   │   │       │   └── [id]/
-│   │   │       │       ├── analytics/     # イベント個別分析
-│   │   │       │       ├── edit/
-│   │   │       │       └── participants/
-│   │   │       ├── gojikai/               # 護持会費管理
-│   │   │       ├── members/               # 会員管理
-│   │   │       │   ├── import/            # CSVインポート
-│   │   │       │   └── [id]/
-│   │   │       ├── ofuse/                 # お布施管理
-│   │   │       ├── reports/               # 会計レポート
-│   │   │       ├── reservations/          # 予約管理
-│   │   │       ├── settings/              # 寺院設定
-│   │   │       └── staff/                 # スタッフ管理
-│   │   ├── (app)/             # 利用者向けルートグループ
-│   │   │   ├── layout.tsx     # アプリレイアウト（BottomNav）
-│   │   │   └── app/
-│   │   │       ├── page.tsx               # ホーム
-│   │   │       ├── calendar/              # 行事カレンダー
-│   │   │       ├── deceased/              # 過去帳（閲覧）
-│   │   │       ├── events/                # イベント
-│   │   │       │   ├── my/               # 申込済みイベント
-│   │   │       │   └── [id]/
-│   │   │       │       ├── apply/         # 参加申込
-│   │   │       │       └── feedback/      # フィードバック
-│   │   │       ├── mypage/                # マイページ
-│   │   │       ├── news/                  # お知らせ
-│   │   │       ├── ofuse/                 # お布施履歴（閲覧）
-│   │   │       └── reservations/          # 法要予約（檀家のみ）
-│   │   ├── api/               # APIルート
-│   │   │   ├── activities/
-│   │   │   ├── announcements/
-│   │   │   ├── annual-events/
-│   │   │   ├── calendar/
-│   │   │   ├── checkout/
-│   │   │   ├── conversion/
-│   │   │   ├── cron/
-│   │   │   │   ├── engagement/           # エンゲージメントスコア再計算
-│   │   │   │   └── reminders/            # リマインダー送信
-│   │   │   ├── deceased/
-│   │   │   ├── events/
-│   │   │   │   └── [id]/
-│   │   │   │       ├── analytics/
-│   │   │   │       ├── feedback/
-│   │   │   │       ├── participate/
-│   │   │   │       ├── participants/
-│   │   │   │       │   └── [pid]/
-│   │   │   │       │       └── refund/
-│   │   │   │       └── send-feedback-request/
-│   │   │   ├── export/
-│   │   │   ├── gojikai/
-│   │   │   ├── line/
-│   │   │   ├── me/
-│   │   │   ├── members/
-│   │   │   │   └── [id]/
-│   │   │   │       ├── deceased/
-│   │   │   │       ├── line-settings/
-│   │   │   │       └── promote/
-│   │   │   ├── ofuse/
-│   │   │   ├── onboarding/
-│   │   │   ├── push/
-│   │   │   ├── reports/
-│   │   │   ├── reservations/
-│   │   │   ├── settings/
-│   │   │   ├── setup/
-│   │   │   ├── staff/
-│   │   │   └── webhooks/
-│   │   │       ├── line/                 # LINE Webhook
-│   │   │       └── stripe/               # Stripe Webhook
-│   │   ├── auth/
-│   │   │   ├── actions.ts               # Server Actions（ログイン・登録・ログアウト）
-│   │   │   ├── accept-invite/           # スタッフ招待受諾
-│   │   │   ├── callback/                # OAuth コールバック
-│   │   │   ├── login/                   # /auth/login（/ へリダイレクト）
-│   │   │   ├── logout/                  # ログアウト処理
-│   │   │   ├── onboarding/              # オンボーディング（会員タイプ登録）
-│   │   │   ├── pwa-return/              # PWAリターン
-│   │   │   ├── register/                # 新規登録
-│   │   │   └── set-password/            # パスワード設定
-│   │   ├── setup/                       # 初期セットアップ
-│   │   ├── maintenance/                 # メンテナンスページ
-│   │   ├── layout.tsx                   # ルートレイアウト
-│   │   ├── page.tsx                     # ルートページ（ログイン or リダイレクト）
-│   │   ├── not-found.tsx                # 404ページ
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── admin/
-│   │   │   └── Sidebar.tsx              # 管理画面サイドバー
-│   │   ├── shared/
-│   │   │   ├── BottomNav.tsx            # モバイル下部ナビ
-│   │   │   ├── RoleGuards.tsx           # ロールガードコンポーネント
-│   │   │   └── ShareButton.tsx          # SNS共有ボタン
-│   │   └── ui/
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── checkbox.tsx
-│   │       ├── input.tsx
-│   │       ├── label.tsx
-│   │       └── skeleton.tsx             # ローディングスケルトン
-│   ├── lib/
-│   │   ├── activities.ts                # アクティビティ記録
-│   │   ├── auth.ts                      # 認証ヘルパー関数
-│   │   ├── engagementScore.ts           # エンゲージメントスコア計算
-│   │   ├── eventCapacity.ts             # イベント定員・キャンセル待ち
-│   │   ├── line.ts                      # LINE Messaging API
-│   │   ├── nenki.ts                     # 年忌計算
-│   │   ├── prisma.ts                    # Prismaクライアント
-│   │   ├── push.ts                      # Web Push通知
-│   │   ├── reservationConflict.ts       # 予約時間重複チェック
-│   │   ├── stripe.ts                    # Stripeクライアント
-│   │   ├── supabase.ts                  # ブラウザ用Supabaseクライアント
-│   │   ├── supabase-admin.ts            # 管理者用Supabaseクライアント
-│   │   ├── supabase-server.ts           # サーバー用Supabaseクライアント
-│   │   └── utils.ts                     # cn()ユーティリティ
-│   ├── generated/
-│   │   └── prisma/client/               # Prisma生成ファイル（コミット対象外）
-│   ├── proxy.ts                         # ルーティングガード（middlewareとして動作）
-│   └── sw-custom.js                     # Service Worker（PWA）
-├── vercel.json                          # Vercel設定・Cronジョブ
-├── next.config.ts                       # Next.js設定
-├── package.json
-└── tsconfig.json
+Temple ──< User (role: ADMIN/STAFF)
+Temple ──< Member (type: DANKA/GOEN)
+Temple ──< Event
+Temple ──< Reservation
+Temple ──< Ofuse
+Temple ──< Announcement
+Temple ──< AnnualEvent
+Temple ──< GojikaiRule
+Temple ──< PushSubscription
+
+Member ──< DeceasedPerson
+Member ──< Reservation
+Member ──< EventParticipation
+Member ──< Ofuse
+Member ──< GojikaiPayment
+Member ──< MemberActivity
+Member ──< MemberFavoriteTemple (N:M with Temple)
+
+Event ──< EventParticipation
 ```
+
+### 4.2 主要モデル定義
+
+#### Temple（寺院）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `id` | UUID | PK |
+| `name` | String | 寺院名 |
+| `denomination` | String? | 宗派 |
+| `address` | String? | 住所 |
+| `phone` | String? | 電話番号 |
+| `email` | String? | 問い合わせ先メール |
+| `logoUrl` | String? | ロゴ画像URL |
+| `description` | String? | 紹介文 |
+| `coverImageUrl` | String? | カバー画像URL |
+| `latitude` / `longitude` | Decimal? | 緯度経度（地図表示用、将来） |
+| `isActive` | Boolean | 有効フラグ |
+| `bookingStartTime` | String | 予約受付開始時間（デフォルト: `09:00`） |
+| `bookingEndTime` | String | 予約受付終了時間（デフォルト: `17:00`） |
+| `bookingDuration` | Int | 1予約あたりの時間（分、デフォルト: 60） |
+| `bookingMaxSlots` | Int | 同時間帯最大枠数（デフォルト: 1） |
+| `bookingAdvanceDays` | Int | 何日前から予約可能か（デフォルト: 1） |
+| `reminderDayBefore` | Boolean | 前日リマインダー送信フラグ |
+| `reminderDayBeforeTime` | String | 前日送信時間（デフォルト: `18:00`） |
+| `reminderDayOf` | Boolean | 当日リマインダー送信フラグ |
+| `reminderDayOfTime` | String | 当日送信時間（デフォルト: `09:00`） |
+| `reminderMeinichi` | Boolean | 命日リマインダーフラグ |
+| `customEventCategories` | Json | カスタムイベントカテゴリ定義 |
+| `planStatus` | PlanStatus | TRIAL / ACTIVE / PAST_DUE / CANCELLED / SUSPENDED |
+| `trialEndsAt` | DateTime? | トライアル終了日 |
+| `stripeCustomerId` | String? | Stripe顧客ID |
+| `stripeSubscriptionId` | String? | Stripeサブスクリプションエー |
+
+#### User（ユーザー・認証アカウント）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `id` | UUID | PK（Supabase Auth UIDと同値） |
+| `templeId` | String? | **NULL = SUPER_ADMIN**（寺院に属さない） |
+| `role` | Role | SUPER_ADMIN / ADMIN / STAFF / MEMBER |
+| `name` | String | 表示名 |
+| `email` | String | ユニーク |
+| `authProvider` | AuthProvider | EMAIL / GOOGLE / APPLE / LINE |
+| `pushToken` | String? | FCMトークン（将来用） |
+| `pushEnabled` | Boolean | プッシュ通知有効フラグ |
+| `isActive` | Boolean | アカウント有効フラグ |
+| `lastLoginAt` | DateTime? | 最終ログイン日時 |
+
+#### Member（会員）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `id` | UUID | PK |
+| `templeId` | String? | NULLable（ご縁さんは寺院未所属の場合あり） |
+| `userId` | String | User.id（1:1） |
+| `type` | MemberType | DANKA / GOEN |
+| `familyName` | String | 家名（例: 山田） |
+| `engagementScore` | Int | エンゲージメントスコア（0〜100） |
+| `promotedAt` | DateTime? | ご縁さん→檀家の転換日時 |
+| `referralSource` | ReferralSource? | SNS / WEB / EVENT / INTRODUCTION / WALK_IN / OTHER |
+| `interestTags` | Json? | 興味タグ（例: `["zazen","shakyo"]`） |
+| `lineUserId` | String? | LINE連携後のユーザーID |
+| `lineNotifyEnabled` | Boolean | LINE通知有効フラグ |
+| `lineCode` | String? | 連携コード（一時保存） |
+| `lineCodeExpiresAt` | DateTime? | 連携コード有効期限 |
+| `notifyReservation` | Boolean | 予約通知設定 |
+| `notifyEvent` | Boolean | イベント通知設定 |
+| `notifyAnniversary` | Boolean | 命日通知設定 |
+| `notifyAnnouncement` | Boolean | お知らせ通知設定 |
+
+#### Event（イベント）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `id` | UUID | PK |
+| `templeId` | String | 作成寺院 |
+| `title` | String | イベント名 |
+| `category` | EventCategory | ZAZEN / SHAKYO / YOGA / MINDFULNESS / LECTURE / SEASONAL / OTHER |
+| `eventDate` | DateTime | 開催日 |
+| `startTime` / `endTime` | String | 開始・終了時刻（HH:MM） |
+| `capacity` | Int? | 定員（NULL=無制限） |
+| `fee` | Int | 参加費（0=無料） |
+| `visibility` | EventVisibility | PUBLIC / MEMBERS_ONLY / DANKA_ONLY |
+| `status` | EventStatus | DRAFT / PUBLISHED / CLOSED / COMPLETED / CANCELLED |
+| `shareUrl` | String? | SNSシェア用URL |
+| `imageUrl` | String? | イベント画像URL |
+
+#### EventParticipation（イベント参加申込）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `status` | ParticipationStatus | APPLIED / CONFIRMED / WAITLISTED / ATTENDED / NO_SHOW / CANCELLED |
+| `paymentStatus` | PaymentStatus | NOT_REQUIRED / PENDING / PAID / REFUNDED |
+| `numGuests` | Int | 参加人数 |
+| `stripeSessionId` | String? | StripeセッションID |
+| `stripePaymentIntentId` | String? | Stripe PaymentIntent ID |
+| `feedbackScore` | Int? | フィードバックスコア（1〜5） |
+| `feedbackComment` | String? | フィードバックコメント |
+
+#### Reservation（法要予約）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `type` | ReservationType | ANNUAL_MEMORIAL / MONTHLY_MEMORIAL / NIBON / KUYO / FUNERAL / OTHER |
+| `scheduledAt` | DateTime | 予約日時 |
+| `durationMin` | Int | 所要時間（分） |
+| `status` | ReservationStatus | PENDING / CONFIRMED / COMPLETED / CANCELLED |
+| `deceasedPersonId` | String? | 対象故人 |
+
+#### SuperAdminLog（SUPER_ADMIN操作ログ）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `adminId` | String | 操作者（User.id） |
+| `action` | String | TEMPLE_CREATE / PLAN_CHANGE / TEMPLE_SUSPEND 等 |
+| `targetType` | String | TEMPLE / USER 等 |
+| `targetId` | String? | 対象エンティティID |
+| `detail` | String? | 詳細テキスト |
+
+### 4.3 Enum一覧
+
+| Enum | 値 |
+|---|---|
+| `Role` | SUPER_ADMIN, ADMIN, STAFF, MEMBER |
+| `PlanStatus` | TRIAL, ACTIVE, PAST_DUE, CANCELLED, SUSPENDED |
+| `MemberType` | DANKA, GOEN |
+| `EventCategory` | ZAZEN, SHAKYO, YOGA, MINDFULNESS, LECTURE, SEASONAL, OTHER |
+| `EventVisibility` | PUBLIC, MEMBERS_ONLY（廃止予定、PUBLICと同等）, DANKA_ONLY |
+| `EventStatus` | DRAFT, PUBLISHED, CLOSED, COMPLETED, CANCELLED |
+| `ParticipationStatus` | APPLIED, CONFIRMED, WAITLISTED, ATTENDED, NO_SHOW, CANCELLED |
+| `ReservationType` | ANNUAL_MEMORIAL, MONTHLY_MEMORIAL, NIBON, KUYO, FUNERAL, OTHER |
+| `ReservationStatus` | PENDING, CONFIRMED, COMPLETED, CANCELLED |
+| `OfuseType` | HOUYO, GOJIKAI, KIFU, EVENT_FEE, OTHER |
+| `PaymentMethod` | CASH, TRANSFER, ONLINE |
+| `ActivityType` | LOGIN, NEWS_VIEW, EVENT_APPLY, EVENT_ATTEND, EVENT_FEEDBACK, KUYO_APPLY, CONTACT, CONSECUTIVE_MONTH |
+| `AnnouncementTarget` | ALL, DANKA, GOEN |
+| `ReferralSource` | SNS, WEB, EVENT, INTRODUCTION, WALK_IN, OTHER |
 
 ---
 
-## 3. データベース設計
+## 5. 認証・認可
 
-✅ 実装済み
+### 5.1 認証フロー
 
-### 3.1 全テーブル一覧
+```
+[メール/パスワード登録] → Supabase Auth → メール確認 → onboarding
+[LINE OAuth]          → Supabase Auth → onboarding
+[Google OAuth]        → Supabase Auth → onboarding
+```
 
-| テーブル名 | モデル名 | 概要 |
+- セッション管理: Supabase SSR（Cookieベース）
+- Cookieはhttponly・SameSite=Lax
+- `proxy.ts` でセッションのリフレッシュを担当
+
+### 5.2 ロール別アクセス制御
+
+| ロール | 説明 | templeId |
 |---|---|---|
-| `temples` | Temple | 寺院情報・予約設定 |
-| `users` | User | 認証アカウント |
-| `members` | Member | 会員情報（檀家+ご縁さん統合） |
-| `deceased_persons` | DeceasedPerson | 過去帳（故人情報） |
-| `reservations` | Reservation | 法要予約 |
-| `events` | Event | イベント |
-| `event_participations` | EventParticipation | イベント参加申込 |
-| `ofuse` | Ofuse | お布施・会計記録 |
-| `gojikai_rules` | GojikaiRule | 護持会費ルール |
-| `gojikai_payments` | GojikaiPayment | 護持会費支払い記録 |
-| `announcements` | Announcement | お知らせ |
-| `annual_events` | AnnualEvent | 年中行事 |
-| `member_interactions` | MemberInteraction | 対応履歴・CRMメモ |
-| `member_activities` | MemberActivity | アクティビティログ |
-| `push_subscriptions` | PushSubscription | Webプッシュ通知サブスクリプション |
+| `SUPER_ADMIN` | SaaS運営者。全寺院を管理。MFA必須 | NULL |
+| `ADMIN` | 寺院管理者。自寺院のすべてを管理 | 寺院ID |
+| `STAFF` | スタッフ。管理機能の一部を利用可（閲覧・参加ステータス更新等） | 寺院ID |
+| `MEMBER` | 一般会員（檀家・ご縁さん）。自分の情報のみ操作可 | 寺院ID（ご縁さんはNULL可） |
 
-### 3.2 テーブル定義
+### 5.3 認証ヘルパー（`src/lib/auth.ts`）
 
-#### `temples`（寺院）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| name | String | ✓ | — | 寺院名 |
-| denomination | String | — | — | 宗派 |
-| address | String | — | — | 住所 |
-| phone | String | — | — | 電話番号 |
-| email | String | — | — | 連絡先メール |
-| logoUrl | String | — | — | ロゴURL |
-| description | String | — | — | 寺院紹介文 |
-| bookingStartTime | String | ✓ | "09:00" | 予約受付開始時刻 |
-| bookingEndTime | String | ✓ | "17:00" | 予約受付終了時刻 |
-| bookingDuration | Int | ✓ | 60 | 1予約あたりの時間（分） |
-| bookingMaxSlots | Int | ✓ | 1 | 同時予約可能数 |
-| bookingAdvanceDays | Int | ✓ | 1 | 最低何日前から予約可能か |
-| reminderDayBefore | Boolean | ✓ | true | 前日リマインダー有効 |
-| reminderDayBeforeTime | String | ✓ | "18:00" | 前日リマインダー送信時刻 |
-| reminderDayOf | Boolean | ✓ | true | 当日リマインダー有効 |
-| reminderDayOfTime | String | ✓ | "09:00" | 当日リマインダー送信時刻 |
-| reminderMeinichi | Boolean | ✓ | true | 月命日リマインダー有効 |
-| customEventCategories | Json | ✓ | [] | カスタムイベントカテゴリ |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `users`（認証アカウント）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK（Supabase Auth UIDと同じ） |
-| templeId | String | ✓ | — | FK → temples |
-| role | Role | ✓ | MEMBER | 権限ロール |
-| name | String | ✓ | — | 氏名 |
-| email | String | ✓ | — | メール（一意） |
-| phone | String | — | — | 電話番号 |
-| passwordHash | String | — | — | パスワードハッシュ（メール認証時） |
-| authProvider | AuthProvider | ✓ | EMAIL | 認証プロバイダー |
-| pushToken | String | — | — | FCMトークン（将来用） |
-| pushEnabled | Boolean | ✓ | true | プッシュ通知有効 |
-| isActive | Boolean | ✓ | true | アカウント有効フラグ |
-| lastLoginAt | DateTime | — | — | 最終ログイン日時 |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `members`（会員）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| userId | String | ✓ | — | FK → users（一意） |
-| type | MemberType | ✓ | GOEN | DANKA または GOEN |
-| familyName | String | ✓ | — | 家名・苗字 |
-| address | String | — | — | 住所 |
-| postalCode | String | — | — | 郵便番号 |
-| phone | String | — | — | 電話番号 |
-| email | String | — | — | 連絡先メール（任意） |
-| joinedDate | DateTime | ✓ | now() | 入会日 |
-| interestTags | Json | — | — | 興味タグ（例: `["zazen","yoga"]`） |
-| referralSource | ReferralSource | — | — | 流入元 |
-| engagementScore | Int | ✓ | 0 | エンゲージメントスコア（0〜100） |
-| promotedAt | DateTime | — | — | ご縁さん→檀家昇格日時 |
-| notes | String | — | — | 管理者メモ |
-| lineUserId | String | — | — | LINE連携後のユーザーID |
-| lineNotifyEnabled | Boolean | ✓ | false | LINE通知有効 |
-| lineCode | String | — | — | LINE連携用一時コード（6桁） |
-| lineCodeExpiresAt | DateTime | — | — | LINE連携コード有効期限 |
-| notifyReservation | Boolean | ✓ | true | 予約通知設定 |
-| notifyEvent | Boolean | ✓ | true | イベント通知設定 |
-| notifyAnniversary | Boolean | ✓ | true | 記念日通知設定 |
-| notifyAnnouncement | Boolean | ✓ | true | お知らせ通知設定 |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `deceased_persons`（過去帳・故人）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| memberId | String | ✓ | — | FK → members |
-| name | String | ✓ | — | 俗名 |
-| kaimyo | String | — | — | 戒名 |
-| deathDate | DateTime | — | — | 没年月日 |
-| birthDate | DateTime | — | — | 生年月日 |
-| age | Int | — | — | 享年 |
-| relationship | String | — | — | 故人との続柄 |
-| notes | String | — | — | 備考 |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `reservations`（法要予約）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| memberId | String | ✓ | — | FK → members |
-| type | ReservationType | ✓ | — | 法要種別 |
-| scheduledAt | DateTime | ✓ | — | 予約日時 |
-| durationMin | Int | ✓ | 60 | 所要時間（分） |
-| deceasedPersonId | String | — | — | FK → deceased_persons |
-| status | ReservationStatus | ✓ | PENDING | 予約ステータス |
-| notes | String | — | — | 備考・希望事項 |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `events`（イベント）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| title | String | ✓ | — | イベント名 |
-| description | String | — | — | 詳細説明 |
-| category | EventCategory | ✓ | — | カテゴリ |
-| eventDate | DateTime | ✓ | — | 開催日 |
-| startTime | String | ✓ | — | 開始時刻（HH:MM） |
-| endTime | String | ✓ | — | 終了時刻（HH:MM） |
-| location | String | — | — | 会場（本堂・客殿等） |
-| capacity | Int | — | — | 定員（NULL=無制限） |
-| fee | Int | ✓ | 0 | 参加費（円、0=無料） |
-| visibility | EventVisibility | ✓ | PUBLIC | 公開範囲 |
-| imageUrl | String | — | — | カバー画像URL |
-| shareUrl | String | — | — | SNS共有用短縮URL |
-| status | EventStatus | ✓ | DRAFT | ステータス |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `event_participations`（イベント参加申込）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| eventId | String | ✓ | — | FK → events |
-| memberId | String | ✓ | — | FK → members |
-| numGuests | Int | ✓ | 1 | 参加人数（本人含む） |
-| status | ParticipationStatus | ✓ | APPLIED | 参加ステータス |
-| paymentStatus | PaymentStatus | ✓ | NOT_REQUIRED | 決済ステータス |
-| paymentAmount | Int | ✓ | 0 | 支払い金額（円） |
-| stripeSessionId | String | — | — | Stripe Checkout Session ID |
-| stripePaymentIntentId | String | — | — | Stripe Payment Intent ID |
-| feedbackScore | Int | — | — | アンケート評価（1〜5） |
-| feedbackComment | String | — | — | アンケートコメント |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-ユニーク制約: `(eventId, memberId)`
-
-#### `ofuse`（お布施）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| memberId | String | ✓ | — | FK → members |
-| reservationId | String | — | — | FK → reservations（任意） |
-| type | OfuseType | ✓ | — | 種別 |
-| amount | Int | ✓ | — | 金額（円） |
-| paidAt | DateTime | ✓ | — | 納入日 |
-| paymentMethod | PaymentMethod | ✓ | CASH | 支払い方法 |
-| receiptIssued | Boolean | ✓ | false | 領収書発行済み |
-| notes | String | — | — | 備考 |
-| createdAt | DateTime | ✓ | now() | — |
-
-#### `gojikai_rules`（護持会費ルール）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| amount | Int | ✓ | — | 年会費金額（円） |
-| dueMonth | Int | ✓ | 3 | 請求月（1〜12） |
-| createdAt | DateTime | ✓ | now() | — |
-
-#### `gojikai_payments`（護持会費支払い）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| memberId | String | ✓ | — | FK → members（檀家のみ） |
-| fiscalYear | Int | ✓ | — | 年度 |
-| amount | Int | ✓ | — | 金額（円） |
-| status | GojikaiStatus | ✓ | UNPAID | 未納/納付/免除 |
-| paidAt | DateTime | — | — | 納付日 |
-| dueDate | DateTime | — | — | 期日 |
-| createdAt | DateTime | ✓ | now() | — |
-
-ユニーク制約: `(memberId, fiscalYear)`
-
-#### `announcements`（お知らせ）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| title | String | ✓ | — | タイトル |
-| body | String | ✓ | — | 本文 |
-| targetSegment | AnnouncementTarget | ✓ | ALL | 配信対象セグメント |
-| publishedAt | DateTime | — | — | 公開日時（NULLは下書き） |
-| pushSent | Boolean | ✓ | false | プッシュ通知送信済み |
-| createdAt | DateTime | ✓ | now() | — |
-| updatedAt | DateTime | ✓ | @updatedAt | — |
-
-#### `annual_events`（年中行事）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| templeId | String | ✓ | — | FK → temples |
-| name | String | ✓ | — | 行事名 |
-| month | Int | ✓ | — | 月（1〜12） |
-| day | Int | ✓ | — | 日 |
-| endDay | Int | — | — | 複数日イベントの終了日 |
-| description | String | — | — | 説明 |
-| isRecurring | Boolean | ✓ | true | 毎年繰り返し |
-| showOnCalendar | Boolean | ✓ | true | カレンダー表示 |
-| notes | String | — | — | 備考 |
-| createdAt | DateTime | ✓ | now() | — |
-
-#### `member_interactions`（対応履歴）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| memberId | String | ✓ | — | FK → members |
-| staffNote | String | ✓ | — | 対応内容メモ |
-| category | String | — | — | カテゴリ |
-| createdAt | DateTime | ✓ | now() | — |
-
-#### `member_activities`（アクティビティログ）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| memberId | String | ✓ | — | FK → members |
-| type | ActivityType | ✓ | — | アクティビティ種別 |
-| metadata | Json | — | — | 補足データ（eventId等） |
-| score | Int | ✓ | 0 | ポイント付与数 |
-| createdAt | DateTime | ✓ | now() | — |
-
-インデックス: `(memberId, createdAt)`
-
-#### `push_subscriptions`（プッシュ通知）
-
-| カラム | 型 | 必須 | デフォルト | 説明 |
-|---|---|:---:|---|---|
-| id | String(UUID) | ✓ | uuid() | PK |
-| userId | String | ✓ | — | FK → users（カスケード削除） |
-| templeId | String | ✓ | — | FK → temples（カスケード削除） |
-| endpoint | String | ✓ | — | Push ServiceエンドポイントURL |
-| p256dh | String | ✓ | — | ECDH公開鍵 |
-| auth | String | ✓ | — | 認証シークレット |
-| createdAt | DateTime | ✓ | now() | — |
-
-ユニーク制約: `(userId, endpoint)`
-
-### 3.3 Enum定義
-
-#### Role（ユーザーロール）
-
-| 値 | 説明 |
-|---|---|
-| `SUPER_ADMIN` | システム管理者（将来の多寺院対応用） |
-| `ADMIN` | 住職・寺院管理者（全機能アクセス） |
-| `STAFF` | 寺院スタッフ（管理機能アクセス、一部制限） |
-| `MEMBER` | 一般会員（利用者画面のみ） |
-
-#### AuthProvider（認証プロバイダー）
-
-| 値 | 説明 |
-|---|---|
-| `EMAIL` | メール+パスワード |
-| `GOOGLE` | Google OAuth |
-| `APPLE` | Apple OAuth |
-| `LINE` | LINE OAuth |
-
-#### MemberType（会員種別）
-
-| 値 | 説明 |
-|---|---|
-| `DANKA` | 檀家（正式会員）法要予約・過去帳・お布施機能利用可 |
-| `GOEN` | ご縁さん（一般会員）イベント参加・お知らせ閲覧 |
-
-#### ReferralSource（流入元）
-
-| 値 | 説明 |
-|---|---|
-| `SNS` | SNS経由 |
-| `WEB` | Webサイト経由 |
-| `EVENT` | イベント参加経由 |
-| `INTRODUCTION` | 紹介 |
-| `WALK_IN` | 飛び込み |
-| `OTHER` | その他 |
-
-#### ReservationType（法要種別）
-
-| 値 | 説明 |
-|---|---|
-| `ANNUAL_MEMORIAL` | 年忌法要（一周忌・三回忌等） |
-| `MONTHLY_MEMORIAL` | 月命日 |
-| `NIBON` | 新盆 |
-| `KUYO` | 供養（水子供養等） |
-| `FUNERAL` | 葬儀 |
-| `OTHER` | その他 |
-
-#### ReservationStatus
-
-| 値 | 説明 |
-|---|---|
-| `PENDING` | 申請中（未確認） |
-| `CONFIRMED` | 確認済み |
-| `COMPLETED` | 完了 |
-| `CANCELLED` | キャンセル |
-
-#### EventCategory（イベントカテゴリ）
-
-| 値 | 説明 |
-|---|---|
-| `ZAZEN` | 坐禅 |
-| `SHAKYO` | 写経 |
-| `YOGA` | ヨガ |
-| `MINDFULNESS` | マインドフルネス |
-| `LECTURE` | 仏事講座 |
-| `SEASONAL` | 季節行事 |
-| `OTHER` | その他 |
-
-#### EventVisibility（公開範囲）
-
-| 値 | 説明 | マルチテンプル対応 |
+| 関数 | 説明 | 戻り値 |
 |---|---|---|
-| `PUBLIC` | 誰でも閲覧・申込可（全寺院ユーザー・ご縁さん含む） | ✅ 全員参加可 |
-| `MEMBERS_ONLY` | **廃止予定**（既存データ互換のためenum残存、PUBLICと同等扱い） | ✅ 全員参加可 |
-| `DANKA_ONLY` | 自寺院に所属する檀家のみ参加可 | ❌ 他寺院・ご縁さん不可 |
-
-#### EventStatus
-
-| 値 | 説明 |
-|---|---|
-| `DRAFT` | 下書き（非公開） |
-| `PUBLISHED` | 公開中・申込受付中 |
-| `CLOSED` | 募集終了（申込締切） |
-| `COMPLETED` | 開催完了 |
-| `CANCELLED` | 開催中止 |
-
-#### ParticipationStatus（参加ステータス）
-
-| 値 | 説明 |
-|---|---|
-| `APPLIED` | 申込済み |
-| `CONFIRMED` | 確定 |
-| `WAITLISTED` | キャンセル待ち |
-| `ATTENDED` | 参加済み（出席確認済み） |
-| `NO_SHOW` | 無断欠席 |
-| `CANCELLED` | キャンセル |
-
-#### PaymentStatus（決済ステータス）
-
-| 値 | 説明 |
-|---|---|
-| `NOT_REQUIRED` | 無料（決済不要） |
-| `PENDING` | 決済待ち |
-| `PAID` | 支払い済み |
-| `REFUNDED` | 返金済み |
-
-#### OfuseType（お布施種別）
-
-| 値 | 説明 |
-|---|---|
-| `HOUYO` | 法要 |
-| `GOJIKAI` | 護持会費 |
-| `KIFU` | 寄付 |
-| `EVENT_FEE` | イベント参加費 |
-| `OTHER` | その他 |
-
-#### AnnouncementTarget（配信対象）
-
-| 値 | 説明 |
-|---|---|
-| `ALL` | 全会員 |
-| `DANKA` | 檀家のみ |
-| `GOEN` | ご縁さんのみ |
-
-#### ActivityType（アクティビティ種別）
-
-| 値 | ポイント | 説明 |
-|---|:---:|---|
-| `LOGIN` | 1 | アプリログイン |
-| `NEWS_VIEW` | 2 | お知らせ閲覧 |
-| `EVENT_APPLY` | 10 | イベント申込 |
-| `EVENT_ATTEND` | 20 | イベント参加（実績） |
-| `EVENT_FEEDBACK` | 5 | アンケート回答 |
-| `KUYO_APPLY` | 30 | 供養申込（ご縁さん） |
-| `CONTACT` | 15 | お寺への問い合わせ |
-| `CONSECUTIVE_MONTH` | 10 | 連続月参加ボーナス |
-
-### 3.4 テーブル間リレーション（ER図）
-
-```
-temples
-  │
-  ├──1:N── users
-  │           │
-  │           └──1:1── members ──1:N── deceased_persons
-  │                        │
-  │                        ├──1:N── reservations ──N:1── deceased_persons
-  │                        ├──1:N── ofuse
-  │                        ├──1:N── gojikai_payments
-  │                        ├──1:N── event_participations ──N:1── events
-  │                        ├──1:N── member_interactions
-  │                        └──1:N── member_activities
-  │
-  ├──1:N── events ──1:N── event_participations
-  ├──1:N── reservations
-  ├──1:N── ofuse
-  ├──1:N── announcements
-  ├──1:N── annual_events
-  ├──1:N── gojikai_rules
-  └──1:N── push_subscriptions ──N:1── users
-```
-
----
-
-## 4. 認証・認可
-
-✅ 実装済み
-
-### 4.1 対応ログイン方法
-
-| 方法 | 実装状況 | 備考 |
-|---|:---:|---|
-| メール+パスワード | ✅ | Supabase Auth経由、メール確認必須 |
-| Google OAuth | ✅ | Supabase OAuth、新規ユーザーはオンボーディングへ |
-| LINE OAuth | ✅ | Supabase OAuth経由 |
-| Apple OAuth | 🚧 | Supabase設定あり、UI未確認 |
-
-### 4.2 ユーザーロール
-
-| ロール | 説明 | アクセス範囲 |
-|---|---|---|
-| `SUPER_ADMIN` | システム管理者 | 全機能（多寺院管理想定） |
-| `ADMIN` | 住職・管理者 | 全管理機能（スタッフ管理・設定含む） |
-| `STAFF` | 寺院スタッフ | 管理機能（スタッフ管理・高度分析除く） |
-| `MEMBER` | 一般会員 | 利用者画面のみ |
-
-### 4.3 会員タイプとロールの関係
-
-```
-User.role = MEMBER
-  └── Member.type = DANKA  → 法要予約・過去帳・お布施履歴にアクセス可
-  └── Member.type = GOEN   → イベント・お知らせ・ご縁さん向け機能のみ
-
-User.role = ADMIN / STAFF
-  └── Member record は不要（adminとして管理画面にアクセス）
-```
-
-### 4.4 認証フロー
-
-#### メール登録フロー
-
-```
-[新規登録ページ /auth/register]
-    │
-    ├── 会員タイプ選択（DANKA / GOEN）
-    ├── 名前、メール、パスワード（8文字以上）入力
-    ├── 檀家の場合: 家名、住所、電話番号も入力
-    │
-    ▼
-[Server Action: registerWithEmail()]
-    ├── Supabase Auth でユーザー作成（メール確認リンク送信）
-    ├── DB users レコード作成
-    └── DB members レコード作成（type = DANKA or GOEN）
-    │
-    ▼
-[メール確認完了]
-    │
-    ▼
-[/app へリダイレクト]
-```
-
-#### Google/LINEログインフロー（新規ユーザー）
-
-```
-[/ ログインページ]
-    │
-    ▼ Googleでログインボタン押下
-[Supabase OAuth → Google同意画面]
-    │
-    ▼
-[/auth/callback（route.ts）]
-    ├── exchangeCodeForSession()
-    ├── DB確認: users & members レコード存在チェック
-    │
-    ├── レコードなし → [/auth/onboarding へリダイレクト]
-    │       │
-    │       ▼ オンボーディング画面
-    │       ├── 会員タイプ選択（DANKA / GOEN）
-    │       ├── 名前（Googleから自動入力）、その他必須項目
-    │       │
-    │       ▼ POST /api/onboarding
-    │       ├── Upsert users レコード
-    │       └── Create members レコード
-    │           │
-    │           ▼ [/app へリダイレクト]
-    │
-    ├── ADMIN/STAFF → [/admin へリダイレクト]
-    │       └── lastLoginAt 更新
-    │
-    └── MEMBER → [/app へリダイレクト]
-            └── lastLoginAt 更新
-```
-
-#### ログイン後の振り分けロジック（proxy.ts）
-
-```
-認証済みユーザーが / / /auth/login / /auth/register にアクセス:
-    │
-    ├── DBユーザーなし → /auth/onboarding
-    ├── isActive = false → ログインページ（エラー表示）
-    ├── member なし + role = MEMBER → /auth/onboarding
-    ├── role = ADMIN/SUPER_ADMIN/STAFF → /admin
-    └── role = MEMBER（memberあり） → /app
-```
-
-### 4.5 セッション管理
-
-- **方式:** Supabase Auth（JWT + Cookie）
-- **実装:** `@supabase/ssr` パッケージによるSSR対応Cookie管理
-- **Cookieリフレッシュ:** `proxy.ts`（middleware）でリクエスト毎に自動更新
-
-### 4.6 ルーティングガード
-
-| パス | 条件 | 振る舞い |
-|---|---|---|
-| `/app/*` | 未認証 | `/` へリダイレクト（`?next=` パラメータ付き） |
-| `/app/*` | メール未確認 | `/` へリダイレクト（`?error=email_not_confirmed`） |
-| `/admin/*` | 未認証 | `/` へリダイレクト |
-| `/admin/*` | role = MEMBER | `/app` へリダイレクト |
-| `/app/reservations` | type ≠ DANKA | `/app` へリダイレクト |
-| `/app/ofuse` | type ≠ DANKA | `/app` へリダイレクト |
-| `/` | 認証済み | ロール/タイプに応じて振り分け |
-
----
-
-## 5. 画面一覧・ルーティング
-
-✅ 実装済み
-
-### 5.1 認証・共通ページ
-
-| パス | アクセス | 概要 |
-|---|---|---|
-| `/` | 全員 | ログインページ（認証済みは自動リダイレクト） |
-| `/auth/login` | 未認証 | `/` へリダイレクト |
-| `/auth/register` | 未認証 | 新規会員登録 |
-| `/auth/onboarding` | 認証済み（member未登録） | 会員タイプ選択・基本情報登録 |
-| `/auth/set-password` | 未認証 | パスワード設定（初回/リセット） |
-| `/auth/accept-invite` | 未認証 | スタッフ招待受諾 |
-| `/auth/pwa-return` | 未認証 | PWAリターン処理 |
-| `/setup` | 未認証（DB空の場合のみ） | 初期寺院セットアップ |
-| `/maintenance` | 全員 | メンテナンス画面 |
-
-### 5.2 利用者側ページ（`/app`）
-
-| パス | 対象 | 概要 |
-|---|---|---|
-| `/app` | 全会員 | ホーム（会員タイプ別に表示内容を切替） |
-| `/app/events` | 全会員 | イベント一覧（visibility制御あり） |
-| `/app/events/[id]` | 全会員 | イベント詳細 |
-| `/app/events/[id]/apply` | 全会員 | イベント申込フォーム |
-| `/app/events/[id]/apply/success` | 全会員 | 申込完了・決済完了 |
-| `/app/events/[id]/feedback` | 申込済み会員 | イベントフィードバック（★評価+コメント） |
-| `/app/events/my` | 全会員 | 自分の申込イベント一覧 |
-| `/app/news` | 全会員 | お知らせ一覧 |
-| `/app/news/[id]` | 全会員 | お知らせ詳細 |
-| `/app/calendar` | 全会員 | 行事カレンダー |
-| `/app/reservations` | **檀家のみ** | 法要予約一覧・履歴 |
-| `/app/reservations/new` | **檀家のみ** | 法要予約フォーム |
-| `/app/ofuse` | **檀家のみ** | お布施履歴閲覧 |
-| `/app/deceased` | **檀家のみ** | 過去帳閲覧 |
-| `/app/mypage` | 全会員 | プロフィール・通知設定・LINE連携 |
-
-### 5.3 管理側ページ（`/admin`）
-
-| パス | アクセス | 概要 |
-|---|---|---|
-| `/admin` | ADMIN/STAFF | ダッシュボード（本日予約・統計・転換KPI） |
-| `/admin/members` | ADMIN/STAFF | 会員一覧（檀家/ご縁さん一括管理） |
-| `/admin/members/[id]` | ADMIN/STAFF | 会員詳細 |
-| `/admin/members/[id]/edit` | ADMIN/STAFF | 会員情報編集 |
-| `/admin/members/import` | ADMIN/STAFF | CSVインポート |
-| `/admin/deceased` | ADMIN/STAFF | 過去帳管理 |
-| `/admin/deceased/new` | ADMIN/STAFF | 故人登録 |
-| `/admin/deceased/[id]/edit` | ADMIN/STAFF | 故人情報編集 |
-| `/admin/reservations` | ADMIN/STAFF | 予約カレンダー・一覧 |
-| `/admin/reservations/[id]` | ADMIN/STAFF | 予約詳細・ステータス変更 |
-| `/admin/events` | ADMIN/STAFF | イベント管理一覧 |
-| `/admin/events/new` | ADMIN/STAFF | イベント作成 |
-| `/admin/events/[id]/edit` | ADMIN/STAFF | イベント編集 |
-| `/admin/events/[id]/participants` | ADMIN/STAFF | 参加者管理（出席確認・キャンセル） |
-| `/admin/events/[id]/analytics` | ADMIN/STAFF | イベント個別分析 |
-| `/admin/events/analytics` | **ADMINのみ** | イベント分析ダッシュボード |
-| `/admin/analytics` | **ADMINのみ** | → `/admin/events/analytics` へリダイレクト |
-| `/admin/ofuse` | ADMIN/STAFF | お布施記録一覧 |
-| `/admin/ofuse/new` | ADMIN/STAFF | お布施記録入力 |
-| `/admin/gojikai` | ADMIN/STAFF | 護持会費管理 |
-| `/admin/reports` | ADMIN/STAFF | 会計レポート |
-| `/admin/announcements` | ADMIN/STAFF | お知らせ一覧 |
-| `/admin/announcements/new` | ADMIN/STAFF | お知らせ作成 |
-| `/admin/announcements/[id]/edit` | ADMIN/STAFF | お知らせ編集 |
-| `/admin/annual-events` | ADMIN/STAFF | 年中行事管理 |
-| `/admin/conversion` | **ADMINのみ** | ご縁さん→檀家 転換候補管理 |
-| `/admin/settings` | ADMIN/STAFF | 寺院設定 |
-| `/admin/staff` | **ADMINのみ** | スタッフ管理 |
-
-### 5.4 ボトムナビ構成
-
-#### ご縁さん（GOEN）
-
-```
-[🏠 ホーム] [📆 カレンダー] [📅 イベント] [📢 お知らせ] [👤 マイページ]
-```
-
-#### 檀家（DANKA）
-
-```
-[🏠 ホーム] [📆 カレンダー] [📿 法要予約] [📅 イベント] [📢 お知らせ] [👤 マイページ]
-```
-
-※「法要予約」は `isDanka` フラグがtrueの場合のみ表示
-
-### 5.5 管理画面サイドバー構成
-
-```
-ダッシュボード
-  📊 ダッシュボード    /admin
-
-檀家管理
-  📅 予約             /admin/reservations
-  👥 会員             /admin/members
-  📖 過去帳           /admin/deceased
-
-会計管理
-  💴 お布施           /admin/ofuse
-  🏦 護持会費         /admin/gojikai
-  📊 レポート         /admin/reports
-
-イベント管理
-  🎋 イベント         /admin/events
-  📊 分析             /admin/events/analytics    ※adminのみ
-
-配信管理
-  📢 お知らせ         /admin/announcements
-  📅 行事             /admin/annual-events
-
-システム
-  ⚙️ 設定             /admin/settings
-  👥 スタッフ管理     /admin/staff               ※adminのみ
-```
-
----
-
-## 6. API一覧
-
-✅ 実装済み
-
-### 6.1 認証・ユーザー
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/me` | ✓ | 全員 | 現在のユーザー情報取得 |
-| PATCH | `/api/me` | ✓ | 全員 | プロフィール更新（名前・通知設定） |
-| POST | `/api/setup` | ✗ | — | 初期寺院セットアップ |
-| POST | `/api/onboarding` | ✓ | MEMBER | オンボーディング（会員タイプ登録） |
-
-### 6.2 会員管理
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/members` | ✓ | ADMIN/STAFF | 会員一覧（`?type=DANKA\|GOEN` フィルタ） |
-| POST | `/api/members` | ✓ | ADMIN/STAFF | 会員新規登録 |
-| GET | `/api/members/[id]` | ✓ | ADMIN/STAFF | 会員詳細 |
-| PATCH | `/api/members/[id]` | ✓ | ADMIN/STAFF | 会員情報更新 |
-| DELETE | `/api/members/[id]` | ✓ | ADMIN/STAFF | 会員削除 |
-| PATCH | `/api/members/[id]/promote` | ✓ | ADMIN/STAFF | ご縁さん→檀家 昇格 |
-| GET | `/api/members/[id]/deceased` | ✓ | ADMIN/STAFF | 故人一覧取得 |
-| POST | `/api/members/[id]/deceased` | ✓ | ADMIN/STAFF | 故人登録 |
-| PATCH | `/api/members/[id]/line-settings` | ✓ | ADMIN/STAFF | LINE通知設定更新 |
-| POST | `/api/members/import` | ✓ | ADMIN/STAFF | CSVインポート（multipart） |
-
-### 6.3 イベント
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/events` | △ | — | イベント一覧（visibility制御） |
-| POST | `/api/events` | ✓ | ADMIN/STAFF | イベント作成 |
-| GET | `/api/events/[id]` | △ | — | イベント詳細 |
-| PATCH | `/api/events/[id]` | ✓ | ADMIN/STAFF | イベント編集 |
-| DELETE | `/api/events/[id]` | ✓ | ADMIN/STAFF | イベント削除 |
-| POST | `/api/events/[id]/participate` | ✓ | MEMBER | イベント申込（無料 or Stripe Checkout） |
-| DELETE | `/api/events/[id]/participate` | ✓ | MEMBER | 申込キャンセル |
-| GET | `/api/events/[id]/participants` | ✓ | ADMIN/STAFF | 参加者一覧 |
-| PATCH | `/api/events/[id]/participants/[pid]` | ✓ | ADMIN/STAFF | 参加ステータス更新 |
-| POST | `/api/events/[id]/participants/[pid]/refund` | ✓ | ADMIN/STAFF | 返金処理 |
-| GET | `/api/events/[id]/feedback` | ✓ | MEMBER | 自分のフィードバック取得 |
-| POST | `/api/events/[id]/feedback` | ✓ | MEMBER | フィードバック送信 |
-| POST | `/api/events/[id]/send-feedback-request` | ✓ | ADMIN/STAFF | 参加者へアンケート依頼通知送信 |
-| GET | `/api/events/[id]/analytics` | ✓ | ADMIN/STAFF | イベント個別分析データ |
-| GET | `/api/events/analytics` | ✓ | ADMIN | 全イベント分析データ |
-
-### 6.4 法要予約
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/reservations` | ✓ | 全員 | 予約一覧（役割で絞り込み） |
-| POST | `/api/reservations` | ✓ | MEMBER（DANKA） | 予約作成 |
-| GET | `/api/reservations/[id]` | ✓ | 全員 | 予約詳細 |
-| PATCH | `/api/reservations/[id]` | ✓ | ADMIN/STAFF | 予約更新・ステータス変更 |
-| DELETE | `/api/reservations/[id]` | ✓ | 全員 | 予約キャンセル |
-| GET | `/api/reservations/available` | ✓ | MEMBER | 空き時間取得 |
-
-### 6.5 過去帳
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/deceased` | ✓ | ADMIN/STAFF | 全故人一覧 |
-| POST | `/api/deceased` | ✓ | ADMIN/STAFF | 故人登録 |
-| GET | `/api/deceased/[id]` | ✓ | 全員 | 故人詳細（自分の家のみ） |
-| PATCH | `/api/deceased/[id]` | ✓ | ADMIN/STAFF | 故人情報更新 |
-| DELETE | `/api/deceased/[id]` | ✓ | ADMIN/STAFF | 故人削除 |
-| GET | `/api/deceased/anniversaries` | ✓ | 全員 | 直近の年忌一覧 |
-
-### 6.6 お布施・会計
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/ofuse` | ✓ | ADMIN/STAFF | お布施一覧 |
-| POST | `/api/ofuse` | ✓ | ADMIN/STAFF | お布施記録 |
-| GET | `/api/ofuse/[id]` | ✓ | ADMIN/STAFF | お布施詳細 |
-| PATCH | `/api/ofuse/[id]` | ✓ | ADMIN/STAFF | お布施更新 |
-| DELETE | `/api/ofuse/[id]` | ✓ | ADMIN/STAFF | お布施削除 |
-| GET | `/api/gojikai` | ✓ | ADMIN/STAFF | 護持会費一覧 |
-| POST | `/api/gojikai` | ✓ | ADMIN/STAFF | 護持会費ルール作成 |
-| GET | `/api/gojikai/[id]` | ✓ | ADMIN/STAFF | 護持会費詳細 |
-| PATCH | `/api/gojikai/[id]` | ✓ | ADMIN/STAFF | 護持会費更新 |
-| DELETE | `/api/gojikai/[id]` | ✓ | ADMIN/STAFF | 護持会費削除 |
-| GET | `/api/reports/annual` | ✓ | ADMIN/STAFF | 年次レポート |
-| GET | `/api/reports/monthly` | ✓ | ADMIN/STAFF | 月次レポート |
-
-### 6.7 お知らせ・行事
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/announcements` | ✓ | 全員 | お知らせ一覧 |
-| POST | `/api/announcements` | ✓ | ADMIN/STAFF | お知らせ作成・配信 |
-| GET | `/api/announcements/[id]` | ✓ | 全員 | お知らせ詳細 |
-| PATCH | `/api/announcements/[id]` | ✓ | ADMIN/STAFF | お知らせ編集 |
-| DELETE | `/api/announcements/[id]` | ✓ | ADMIN/STAFF | お知らせ削除 |
-| GET | `/api/annual-events` | ✓ | 全員 | 年中行事一覧 |
-| POST | `/api/annual-events` | ✓ | ADMIN/STAFF | 年中行事登録 |
-| GET | `/api/annual-events/[id]` | ✓ | 全員 | 年中行事詳細 |
-| PATCH | `/api/annual-events/[id]` | ✓ | ADMIN/STAFF | 年中行事更新 |
-| DELETE | `/api/annual-events/[id]` | ✓ | ADMIN/STAFF | 年中行事削除 |
-| GET | `/api/annual-events/template` | ✗ | — | テンプレート取得 |
-| GET | `/api/calendar` | ✓ | 全員 | カレンダー用データ |
-
-### 6.8 通知
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| POST | `/api/push/subscribe` | ✓ | 全員 | Webプッシュ通知購読 |
-| POST | `/api/push/unsubscribe` | ✓ | 全員 | Webプッシュ通知購読解除 |
-| POST | `/api/line/generate-code` | ✓ | MEMBER | LINE連携用6桁コード生成 |
-
-### 6.9 決済
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| POST | `/api/checkout/create-session` | ✓ | MEMBER | Stripe Checkout Session作成 |
-
-### 6.10 Webhook・Cron
-
-| メソッド | パス | 認証方式 | 概要 |
-|---|---|---|---|
-| POST | `/api/webhooks/stripe` | Stripe署名検証 | 決済完了・返金イベント処理 |
-| POST | `/api/webhooks/line` | LINE署名検証 | LINEメッセージ処理（連携コード照合） |
-| POST | `/api/cron/engagement` | Bearer `CRON_SECRET` | エンゲージメントスコア再計算 |
-| POST | `/api/cron/reminders?type=evening` | Bearer `CRON_SECRET` | 前日リマインダー送信 |
-| POST | `/api/cron/reminders?type=morning` | Bearer `CRON_SECRET` | 当日リマインダー送信 |
-
-### 6.11 分析・エクスポート
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/activities` | ✓ | ADMIN | アクティビティログ一覧 |
-| GET | `/api/conversion/candidates` | ✓ | ADMIN | 転換候補一覧 |
-| GET | `/api/conversion/stats` | ✓ | ADMIN | 転換KPI統計 |
-| GET | `/api/export/members` | ✓ | ADMIN/STAFF | 会員CSVエクスポート |
-| GET | `/api/export/events` | ✓ | ADMIN/STAFF | イベントCSVエクスポート |
-| GET | `/api/export/ofuse` | ✓ | ADMIN/STAFF | お布施CSVエクスポート |
-
-### 6.12 寺院・お気に入り（マルチテンプル対応）
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/temples` | ✗ | — | 有効な寺院一覧取得（`?search=` `?denomination=` フィルタ対応） |
-| GET | `/api/temples/[id]` | ✗ | — | 寺院プロフィール詳細 + 近日開催イベント |
-| GET | `/api/favorites/temples` | ✓ | MEMBER | お気に入り寺院一覧取得 |
-| POST | `/api/favorites/temples` | ✓ | MEMBER | 寺院をお気に入り登録（重複登録は無視） |
-| DELETE | `/api/favorites/temples/[id]` | ✓ | MEMBER | お気に入り登録解除 |
-
-### 6.13 スタッフ管理・設定
-
-| メソッド | パス | 認証 | ロール | 概要 |
-|---|---|:---:|---|---|
-| GET | `/api/staff` | ✓ | ADMIN | スタッフ一覧 |
-| POST | `/api/staff` | ✓ | ADMIN | スタッフ追加 |
-| POST | `/api/staff/invite` | ✓ | ADMIN | 招待メール送信 |
-| GET | `/api/staff/[id]` | ✓ | ADMIN | スタッフ詳細 |
-| PATCH | `/api/staff/[id]` | ✓ | ADMIN | スタッフ更新 |
-| DELETE | `/api/staff/[id]` | ✓ | ADMIN | スタッフ削除 |
-| GET | `/api/settings` | ✓ | ADMIN/STAFF | 寺院設定取得 |
-| PATCH | `/api/settings` | ✓ | ADMIN/STAFF | 寺院設定更新 |
-| POST | `/api/settings/logo` | ✓ | ADMIN/STAFF | ロゴ画像アップロード |
-
----
-
-## 7. 主要機能の仕様
-
-### 7.1 会員管理（CRM）
-
-✅ 実装済み
-
-#### 会員登録フロー
-
-```
-[管理者がインポートまたは直接登録]
-  ↓
-users レコード作成（role=MEMBER）
-members レコード作成（type=DANKA or GOEN）
-
-[ユーザー自身がサインアップ]
-  ↓
-/auth/register または OAuth → /auth/onboarding
-  ↓
-同上
-```
-
-#### 檀家とご縁さんの機能差分
-
-| 機能 | 檀家(DANKA) | ご縁さん(GOEN) |
-|---|:---:|:---:|
-| 法要予約 | ✅ | ❌ |
-| 過去帳閲覧 | ✅ | ❌ |
-| お布施履歴閲覧 | ✅ | ❌ |
-| イベント参加 | ✅ | ✅ |
-| お知らせ閲覧 | ✅ | ✅ |
-| 家名（familyName）登録 | 必須 | 必須 |
-| 住所登録 | 必須 | 任意 |
-
-#### CSVインポート仕様
-
-- **エンドポイント:** `POST /api/members/import`
-- **フォーマット:** UTF-8 CSV（ヘッダー行必須）
-- **必須カラム:** `name`, `email`, `type`, `familyName`
-- **任意カラム:** `phone`, `address`, `postalCode`, `notes`, `joinedDate`
-- **バリデーション:** 必須チェック、type値チェック（DANKA/GOEN）、メール形式
-- **重複処理:** 同メールのユーザーが既存の場合はスキップ（エラー記録）
-- **レスポンス:** 成功件数・失敗件数・失敗詳細を返却
-
-#### ご縁さん→檀家 昇格フロー
-
-```
-[管理者が /admin/members/[id] で「昇格」実行]
-  ↓
-POST /api/members/[id]/promote
-  ↓
-member.type = DANKA（GOEN → DANKA）
-member.promotedAt = 現在日時
-member.familyName, address, phone の必須チェック
-  ↓
-法要予約・過去帳・お布施機能が利用可能になる
-```
-
-### 7.2 法要予約
-
-✅ 実装済み
-
-#### 予約作成フロー
-
-```
-/app/reservations（檀家のみアクセス可）
-  ↓ 「新規予約」ボタン
-/app/reservations/new
-  ├── 予約種別選択（年忌・月命日・新盆・供養・葬儀・その他）
-  ├── カレンダーから日時選択（空き枠確認API呼び出し）
-  ├── 故人選択（年忌・月命日・新盆の場合）
-  └── 備考入力 → 送信
-  ↓
-POST /api/reservations
-  ├── 重複チェック（reservationConflict.ts）
-  └── status = PENDING で作成
-  ↓
-管理者が確認 → CONFIRMED → 完了後 COMPLETED
-```
-
-#### 予約種別
-
-| 種別 | 英語名 | 説明 |
-|---|---|---|
-| 年忌法要 | `ANNUAL_MEMORIAL` | 一周忌・三回忌・七回忌等 |
-| 月命日 | `MONTHLY_MEMORIAL` | 毎月の命日 |
-| 新盆 | `NIBON` | 初盆（没後初めてのお盆） |
-| 供養 | `KUYO` | 水子供養・永代供養等 |
-| 葬儀 | `FUNERAL` | |
-| その他 | `OTHER` | |
-
-#### 予約ステータス遷移
-
-```
-PENDING → CONFIRMED → COMPLETED
-                  ↓
-              CANCELLED（いつでもキャンセル可）
-```
-
-#### 重複チェックロジック（`reservationConflict.ts`）
-
-- 同日の既存予約と時間帯が重複しないかチェック
-- `bookingMaxSlots`（寺院設定）より同時予約数が多くないかチェック
-- チェックは `hasTimeOverlap()` 純粋関数で処理
-
-### 7.3 イベント管理
-
-✅ 実装済み
-
-#### イベント作成・公開フロー
-
-```
-/admin/events/new
-  ├── タイトル、カテゴリ、日時、場所、定員、参加費、公開範囲
-  └── 画像アップロード（Supabase Storage）
-  ↓
-status = DRAFT（下書き保存）
-  ↓
-管理者が「公開」操作 → status = PUBLISHED
-  ↓
-利用者画面に表示・申込受付開始
-  ↓
-「募集終了」操作 → status = CLOSED
-  ↓
-「完了」操作 → status = COMPLETED
-         → アンケート依頼通知送信（手動ボタン）
-```
-
-#### 公開範囲（visibility）制御ロジック
-
-| 設定 | 未ログイン | ご縁さん | 檀家 | 管理者 |
-|---|:---:|:---:|:---:|:---:|
-| `PUBLIC` | 閲覧○申込✗ | ○ | ○ | ○ |
-| `MEMBERS_ONLY` | ✗ | ○ | ○ | ○ |
-| `DANKA_ONLY` | ✗ | ✗ | ○ | ○ |
-
-#### 参加申込フロー
-
-**無料イベント:**
-```
-POST /api/events/[id]/participate
-  → EventParticipation作成（status=APPLIED, paymentStatus=NOT_REQUIRED）
-  → /app/events/[id]/apply/success へリダイレクト
-```
-
-**有料イベント:**
-```
-POST /api/checkout/create-session
-  → EventParticipation作成（status=APPLIED, paymentStatus=PENDING）
-  → Stripe Checkout Sessionを作成してURLを返す
-  → ユーザーをStripe決済ページへリダイレクト
-  → 決済完了 → Webhook受信
-  → paymentStatus=PAID, status=CONFIRMED に更新
-  → Ofuseレコード（EVENT_FEE）を自動作成
-```
-
-#### 定員管理・キャンセル待ち（`eventCapacity.ts`）
-
+| `getAuthUser()` | 現在のユーザーを取得（未認証時はnull） | `AuthUser \| null` |
+| `requireAuth()` | 未認証時に例外スロー | `AuthUser` |
+| `requireAdmin()` | ADMIN以外を拒否 | `AuthUser` |
+| `requireAdminOrStaff()` | ADMIN/STAFF以外を拒否 | `AuthUser` |
+| `requireSuperAdmin()` | SUPER_ADMIN以外を拒否 | `SuperAdminUser` |
+
+**型定義:**
 ```typescript
-// 申込時の判定ロジック
-determineParticipationStatus(currentCount, numGuests, capacity):
-  - capacity が NULL → APPLIED（無制限）
-  - currentCount + numGuests <= capacity → APPLIED
-  - それ以外 → WAITLISTED（キャンセル待ち）
+// templeIdはnon-nullableで既存コードとの後方互換を維持
+type AuthUser = Omit<User, "templeId"> & { templeId: string; member: Member | null }
+type SuperAdminUser = Omit<User, "templeId"> & { templeId: null; member: null }
+type TempleAuthUser = AuthUser // エイリアス
 ```
 
-### 7.4 お布施・会計管理
+### 5.4 SUPER_ADMIN専用セキュリティ
 
-✅ 実装済み
+1. **初期化**: `/superadmin/init` で1回のみ作成（既存SUPER_ADMINがいれば409）
+2. **メール制限**: `SUPER_ADMIN_EMAIL` 環境変数に一致するメールのみ登録可
+3. **MFA（TOTP）必須**: `/superadmin/mfa/enroll` でQRコードをスキャンして設定
+4. **ログイン2ステップ**: パスワード入力 → TOTPコード入力（`mfa.challenge()` → `mfa.verify()`）
+5. **レート制限**: ログイン/初期化は5req/分（Upstash Redis）
 
-#### お布施記録フロー
+### 5.5 `proxy.ts` の役割
 
-```
-管理者が /admin/ofuse/new でお布施を記録
-  ├── 会員選択
-  ├── 種別（法要/護持会費/寄付/イベント参加費/その他）
-  ├── 金額・納入日・支払い方法
-  └── 関連予約の紐付け（任意）
-  ↓
-Ofuseレコード作成
-  ↓
-月次・年次レポートに集計
-```
+Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 
-#### 護持会費管理
-
-- `GojikaiRule`でルール設定（金額・請求月）
-- `GojikaiPayment`で檀家毎・年度毎の支払い状況を管理
-- ステータス: `UNPAID`（未納） / `PAID`（納付済み） / `EXEMPT`（免除）
-
-#### 会計レポート集計ロジック
-
-- `GET /api/reports/monthly`: 指定年月のofuse合計（種別別）
-- `GET /api/reports/annual`: 指定年のofuse合計（月別・種別別）
-
-### 7.5 Stripe決済連携
-
-✅ 実装済み
-
-#### Checkout Session作成
-
-```
-POST /api/checkout/create-session
-ボディ: { eventId, numGuests }
-
-処理:
-1. イベント取得（fee, title確認）
-2. EventParticipation作成（APPLIED, PENDING）
-3. stripe.checkout.sessions.create({
-     line_items: [{ price_data: { currency: 'jpy', unit_amount: fee }, quantity: numGuests }],
-     success_url: '/app/events/{id}/apply/success?session_id={CHECKOUT_SESSION_ID}',
-     cancel_url: '/app/events/{id}/apply',
-     metadata: { participationId, eventId, memberId }
-   })
-4. session.url を返す → フロントがリダイレクト
-```
-
-#### Webhookで処理するイベント
-
-| Stripeイベント | 処理内容 |
-|---|---|
-| `checkout.session.completed` | ParticipationをCONFIRMED+PAIDに更新、Ofuse(EVENT_FEE)レコード作成 |
-| `charge.refunded` | ParticipationのpaymentStatusをREFUNDEDに更新 |
-
-#### 返金フロー
-
-```
-管理者が /admin/events/[id]/participants で返金ボタン押下
-  ↓
-POST /api/events/[id]/participants/[pid]/refund
-  ↓
-stripe.refunds.create({ payment_intent: stripePaymentIntentId })
-  ↓
-Webhookで charge.refunded イベント受信
-  ↓
-paymentStatus = REFUNDED
-```
-
-### 7.6 お知らせ・配信
-
-✅ 実装済み
-
-#### お知らせ作成・配信フロー
-
-```
-管理者が /admin/announcements/new で作成
-  ├── タイトル・本文入力
-  └── 対象セグメント選択（ALL / DANKA / GOEN）
-  ↓
-「配信する」ボタン → publishedAt に現在日時セット
-  ↓
-対象会員のプッシュ通知購読リストに一括送信
-  ↓
-pushSent = true
-```
-
-#### セグメント配信
-
-- `AnnouncementTarget.ALL`: 全会員
-- `AnnouncementTarget.DANKA`: 檀家のみ（`member.type = DANKA`）
-- `AnnouncementTarget.GOEN`: ご縁さんのみ（`member.type = GOEN`）
-
-### 7.7 過去帳管理
-
-✅ 実装済み
-
-#### 年忌計算ロジック（`nenki.ts`）
-
-定義されている年忌:
-
-| 年忌名 | 没後年数 |
-|---|---|
-| 一周忌 | 1年後 |
-| 三回忌 | 2年後 |
-| 七回忌 | 6年後 |
-| 十三回忌 | 12年後 |
-| 十七回忌 | 16年後 |
-| 二十三回忌 | 22年後 |
-| 二十七回忌 | 26年後 |
-| 三十三回忌 | 32年後 |
-| 五十回忌 | 49年後 |
-
-- `calcNenki(deathDate)` → 全年忌エントリ一覧
-- `getNextNenki(deathDate)` → 今日以降の直近年忌
-- `getNenkiForYear(deathDate, year)` → 指定年の年忌名
-- `getNenkiDeathYearsForYear(year)` → 指定年に年忌を迎える没年のリスト
-
-### 7.8 通知・リマインダー
-
-✅ 実装済み
-
-#### Web Push通知
-
-- VAPID方式で`web-push`ライブラリを使用
-- `push_subscriptions`テーブルでサブスクリプションを管理
-- `sendPushNotification()` / `sendPushToMany()` で送信
-- 410/404レスポンス時は無効サブスクリプションとして扱う（自動削除は実装者判断）
-
-#### LINE通知連携
-
-**LINE連携フロー:**
-```
-1. ユーザーが /app/mypage で「LINE連携」ボタン押下
-2. POST /api/line/generate-code → 6桁コードを生成（有効期限: 10分）
-3. ユーザーがてらログLINE公式アカウントにコードを送信
-4. POST /api/webhooks/line がメッセージ受信
-5. コード照合 → member.lineUserId に LINE ユーザーID を保存
-6. lineNotifyEnabled = true
-```
-
-**LINE通知の仕様:**
-- 法要リマインダー（前日・当日）
-- イベントリマインダー（前日・当日）
-- 月命日リマインダー
-- 個人の通知設定（notifyReservation / notifyEvent / notifyAnniversary）を尊重
-
-#### Cronジョブスケジュール
-
-| Cronパス | スケジュール（UTC） | JST相当 | 処理内容 |
-|---|---|---|---|
-| `/api/cron/reminders?type=evening` | `0 9 * * *` | 毎日 18:00 | 翌日の予約・イベントリマインダー |
-| `/api/cron/reminders?type=morning` | `0 0 * * *` | 毎日 09:00 | 当日のイベント・月命日リマインダー |
-| `/api/cron/engagement` | `0 17 * * *` | 毎日 02:00（翌日） | エンゲージメントスコア一括再計算 |
-
-### 7.9 エンゲージメントスコア
-
-✅ 実装済み
-
-#### スコア算出ロジック
-
-```
-engagement_score = min(100, round(Σ(ポイント × 時間減衰係数)))
-
-時間減衰係数 = e^(-0.05 × 経過日数)
-  → 90日前の行動は約 1% まで減衰
-```
-
-#### 行動別ポイント
-
-| 行動 | ポイント |
-|---|---|
-| アプリログイン | 1 |
-| お知らせ閲覧 | 2 |
-| イベント申込 | 10 |
-| イベント参加（実績） | 20 |
-| アンケート回答 | 5 |
-| 供養申込（ご縁さん） | 30 |
-| お寺への問い合わせ | 15 |
-| 連続月参加ボーナス | 10 |
-
-#### スコアラベルと転換候補判定
-
-| スコア範囲 | ラベル | 転換候補 |
-|---|---|:---:|
-| 0〜19 | 低 | ✗ |
-| 20〜49 | 中 | ✗ |
-| 50〜79 | 高 | ✅ |
-| 80〜100 | 最高 | ✅ |
-
-転換候補（スコア50以上のご縁さん）は `/admin/conversion` で一覧表示・アプローチ管理が可能。
-
-### 7.10 イベント分析
-
-✅ 実装済み
-
-#### `/admin/events/analytics`（分析ダッシュボード）
-
-- **KPIカード×4:** 今月の開催数・総参加者数・平均参加率・新規ご縁さん獲得数（前月比バッジ付き）
-- **月次推移グラフ:** 直近6ヶ月の開催数（棒）＋参加者数（折れ線）ComposedChart
-- **カテゴリ別ランキング:** 全期間の参加者数（横棒グラフ）
-- **リピーター分析:** 初回のみ / 2回 / 3回以上 の3階層円グラフ
-- **イベント別パフォーマンステーブル:** 直近20件、日付/参加率/評価でソート可
-- **獲得チャネル分析:** 直近12ヶ月のご縁さん登録者の流入元（棒グラフ）
-
-#### `/admin/events/[id]/analytics`（個別イベント分析）
-
-- 参加状況の内訳（ステータス別件数）
-- 申込の日別推移グラフ（折れ線）
-- 流入経路別内訳（横棒）
-- 会員種別内訳（円グラフ）
-- フィードバックスコア分布（棒グラフ）+ コメント一覧
-- SNS共有ボタン（Web Share API / URLコピー）
-- アンケート依頼送信ボタン（status=COMPLETED のイベントのみ）
+1. **レート制限チェック**（認証系: 10req/分、SUPER_ADMIN系: 5req/分）
+2. **未認証ユーザーのリダイレクト**（`/app`, `/admin` → `/`）
+3. **メール未確認ユーザーのブロック**
+4. **ログイン済みユーザーをロール別にリダイレクト**（ADMIN→`/admin`、MEMBER→`/app`）
+5. **Supabaseセッションリフレッシュ**
 
 ---
 
-## 8. コンポーネント設計
+## 6. 画面一覧・ルーティング
 
-✅ 実装済み
+### 6.1 公開ページ
 
-### 8.1 共通コンポーネント
-
-| コンポーネント | パス | 説明 |
-|---|---|---|
-| `Sidebar` | `components/admin/Sidebar.tsx` | 管理画面サイドバー（PC固定 / SPドロワー） |
-| `BottomNav` | `components/shared/BottomNav.tsx` | モバイルボトムナビ（isDankaで法要予約を表示制御） |
-| `RoleGuards` | `components/shared/RoleGuards.tsx` | ロールベース表示制御ラッパー |
-| `ShareButton` | `components/shared/ShareButton.tsx` | Web Share API / URLコピーボタン |
-
-### 8.2 UIコンポーネント（`components/ui/`）
-
-| コンポーネント | 説明 |
+| パス | 説明 |
 |---|---|
-| `button.tsx` | ボタン（バリアント: default, outline, ghost） |
-| `card.tsx` | カード |
-| `checkbox.tsx` | チェックボックス |
-| `input.tsx` | テキスト入力 |
-| `label.tsx` | フォームラベル |
-| `skeleton.tsx` | ローディングスケルトン（`animate-pulse` / `bg-stone-200`） |
+| `/` | ランディング/ログインページ |
+| `/lp` | LP（ランディングページ） |
+| `/setup` | 寺院初期セットアップ（新規登録） |
+| `/privacy` | プライバシーポリシー |
+| `/terms` | 利用規約 |
+| `/tokushoho` | 特定商取引法に基づく表記 |
+| `/maintenance` | メンテナンス画面 |
 
-### 8.3 ライブラリ関数（`src/lib/`）
+### 6.2 認証ページ
 
-| ファイル | エクスポート | 説明 |
-|---|---|---|
-| `auth.ts` | `getAuthUser()`, `requireAuth()`, `requireAdmin()`, `requireAdminOrStaff()` | サーバーサイド認証チェック |
-| `activities.ts` | `logActivity(memberId, type, metadata?)` | アクティビティ記録（エンゲージメント用） |
-| `engagementScore.ts` | `calcEngagementScore()`, `scoreToLabel()`, `ACTION_POINTS` | スコア計算ロジック |
-| `eventCapacity.ts` | `determineParticipationStatus()`, `calcRemainingSeats()` | 定員・キャンセル待ち判定 |
-| `nenki.ts` | `calcNenki()`, `getNextNenki()`, `getNenkiForYear()` | 年忌計算 |
-| `push.ts` | `sendPushNotification()`, `sendPushToMany()` | Web Push送信 |
-| `line.ts` | `sendLineNotification()`, `verifyLineSignature()` | LINE連携 |
-| `reservationConflict.ts` | `hasTimeOverlap()` | 予約重複チェック |
-| `stripe.ts` | `getStripe()` | Stripeクライアント（遅延初期化） |
-| `utils.ts` | `cn(...classNames)` | Tailwindクラス結合 |
+| パス | 説明 |
+|---|---|
+| `/auth/login` | ログイン |
+| `/auth/register` | 新規登録 |
+| `/auth/onboarding` | 初回プロフィール設定 |
+| `/auth/set-password` | パスワード設定 |
+| `/auth/forgot-password` | パスワード忘れ |
+| `/auth/new-password` | パスワードリセット |
+| `/auth/accept-invite` | スタッフ招待受諾 |
+| `/auth/pwa-return` | PWAリダイレクトハンドラー |
 
-### 8.4 レイアウト構成
+### 6.3 SUPER_ADMINページ
+
+| パス | 説明 |
+|---|---|
+| `/superadmin/init` | SUPER_ADMIN初回登録（レイアウト外） |
+| `/superadmin/login` | SUPER_ADMINログイン（MFA対応） |
+| `/superadmin/mfa/enroll` | MFA（TOTP）設定 |
+| `/superadmin` | ダッシュボード |
+| `/superadmin/temples` | 全寺院一覧（プラン状態・会員数・管理者情報） |
+| `/superadmin/temples/new` | 新規寺院作成（管理者アカウントも同時作成） |
+| `/superadmin/temples/[id]` | 寺院詳細・プラン変更・利用状況 |
+| `/superadmin/logs` | SUPER_ADMIN操作ログ（直近200件） |
+
+### 6.4 管理者ページ（`/admin/`）
+
+| パス | 説明 |
+|---|---|
+| `/admin` | ダッシュボード（KPI + 会員登録グラフ + イベント申込グラフ） |
+| `/admin/members` | 会員一覧（DANKA/GOEN切替・フィルター・CSV出力） |
+| `/admin/members/[id]` | 会員詳細（故人・予約・お布施・エンゲージメント） |
+| `/admin/members/import` | 会員CSVインポート |
+| `/admin/conversion` | 転換管理（スコア70+のご縁さん一覧） |
+| `/admin/deceased` | 過去帳一覧（月命日・年忌フィルター） |
+| `/admin/deceased/new` | 故人登録 |
+| `/admin/deceased/[id]/edit` | 故人編集 |
+| `/admin/events` | イベント一覧（ステータス別タブ） |
+| `/admin/events/new` | イベント作成 |
+| `/admin/events/[id]/edit` | イベント編集 |
+| `/admin/events/[id]/participants` | 参加者管理（ステータス変更・返金・**一斉メール**） |
+| `/admin/events/[id]/analytics` | イベント個別分析 |
+| `/admin/events/analytics` | イベント横断分析 |
+| `/admin/reservations` | 予約一覧（カレンダー/リスト） |
+| `/admin/reservations/[id]` | 予約詳細 |
+| `/admin/announcements` | お知らせ一覧 |
+| `/admin/announcements/new` | お知らせ作成（Push/LINE通知付き） |
+| `/admin/announcements/[id]/edit` | お知らせ編集 |
+| `/admin/annual-events` | 年中行事管理 |
+| `/admin/gojikai` | 護持会費管理（年度別・**催促メール一斉送信**） |
+| `/admin/ofuse` | お布施管理（**PDF領収書発行**） |
+| `/admin/ofuse/new` | お布施記録 |
+| `/admin/reports` | 会計レポート（月次/年次） |
+| `/admin/billing` | 課金管理（Stripeポータルへ） |
+| `/admin/staff` | スタッフ管理 |
+| `/admin/settings` | 寺院設定（予約設定・通知設定・ロゴ） |
+
+### 6.5 会員ページ（`/app/`）
+
+| パス | 説明 |
+|---|---|
+| `/app` | ホーム（今後のイベント・お知らせ） |
+| `/app/events` | イベント一覧（PUBLIC＋DANKA_ONLY） |
+| `/app/events/my` | 申込済みイベント |
+| `/app/events/[id]` | イベント詳細 |
+| `/app/events/[id]/apply` | 参加申込（無料/有料） |
+| `/app/events/[id]/apply/success` | 申込完了 |
+| `/app/events/[id]/feedback` | フィードバック送信 |
+| `/app/calendar` | 月別カレンダー（イベント＋予約＋年中行事） |
+| `/app/reservations` | 予約一覧 |
+| `/app/reservations/new` | 法要予約（檀家限定） |
+| `/app/news` | お知らせ一覧 |
+| `/app/news/[id]` | お知らせ詳細 |
+| `/app/deceased` | 故人一覧（月命日・年忌） |
+| `/app/ofuse` | お布施履歴 |
+| `/app/temples/[id]` | 他寺院詳細（マルチテンプル） |
+| `/app/mypage` | プロフィール・通知設定・LINE連携 |
+
+---
+
+## 7. API一覧
+
+### 7.1 認証・ユーザー
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET | `/api/auth/me` | 現在ユーザーのロール取得 | 認証済み |
+| GET | `/api/me` | ユーザープロフィール取得 | 認証済み |
+| PATCH | `/api/me` | ユーザー名更新 | 認証済み |
+
+### 7.2 セットアップ・SUPER_ADMIN
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/setup` | 寺院初期セットアップ | 公開 |
+| GET/POST | `/api/superadmin/init` | SUPER_ADMIN初期化 | 公開（メール制限あり） |
+| GET/POST | `/api/superadmin/temples` | 全寺院一覧取得 / 新規寺院作成 | SUPER_ADMIN |
+| GET/PATCH | `/api/superadmin/temples/[id]` | 寺院詳細取得 / 更新 | SUPER_ADMIN |
+| POST | `/api/superadmin/temples/[id]/plan` | プラン変更 | SUPER_ADMIN |
+
+### 7.3 会員管理
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/members` | 会員一覧/作成 | ADMIN/STAFF |
+| GET/PATCH/DELETE | `/api/members/[id]` | 会員詳細/更新/無効化 | ADMIN/STAFF |
+| POST | `/api/members/import` | CSV一括インポート | ADMIN |
+| POST | `/api/members/[id]/promote` | GOEN→DANKA転換 | ADMIN |
+| GET | `/api/members/[id]/deceased` | 会員の故人一覧 | ADMIN/STAFF |
+| POST | `/api/members/[id]/line-settings` | LINE通知設定更新 | ADMIN/STAFF |
+
+### 7.4 故人管理
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/deceased` | 故人一覧/登録 | ADMIN/STAFF |
+| GET/PATCH | `/api/deceased/[id]` | 故人詳細/更新 | ADMIN/STAFF |
+| GET | `/api/deceased/anniversaries` | 月命日・年忌一覧 | ADMIN/STAFF |
+
+### 7.5 イベント管理
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/events` | イベント一覧/作成 | GET:認証済み, POST:ADMIN/STAFF |
+| GET/PATCH/DELETE | `/api/events/[id]` | イベント詳細/更新/削除 | GET:認証済み, 他:ADMIN/STAFF |
+| GET | `/api/events/[id]/analytics` | イベント分析 | ADMIN/STAFF |
+| POST | `/api/events/[id]/participate` | 参加申込 | 認証済み |
+| DELETE | `/api/events/[id]/participate` | 申込キャンセル | 認証済み |
+| GET/POST | `/api/events/[id]/participants` | 参加者一覧/管理者追加 | ADMIN/STAFF |
+| GET/PATCH | `/api/events/[id]/participants/[pid]` | 参加者詳細/ステータス更新 | ADMIN/STAFF |
+| POST | `/api/events/[id]/participants/[pid]/refund` | 返金処理 | ADMIN |
+| GET/POST | `/api/events/[id]/feedback` | フィードバック取得/送信 | 認証済み |
+| POST | `/api/events/[id]/send-feedback-request` | フィードバック依頼メール | ADMIN/STAFF |
+| POST | `/api/events/[id]/send-bulk-email` | 参加者への一斉メール | ADMIN/STAFF |
+| GET | `/api/events/analytics` | 全イベント横断分析 | ADMIN/STAFF |
+
+### 7.6 予約管理
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/reservations` | 予約一覧/作成 | 認証済み（作成はDANKAのみ） |
+| GET/PATCH/DELETE | `/api/reservations/[id]` | 予約詳細/更新/キャンセル | 認証済み |
+| GET | `/api/reservations/available` | 空き時間スロット取得 | 認証済み |
+
+### 7.7 お知らせ
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/announcements` | お知らせ一覧/作成 | GET:認証済み, POST:ADMIN/STAFF |
+| GET/PATCH | `/api/announcements/[id]` | 詳細/更新 | 認証済み |
+
+### 7.8 年中行事
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/annual-events` | 一覧/作成 | ADMIN/STAFF |
+| GET/PATCH | `/api/annual-events/[id]` | 詳細/更新 | ADMIN/STAFF |
+| POST | `/api/annual-events/template` | テンプレート適用 | ADMIN |
+
+### 7.9 お布施・護持会費
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/POST | `/api/ofuse` | お布施一覧/記録 | 認証済み |
+| GET/PATCH | `/api/ofuse/[id]` | 詳細/更新 | 認証済み |
+| GET | `/api/ofuse/[id]/receipt` | **PDF領収書生成・ダウンロード** | ADMIN/STAFF |
+| GET/POST | `/api/gojikai` | 護持会費一覧/年度一括初期化 | ADMIN/STAFF |
+| GET/PATCH | `/api/gojikai/[id]` | 詳細/ステータス更新 | ADMIN/STAFF |
+| POST | `/api/gojikai/notify` | **未納者への催促メール一斉送信** | ADMIN |
+
+### 7.10 転換・エンゲージメント
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET | `/api/conversion/candidates` | 転換候補（スコア70+）一覧 | ADMIN/STAFF |
+| GET | `/api/conversion/stats` | 転換統計 | ADMIN/STAFF |
+| POST | `/api/activities` | アクティビティログ記録 | 認証済み |
+
+### 7.11 エクスポート
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET | `/api/export/members` | 会員CSVエクスポート | ADMIN |
+| GET | `/api/export/events` | イベントCSVエクスポート | ADMIN |
+| GET | `/api/export/ofuse` | お布施CSVエクスポート | ADMIN |
+
+### 7.12 レポート・カレンダー
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET | `/api/reports/monthly` | 月次レポート | ADMIN |
+| GET | `/api/reports/annual` | 年次レポート | ADMIN |
+| GET | `/api/calendar` | カレンダー表示用データ | 認証済み |
+
+### 7.13 寺院設定・スタッフ
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET/PATCH | `/api/settings` | 寺院設定取得/更新 | ADMIN/STAFF |
+| POST | `/api/settings/logo` | ロゴアップロード | ADMIN |
+| GET/POST | `/api/staff` | スタッフ一覧/作成 | ADMIN |
+| PATCH/DELETE | `/api/staff/[id]` | スタッフ更新/無効化 | ADMIN |
+| POST | `/api/staff/invite` | スタッフ招待メール送信 | ADMIN |
+
+### 7.14 マルチテンプル・お気に入り
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| GET | `/api/temples` | 全アクティブ寺院一覧 | 公開 |
+| GET/PATCH | `/api/temples/[id]` | 寺院詳細/更新 | GET:公開, PATCH:ADMIN |
+| GET/POST | `/api/favorites/temples` | お気に入り寺院取得/追加 | 認証済み |
+| DELETE | `/api/favorites/temples/[id]` | お気に入り解除 | 認証済み |
+
+### 7.15 決済
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| POST | `/api/checkout/create-session` | イベント決済セッション作成 | 認証済み |
+| POST | `/api/billing/create-subscription` | サブスクリプション作成 | ADMIN |
+| GET | `/api/billing/portal` | Stripe顧客ポータルURL取得 | ADMIN |
+| GET | `/api/billing/status` | サブスクリプション状態確認 | ADMIN |
+| POST | `/api/webhooks/stripe` | Stripe Webhook（イベント決済） | Stripe署名検証 |
+| POST | `/api/webhooks/stripe-billing` | Stripe Webhook（サブスク） | Stripe署名検証 |
+
+### 7.16 通知・Push
+
+| メソッド | パス | 説明 | 権限 |
+|---|---|---|---|
+| POST | `/api/push/subscribe` | Push通知登録 | 認証済み |
+| POST | `/api/push/unsubscribe` | Push通知解除 | 認証済み |
+| POST | `/api/line/generate-code` | LINE連携コード生成（6桁・10分有効） | 認証済み |
+| POST | `/api/webhooks/line` | LINE Webhook処理 | LINE署名検証 |
+
+### 7.17 Cronジョブ
+
+| メソッド | パス | 実行タイミング | 内容 |
+|---|---|---|---|
+| POST | `/api/cron/engagement` | 毎日 17:00 UTC（02:00 JST） | エンゲージメントスコア再計算 |
+| POST | `/api/cron/reminders` | 毎日 09:00/18:00 JST | リマインダー通知送信 |
+| GET | `/api/cron/trial-expiry` | 毎日 09:00 JST | トライアル期限メール送信 |
+
+---
+
+## 8. 主要機能の仕様詳細
+
+### 8.1 エンゲージメントスコア
+
+会員（ご縁さん）のプラットフォームへの関与度を0〜100で数値化する。
+
+**計算式:**
+```
+score = min(100, Σ(activity.score × e^(-0.05 × days_ago)))
+```
+直近の行動ほど高いウェイト。90日以上前の行動は自然減衰。
+
+**アクティビティポイント:**
+
+| アクティビティ | スコア |
+|---|---|
+| LOGIN | 1 |
+| NEWS_VIEW | 2 |
+| EVENT_APPLY | 10 |
+| EVENT_ATTEND | 15 |
+| EVENT_FEEDBACK | 5 |
+| KUYO_APPLY | 20 |
+| CONTACT | 8 |
+| CONSECUTIVE_MONTH | 5 |
+
+**スコア判定:**
+- 70以上 → 転換候補（DANKA昇格提案）
+- 40〜69 → アクティブ
+- 0〜39 → 要育成
+
+### 8.2 イベント可視性制御
+
+| visibility | 閲覧可能対象 |
+|---|---|
+| PUBLIC | 全ユーザー（未ログインも含む将来検討） |
+| MEMBERS_ONLY | 廃止予定。PUBLICと同等に扱う |
+| DANKA_ONLY | 自寺院のDANKAのみ |
+
+マルチテンプル環境では、ご縁さんは全寺院のPUBLICイベントを参照できる。
+
+### 8.3 予約スロット管理
+
+寺院設定（`Temple`モデル）で以下を制御:
+
+- `bookingStartTime` / `bookingEndTime`: 受付時間帯
+- `bookingDuration`: 1予約あたりの所要時間（分）
+- `bookingMaxSlots`: 同時間帯の最大予約数
+- `bookingAdvanceDays`: 何日前から予約可能か
+
+`GET /api/reservations/available` で空きスロット一覧を返す。
+
+### 8.4 LINE連携フロー
 
 ```
-app/layout.tsx（ルート）
-  └── Noto Sans JP フォント、PWAメタタグ、OGP設定
-
-app/(admin)/layout.tsx
-  ├── getAuthUser() → 未認証: /リダイレクト
-  ├── MEMBER role → /appリダイレクト
-  └── <Sidebar> + <main> レイアウト
-
-app/(app)/layout.tsx
-  ├── getAuthUser()（nullも許容）
-  ├── 管理者バナー（ADMINは /adminへのリンク表示）
-  └── <BottomNav isDanka={member.type==="DANKA"}> + コンテンツ
+1. 会員が /app/mypage で「LINE通知を設定」をクリック
+2. POST /api/line/generate-code → 6桁コード生成（10分有効）
+3. 会員がLINE公式アカウントに「XXXX」と送信
+4. LINE Webhook が受信 → DB検索 → Member.lineUserId を保存
+5. 以降はLINEでリマインダー受信可能
 ```
 
-### 8.5 ローディングスケルトン
+### 8.5 お布施 領収書PDF（`GET /api/ofuse/[id]/receipt`）
 
-主要ルートに `loading.tsx` を実装済み（Next.js Suspenseバウンダリ）:
+`@react-pdf/renderer` v4を使用してA4縦サイズのPDF領収書を生成。
 
-- `/admin`（ダッシュボード）
-- `/admin/members`（会員一覧）
-- `/admin/events`（イベント一覧）
-- `/admin/reservations`（予約管理）
-- `/admin/ofuse`（お布施）
-- `/admin/announcements`（お知らせ）
-- `/admin/staff`（スタッフ）
-- `/admin/annual-events`（年中行事）
-- `/admin/settings`（設定）
-- `/admin/members/[id]`（会員詳細）
+**記載内容:**
+- 領収書No.（ofuse ID先頭8文字）
+- 宛名（会員名）
+- 金額
+- 但し書き（お布施種別）
+- 支払日・支払方法
+- 寺院名・印鑑欄
+- 発行日
+
+発行時に `Ofuse.receiptIssued = true` を自動更新。
+
+フォント: NotoSansJP（Googleフォント CDNから取得）
+
+### 8.6 護持会費管理フロー
+
+```
+1. 管理者が /admin/gojikai で「年度初期化」
+2. POST /api/gojikai → 全DANKA会員分のGojikaiPaymentレコードを一括upsert
+3. 各会員の支払い状況を UNPAID/PAID/EXEMPT で管理
+4. 「未納者に催促メール」ボタン → POST /api/gojikai/notify → sendGojikaiReminderEmail
+```
+
+### 8.7 イベント参加者への一斉メール
+
+参加者管理画面（`/admin/events/[id]/participants`）の「一斉メール」ボタンからモーダルを開き:
+
+- 送信対象ステータスを選択（申込/確定/参加済）
+- 件名・本文を入力
+- 「送信する」→ `POST /api/events/[id]/send-bulk-email`
+
+件名には自動で `【イベント名】` が付与される。
+
+### 8.8 メール通知一覧
+
+| 関数 | トリガー |
+|---|---|
+| `sendWelcomeEmail()` | SUPER_ADMINが新規寺院作成時 → 管理者へ |
+| `sendEventConfirmationEmail()` | 参加者ステータスがCONFIRMEDに変更時 |
+| `sendReservationReminderEmail()` | Cronジョブ（前日18:00）から呼び出し |
+| `sendGojikaiReminderEmail()` | 管理者が護持会費催促メール送信時 |
+| `sendTrialExpiryEmail()` | Cronジョブ（毎日09:00）、残り7日・0日で送信 |
+
+### 8.9 ダッシュボードグラフ（管理者）
+
+`recharts` ライブラリを使用したクライアントコンポーネント（`DashboardCharts.tsx`）。
+
+**グラフ1: 会員登録推移（過去6ヶ月）**
+- 棒グラフ（Bar）
+- 檀家（amber）/ ご縁さん（teal）を積み上げ
+
+**グラフ2: イベント申込推移（過去6ヶ月）**
+- 折れ線グラフ（Line）
+- キャンセル除く申込数
+
+データはServer Componentで集計し、シリアライズしてクライアントに渡す。
+
+### 8.10 マルチテンプル対応
+
+- 寺院ごとに完全にデータが分離（`templeId` でテナント分離）
+- `/api/temples` で全寺院を公開取得
+- `MemberFavoriteTemple` でご縁さんが複数寺院をフォロー可能
+- SUPER_ADMINが寺院・管理者アカウントをプロビジョニング
 
 ---
 
@@ -1624,255 +805,227 @@ app/(app)/layout.tsx
 
 ### 9.1 Supabase
 
-| 機能 | 利用状況 |
+| 機能 | 説明 |
 |---|---|
-| Auth（認証） | ✅ Email+PW / Google / LINE OAuth対応 |
-| PostgreSQL | ✅ Prisma + `@prisma/adapter-pg` でアクセス |
-| Storage | ✅ イベント画像・寺院ロゴのアップロード先 |
-| RLS（行レベルセキュリティ） | ❌ アプリレベルで制御（RLS未設定） |
-| Realtime | ❌ 未使用 |
+| **Auth** | メール/パスワード・OAuth（Google, Apple, LINE）・JWT発行 |
+| **MFA** | TOTP（Time-based OTP）。SUPER_ADMINに必須 |
+| **PostgreSQL** | メインDB。Prisma ORMで操作 |
+| **Storage** | 寺院ロゴ・イベント画像の保存（バケット: `teralog-assets`） |
+| **Admin API** | `createUser`, `listUsers`, `updateUser` 等（サーバーサイドのみ） |
 
 ### 9.2 Stripe
 
-| 機能 | 利用状況 |
+| 機能 | 説明 |
 |---|---|
-| Checkout Session | ✅ イベント参加費の決済 |
-| Webhook | ✅ 決済完了・返金イベント処理 |
-| Refunds API | ✅ 参加費返金 |
+| **サブスクリプション** | スタンダードプラン ¥9,800/月。`create-subscription` APIで作成 |
+| **Customer Portal** | 解約・支払方法変更はPortalへリダイレクト |
+| **イベント決済** | 有料イベントの一回払い。`create-session` → Checkout |
+| **Webhook（イベント決済）** | `checkout.session.completed` → `EventParticipation.paymentStatus = PAID` |
+| **Webhook（サブスク）** | `invoice.paid` / `customer.subscription.deleted` → `Temple.planStatus` 更新 |
+| **返金** | `POST /api/events/[id]/participants/[pid]/refund` → Stripe返金 |
 
 ### 9.3 LINE Messaging API
 
-| 機能 | 利用状況 |
+| 機能 | 説明 |
 |---|---|
-| Push Message | ✅ 各種リマインダー通知 |
-| Webhook | ✅ コード照合によるLINE ID連携 |
-| Rich Menu | ❌ 未実装 |
-| LIFF | ❌ 未実装 |
+| **Webhook受信** | followイベント・テキストメッセージを処理 |
+| **アカウント連携** | 6桁コードによる会員とLINEアカウントの紐付け |
+| **通知送信** | 予約リマインダー・イベントリマインダー・命日通知 |
 
-### 9.4 Web Push
+連携コードは10分間有効（`lineCode`, `lineCodeExpiresAt` でDB管理）。
 
-| 機能 | 利用状況 |
+### 9.4 Resend
+
+メールサービス。`FROM_EMAIL` を送信元として日本語メールを送信。
+
+| テンプレート | 送信タイミング |
 |---|---|
-| サブスクリプション管理 | ✅ `push_subscriptions`テーブルで管理 |
-| Push通知送信 | ✅ `web-push`ライブラリ + VAPID |
-| Safari対応 | ✅ PWAとして動作（iOS 16.4以降） |
+| ウェルカムメール | 新規寺院・管理者作成時 |
+| イベント参加確定メール | ステータスCONFIRMED変更時 |
+| 予約リマインダー | 前日Cron（18:00 JST） |
+| 護持会費催促 | 管理者が手動送信 |
+| トライアル期限通知 | 残り7日/0日でCron送信 |
 
-### 9.5 その他
+### 9.5 Upstash Redis
 
-| サービス | 利用状況 |
+| 用途 | 設定 |
 |---|---|
-| SendGrid（メール） | 🚧 環境変数定義あり、実装未確認 |
-| Firebase Cloud Messaging | ❌ 環境変数定義あり、未実装（Web Push優先） |
+| 認証系レート制限 | スライディングウィンドウ 10req/分（`ratelimit:auth` prefix） |
+| SUPER_ADMIN系レート制限 | スライディングウィンドウ 5req/分（`ratelimit:superadmin` prefix） |
+
+`proxy.ts` で全リクエストの先頭で評価。429返却時にはX-RateLimit-*ヘッダーも付与。
+
+### 9.6 Web Push（VAPID）
+
+| 機能 | 説明 |
+|---|---|
+| **登録** | `POST /api/push/subscribe` でエンドポイント・鍵を保存 |
+| **送信** | Cronジョブから `web-push` ライブラリで送信 |
+| **クリーンアップ** | 410/404エラーのサブスクリプションをCron実行時に自動削除 |
 
 ---
 
-## 10. セキュリティ
+## 10. 通知システム
 
-### 10.1 認証方式
+### 10.1 通知チャネルの優先順位
 
-- **Supabase Auth:** JWT（アクセストークン + リフレッシュトークン）
-- **Cookie:** `@supabase/ssr`によるHTTPOnly Cookie管理
-- **proxy.ts:** 全リクエストでCookieを検証・更新
+会員の設定 (`notifyReservation`, `notifyEvent`, `notifyAnniversary`, `notifyAnnouncement`) に従い:
 
-### 10.2 RBACの実装
+1. **Web Push**（`PushSubscription`が存在する場合）
+2. **LINE**（`lineUserId`が設定されている場合）
+3. **メール**（Resend経由）
 
-```typescript
-// サーバーサイド認証ヘルパー（src/lib/auth.ts）
-getAuthUser()        // 認証チェック（MEMBER以上）
-requireAuth()        // 未認証で例外投げる
-requireAdmin()       // ADMIN/SUPER_ADMIN以外で例外
-requireAdminOrStaff() // ADMIN/SUPER_ADMIN/STAFF以外で例外
+### 10.2 Cronジョブ詳細
+
+#### エンゲージメントスコア再計算（`/api/cron/engagement`）
+
+```
+対象: 全寺院の全会員
+処理:
+  1. 直近90日のMemberActivityを取得
+  2. score = Σ(activity.score × e^(-0.05 × days)) をクランプ(0, 100)
+  3. Member.engagementScore を更新
 ```
 
-各APIルートは上記関数で保護。IDORは `templeId` によるスコープ制御で防止（自寺院のデータのみアクセス可）。
+#### リマインダー通知（`/api/cron/reminders`）
 
-### 10.3 入力バリデーション
+**夕方バッチ（18:00 JST, `type=evening`）:**
+- 翌日の確定済み予約を持つ会員へPush/LINE通知
+- 翌日のPUBLISHEDイベント参加者へPush/LINE通知
 
-- APIルート内でフィールドの存在チェック・型チェックを実施
-- Prismaの型安全なクエリでSQLインジェクション防止
-- 統一されたバリデーションライブラリ（Zod等）は未使用
+**朝バッチ（09:00 JST, `type=morning`）:**
+- 当日のイベント参加者へPush/LINE通知
+- 月命日の会員へPush/LINE通知
 
-### 10.4 セキュリティヘッダー
+#### トライアル期限（`/api/cron/trial-expiry`）
 
-`next.config.ts`で以下のヘッダーを設定:
-
-| ヘッダー | 設定 |
-|---|---|
-| `Content-Security-Policy` | スクリプト・スタイルのオリジン制限 |
-| `Strict-Transport-Security` | HTTPS強制 |
-| `X-Frame-Options` | クリックジャッキング防止 |
-| `Permissions-Policy` | カメラ・マイク等の制限 |
-| `X-Content-Type-Options` | MIMEスニッフィング防止 |
-
-### 10.5 Webhook認証
-
-| エンドポイント | 認証方式 |
-|---|---|
-| `/api/webhooks/stripe` | `stripe.webhooks.constructEvent()` 署名検証 |
-| `/api/webhooks/line` | `crypto.timingSafeEqual()` HMAC-SHA256検証 |
-| `/api/cron/*` | `Authorization: Bearer CRON_SECRET` |
-
-### 10.6 レートリミット
-
-❌ 実装なし（Vercelのデフォルト保護に依存）
+- `planStatus = TRIAL` かつ `trialEndsAt = 今日から7日後` の寺院のADMINへメール
+- `planStatus = TRIAL` かつ `trialEndsAt = 今日` の寺院のADMINへ「終了」メール
 
 ---
 
-## 10.5 マルチテンプル対応（2026-03-28実装）
+## 11. セキュリティ
 
-### 概要
+### 11.1 認証・認可
 
-複数寺院が同一プラットフォームに登録でき、イベントを横断的に表示・参加できる仕組みを実装した。
+- 全APIエンドポイントでロール検証（`requireAdmin()`, `requireSuperAdmin()` 等）
+- SupabaseのRow Level Security（RLS）はPrisma経由のため無効化、アプリ層で制御
+- Webhook検証: StripeはHTTPシグニチャー、LINEはHMAC-SHA256シグニチャー
 
-### DB変更
+### 11.2 レート制限
 
-| テーブル | 変更内容 |
-|---|---|
-| `temples` | `cover_image_url` / `latitude` / `longitude` / `is_active` を追加 |
-| `members` | `temple_id` を NULLable に変更（DANKA:必須 / GOEN:NULL） |
-| `member_favorite_temples` | 新規テーブル（ご縁さんのお気に入り寺院） |
-
-### member_favorite_temples テーブル
-
-| カラム | 型 | 説明 |
+| パス | 制限 | 目的 |
 |---|---|---|
-| id | UUID | PK |
-| member_id | UUID (FK→members) | ご縁さんの会員ID |
-| temple_id | UUID (FK→temples) | お気に入り寺院ID |
-| created_at | TIMESTAMP | 登録日時 |
-| (unique) | (member_id, temple_id) | 重複登録防止 |
+| `/api/auth/callback` | 10req/分 | ブルートフォース対策 |
+| `/superadmin/login` | 5req/分 | 管理者ログイン保護 |
+| `/superadmin/init` | 5req/分 | 初期化エンドポイント保護 |
+| `/api/superadmin/init` | 5req/分 | 同上 |
 
-### イベント表示ロジック
+識別子: `x-forwarded-for` または `x-real-ip` ヘッダーによるIPアドレス。
 
-| ユーザー種別 | 表示内容 |
-|---|---|
-| **ご縁さん（お気に入りなし）** | 全寺院のPUBLICイベントを日付順 |
-| **ご縁さん（お気に入りあり）** | お気に入り寺院イベント → その他寺院イベントの順 |
-| **檀家** | 自寺院イベント（PUBLIC+DANKA_ONLY） → 他寺院PUBLICイベントの順 |
+### 11.3 SUPER_ADMIN特別保護
 
-### イベント参加権限マトリクス
+1. Supabase MFAの `aal2` レベルを要求
+2. メールアドレスを環境変数で事前許可
+3. 専用ログイン画面（`/superadmin/login`）
+4. 全操作が `SuperAdminLog` に記録される
 
-| visibility | 自寺院の檀家 | 他寺院の檀家 | ご縁さん |
-|---|:---:|:---:|:---:|
-| `PUBLIC` | ✅ | ✅ | ✅ |
-| `MEMBERS_ONLY` | ✅（廃止予定・PUBLIC扱い） | ✅ | ✅ |
-| `DANKA_ONLY` | ✅ | ❌ | ❌ |
+### 11.4 入力検証
 
-### 新規API
+- Prismaの型安全性でSQLインジェクション防止
+- APIルートで `JSON.parse()` 後のフィールドを個別バリデーション
+- ファイルアップロードはSupabase Storageに直接（サーバー非経由）
 
-| エンドポイント | 説明 |
-|---|---|
-| `GET /api/temples` | アクティブ寺院一覧（認証不要・オンボーディング用） |
-| `GET /api/temples/[id]` | 寺院プロフィール詳細＋公開イベント一覧 |
-| `GET /api/favorites/temples` | お気に入り寺院一覧 |
-| `POST /api/favorites/temples` | お気に入り追加 |
-| `DELETE /api/favorites/temples/[id]` | お気に入り解除 |
+### 11.5 Cookie・セッション
 
-### 新規画面
-
-| パス | 説明 |
-|---|---|
-| `/app/temples/[id]` | 寺院プロフィールページ（ご縁さんがお気に入り登録可能） |
-
-### オンボーディング変更
-
-- **檀家選択時**: 寺院一覧から所属寺院を選択するステップを追加。`members.temple_id` に選択寺院のIDを保存。
-- **ご縁さん選択時**: 寺院選択不要。`members.temple_id = NULL`。
-
----
-
-## 11. 未実装機能・既知の課題
-
-### 11.1 設計書v4に記載されているが未実装の機能
-
-| 機能 | 状況 | 備考 |
-|---|---|---|
-| Apple OAuth | 🚧 | Supabase側設定要 |
-| SendGrid メール送信 | ❌ | 環境変数のみ定義 |
-| FCM（Firebase Cloud Messaging） | ❌ | Web Push優先で未実装 |
-| 領収書PDF発行 | ❌ | お布施記録UIはあるがPDF生成未実装 |
-| お寺へのお問い合わせフォーム (`/app/contact`) | ❌ | ルート定義なし |
-| 簡易供養申込 (`/app/kuyo`) | ❌ | ご縁さん向けページ未実装 |
-| 家系図ビュー | ❌ | 設計書に記載あり未実装 |
-| マルチテナント（複数寺院） | ❌ | DB設計は対応済み、UI未実装 |
-| CSVエクスポートUI | 🚧 | APIは実装済み、管理画面UIは未確認 |
-| 護持会費の会計レポート統合 | 🚧 | 個別管理画面あり、月次/年次レポートへの統合未確認 |
-| LINEリッチメニュー・LIFF | ❌ | |
-| ご縁さん→檀家 KPIダッシュボード（転換管理） | ✅ | `/admin/conversion` で実装済み |
-| オンライン法要（Zoom連携） | ❌ | |
-| AIチャットボット | ❌ | |
-| 御朱印帳デジタル化 | ❌ | |
-
-### 11.2 既知の技術的課題・制限事項
-
-1. **Supabase RLS未設定:** アプリレベルのみで認証制御。DBへの直接アクセスに対する保護なし。
-2. **レートリミット未実装:** 不正な大量リクエストへの保護が不十分。
-3. **入力バリデーション不統一:** Zodなどのスキーマバリデーションライブラリ未導入。各ルートで個別に実装。
-4. **エラーレスポンス形式:** APIエラーの形式が一部ルートで統一されていない。
-5. **画像アップロード:** Supabase StorageのURLが直接カラムに保存される。削除時の孤立ファイル処理未実装。
-6. **プッシュ通知:** 無効なサブスクリプション（410/404）が返ってきた場合のDBレコード自動削除が未実装。
-
-### 11.3 コード内のTODO/FIXMEコメント
-
-コードベース全体を検索した結果、**TODO・FIXMEコメントは存在しない**。
+- HTTPOnly Cookie（XSS対策）
+- `proxy.ts` でSessionリフレッシュ
+- SUPER_ADMINはセッション内でMFA検証済みフラグを管理
 
 ---
 
 ## 12. デプロイ・運用
 
-✅ 実装済み
-
-### 12.1 Vercel設定
-
-| 項目 | 設定 |
-|---|---|
-| フレームワーク | Next.js |
-| リージョン | `hnd1`（東京） |
-| ビルドコマンド | `npm run build` |
-| インストールコマンド | `npm ci` |
-
-### 12.2 デプロイフロー
+### 12.1 デプロイフロー
 
 ```
-git push origin work/harada
-  ↓
-Vercel GitHub連携で自動ビルド・デプロイ
-  ↓
-プレビューデプロイ（PRごとに固有URL）
-  ↓
-mainブランチマージ → 本番デプロイ（自動）
+git push → Vercel 自動デプロイ（work/haradaブランチ）
+         → prisma generate → next build
 ```
 
-### 12.3 環境
+### 12.2 DBマイグレーション
 
-| 環境 | URL | 説明 |
-|---|---|---|
-| production | `https://temple-app-eosin.vercel.app` | 本番環境（mainブランチ） |
-| preview | Vercel発行のURL | PRごとのプレビュー |
-| local | `http://localhost:3000` | ローカル開発 |
+```bash
+npx prisma db push           # スキーマ反映（開発・staging）
+npx prisma generate          # クライアント再生成（ビルド時に自動実行）
+```
 
-### 12.4 Cronジョブ（vercel.json）
+### 12.3 Cronジョブ設定
 
-| パス | スケジュール（cron） | JST換算 | 用途 |
-|---|---|---|---|
-| `/api/cron/reminders?type=evening` | `0 9 * * *` | 毎日 18:00 | 翌日の予約・イベントリマインダー送信 |
-| `/api/cron/reminders?type=morning` | `0 0 * * *` | 毎日 09:00 | 当日のイベント・月命日リマインダー送信 |
-| `/api/cron/engagement` | `0 17 * * *` | 毎日 02:00（翌日） | エンゲージメントスコア一括再計算 |
+Vercel Cronを使用（`vercel.json` または Vercel Dashboard）:
 
-### 12.5 URLリダイレクト設定
+```
+毎日 09:00 JST → GET  /api/cron/trial-expiry       (Authorization: Bearer CRON_SECRET)
+毎日 09:00 JST → POST /api/cron/reminders?type=morning
+毎日 18:00 JST → POST /api/cron/reminders?type=evening
+毎日 17:00 UTC → POST /api/cron/engagement
+```
 
-| ソース | 宛先 | 種別 |
-|---|---|---|
-| `/login` | `/auth/login` | 301永続リダイレクト |
-| `/register` | `/auth/register` | 301永続リダイレクト |
+### 12.4 初期セットアップ手順（新環境）
 
-### 12.6 Next.js設定（next.config.ts）
-
-- **PWA:** `next-pwa`（本番のみ有効、カスタムService Worker: `src/sw-custom.js`）
-- **画像最適化:** `*.supabase.co`ドメインを`remotePatterns`で許可
-- **セキュリティヘッダー:** CSP・HSTS・X-Frame-Options等を設定
+```
+1. Vercelプロジェクト作成・環境変数設定
+2. Supabaseプロジェクト作成・Auth設定（OAuth Provider追加）
+3. Upstash Redis作成・環境変数設定
+4. Stripe商品・Price作成・Webhook設定
+5. LINE公式アカウント・チャネル設定
+6. Resend送信ドメイン設定
+7. npx prisma db push でスキーマ反映
+8. /superadmin/init でSUPER_ADMIN登録
+9. /superadmin/mfa/enroll でMFA設定
+10. /superadmin/temples/new で最初の寺院を登録
+```
 
 ---
 
-*本仕様書はコードベース解析により自動生成されました。設計書v4との差異がある場合はコードの実装を正とします。*
-*最終更新: 2026-03-28*
+## 13. 未実装・課題・改善案
+
+### 13.1 未実装機能
+
+| 機能 | 優先度 | 備考 |
+|---|---|---|
+| **予約リマインダーメール** | 高 | `sendReservationReminderEmail()` は実装済みだが、Cronから呼び出していない |
+| **Stripe Billing Webhook完全実装** | 高 | `PAST_DUE` → 機能制限ロジックが未実装 |
+| **機能アクセスのプラン制限** | 高 | SUSPENDED/CANCELLEDテナントでも操作できてしまう |
+| **SUPER_ADMINダッシュボード** | 中 | 現状は寺院一覧・ログのみ。売上・MRRグラフ等が未実装 |
+| **管理者ダッシュボードKPIグラフ** | 中 | 月次売上・護持会費回収率等のグラフ |
+| **報告書PDF出力** | 中 | レポートページはあるがPDF化未実装 |
+| **会員ポータルの予約キャンセル** | 中 | 現状は管理者のみキャンセル可能 |
+| **SNSシェア機能の完全実装** | 低 | `shareUrl` フィールドはあるが動的OGP未実装 |
+| **地図表示** | 低 | `latitude`/`longitude` フィールドはあるが地図UIが未実装 |
+| **多言語対応（i18n）** | 低 | 現状は日本語のみ |
+| **管理者向けモバイルアプリ** | 低 | 現状はPWA対応のWebのみ |
+
+### 13.2 技術的負債・既知の課題
+
+| 課題 | 内容 |
+|---|---|
+| `EventVisibility.MEMBERS_ONLY` | 廃止予定だが既存データのため残存。コード内でPUBLICと同等処理 |
+| レート制限の対象が限定的 | `/api/superadmin/temples` (POST)などにレート制限がない |
+| PDF領収書のフォント | CDNからNotoSansJPを取得。オフライン/CDN障害時に文字化けリスク |
+| Cronジョブ認証 | Bearer Tokenのみ。IPホワイトリストがVercelでは困難 |
+| テストカバレッジ | ユニット・E2Eテストが未整備 |
+| `proxy.ts` のDB直接アクセス | `import { prisma }` がProxy内で行われており、コールドスタート影響あり |
+
+### 13.3 スケーラビリティの課題
+
+| 項目 | 現状 | 改善案 |
+|---|---|---|
+| 画像最適化 | Supabase Storage直接URL | next/image + CDN |
+| N+1問題 | Prismaのinclude多用 | 必要に応じてクエリ最適化 |
+| メール送信 | Resend直接（同期） | キュー化（Inngest等） |
+| エンゲージメントCron | 全会員を毎日処理 | 更新が必要なもののみ差分処理 |
+
+---
+
+*最終更新: 2026-03-30 — コードベース `work/harada` ブランチを元に自動解析して生成*

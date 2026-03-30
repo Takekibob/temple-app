@@ -161,6 +161,15 @@ export default async function AdminEventsPage({
                         >
                           分析
                         </Link>
+                        {event.status === "PUBLISHED" && event.visibility !== "DANKA_ONLY" && (
+                          <Link
+                            href={`/events/${event.id}`}
+                            target="_blank"
+                            className="text-teal-600 hover:text-teal-800 text-xs"
+                          >
+                            公開ページ
+                          </Link>
+                        )}
                         <Link
                           href={`/admin/events/${event.id}/edit`}
                           className="text-amber-700 hover:text-amber-900 text-xs font-medium"

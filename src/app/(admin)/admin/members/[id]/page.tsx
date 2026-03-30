@@ -85,6 +85,14 @@ export default async function MemberDetailPage({
           {isConversionCandidate && (
             <PromoteButton memberId={id} memberName={member.user.name} />
           )}
+          {isDanka && (
+            <Link
+              href={`/admin/members/${id}/family-tree`}
+              className="px-4 py-2 bg-white border border-stone-200 text-stone-600 text-sm rounded-lg hover:bg-stone-50"
+            >
+              家系図
+            </Link>
+          )}
           <Link
             href={`/admin/members/${id}/edit`}
             className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
