@@ -65,6 +65,7 @@ model Temple {
   gojikaiRules GojikaiRule[]
   pushSubscriptions PushSubscription[]
   favoriteByMembers MemberFavoriteTemple[]
+  activityLogs ActivityLog[]
 
   @@map("temples")
 }
@@ -91,6 +92,7 @@ model User {
   temple  Temple?  @relation(fields: [templeId], references: [id])
   member  Member?
   pushSubscriptions PushSubscription[]
+  activityLogs ActivityLog[]
 
   @@map("users")
 }
@@ -569,4 +571,29 @@ model PushSubscription {
 
   @@unique([userId, endpoint])
   @@map("push_subscriptions")
+}
+
+// ==========================================
+// 操作ログ（監査ログ）
+// ==========================================
+model ActivityLog {
+  id         String   @id @default(uuid())
+  templeId   String
+  userId     String?  // NULL = システム自動処理
+  action     String
+  // 'create' | 'update' | 'delete' | 'export' | 'import' | 'login' | 'logout' | 'view_sensitive'
+  targetType String?
+  // 'member' | 'event' | 'reservation' | 'ofuse' | 'settings' | 'gojikai' | 'announcement'
+  targetId   String?
+  targetName String?  // 人間が読める対象名（例: 「山田 太郎」）
+  detail     Json?    // 変更前後の値など
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  temple Temple  @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([templeId, createdAt(sort: Desc)])
+  @@index([templeId, targetType, targetId])
+  @@map("activity_logs")
 }

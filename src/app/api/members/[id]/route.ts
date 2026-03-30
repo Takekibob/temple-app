@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 export async function GET(
   _request: NextRequest,
@@ -74,6 +75,16 @@ export async function PATCH(
           })
         : Promise.resolve(),
     ]);
+
+    await logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "update",
+      targetType: "member",
+      targetId: id,
+      targetName: existing.familyName ?? undefined,
+      detail: { updated: Object.keys(body) },
+    });
 
     return NextResponse.json({ member });
   } catch (e: unknown) {

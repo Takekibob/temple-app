@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(head -20 grep -n \"POST\\\\|DELETE\\\\|PATCH\\\\|export async\" \"/Users/haradatakeki/Developer/temple-app/src/app/api/members/[id]/route.ts\")",
+      "Bash(node -e \"const { Prisma } = require\\(''@prisma/client''\\); console.log\\(typeof Prisma\\)\")"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

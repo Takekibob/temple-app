@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 const ALLOWED_FIELDS = [
   "name", "denomination", "address", "phone", "email", "description",
@@ -59,6 +60,14 @@ export async function PATCH(request: NextRequest) {
     const temple = await prisma.temple.update({
       where: { id: authUser.templeId },
       data,
+    });
+
+    await logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "update",
+      targetType: "settings",
+      detail: { updated: Object.keys(data) },
     });
 
     return NextResponse.json(temple);

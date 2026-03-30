@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 const PAGE_SIZE = 50;
 
@@ -85,6 +86,16 @@ export async function POST(request: NextRequest) {
         postalCode: postalCode || undefined,
         notes: notes || undefined,
       },
+    });
+
+    await logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "create",
+      targetType: "member",
+      targetId: member.id,
+      targetName: `${name}（${familyName}家）`,
+      detail: { type },
     });
 
     return NextResponse.json({ member }, { status: 201 });

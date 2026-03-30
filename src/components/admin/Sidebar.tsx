@@ -68,6 +68,7 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "⚙️", label: "設定", href: "/admin/settings", adminOnly: true },
       { icon: "👥", label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
       { icon: "💳", label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
+      { icon: "🔍", label: "操作ログ", href: "/admin/logs", adminOnly: true },
     ],
   },
 ];

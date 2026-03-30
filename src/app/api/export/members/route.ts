@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLog";
 
 function escapeCsv(v: unknown): string {
   const s = v == null ? "" : String(v);
@@ -45,6 +46,14 @@ export async function GET() {
       エンゲージメントスコア: m.engagementScore,
       登録日: m.createdAt.toISOString().slice(0, 10),
     }));
+
+    await logActivity({
+      templeId: authUser.templeId,
+      userId: authUser.id,
+      action: "export",
+      targetType: "member",
+      detail: { count: members.length },
+    });
 
     const csv = "\uFEFF" + toCsv(rows); // BOM for Excel
     return new NextResponse(csv, {
