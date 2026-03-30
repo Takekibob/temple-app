@@ -69,15 +69,34 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
 
-    // upsert: 既存があれば金額のみ更新、なければ作成
+    // 既存レコードのステータスを事前取得
+    const memberIds = dankaMembers.map((m) => m.id);
+    const existingPayments = await prisma.gojikaiPayment.findMany({
+      where: { memberId: { in: memberIds }, fiscalYear: year },
+      select: { memberId: true, status: true },
+    });
+    const existingStatusMap = new Map(existingPayments.map((p) => [p.memberId, p.status]));
+
+    // 新規 → UNPAID で作成、既存UNPAID → 金額更新、既存PAID/EXEMPT → 金額を変更しない
     const results = await Promise.all(
-      dankaMembers.map((m) =>
-        prisma.gojikaiPayment.upsert({
+      dankaMembers.map((m) => {
+        const existingStatus = existingStatusMap.get(m.id);
+        if (!existingStatus) {
+          return prisma.gojikaiPayment.create({
+            data: { memberId: m.id, fiscalYear: year, amount: amountInt, status: "UNPAID" },
+          });
+        }
+        if (existingStatus === "UNPAID") {
+          return prisma.gojikaiPayment.update({
+            where: { memberId_fiscalYear: { memberId: m.id, fiscalYear: year } },
+            data: { amount: amountInt },
+          });
+        }
+        // PAID / EXEMPT: 金額・ステータスともに変更しない
+        return prisma.gojikaiPayment.findUniqueOrThrow({
           where: { memberId_fiscalYear: { memberId: m.id, fiscalYear: year } },
-          create: { memberId: m.id, fiscalYear: year, amount: amountInt, status: "UNPAID" },
-          update: { amount: amountInt },
-        })
-      )
+        });
+      })
     );
 
     // ルールも更新/作成（race condition を避けるため findFirst → update/create に分離）

@@ -13,6 +13,11 @@ interface Payment {
   member: { user: { name: string }; familyName: string | null };
 }
 
+interface AmountEditState {
+  id: string;
+  value: string;
+}
+
 interface Props {
   payments: Payment[];
   fiscalYear: number;
@@ -42,6 +47,8 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [notifyPending, setNotifyPending] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState<string | null>(null);
+  const [amountEdit, setAmountEdit] = useState<AmountEditState | null>(null);
+  const [amountPending, setAmountPending] = useState(false);
 
   function updateStatus(id: string, status: string) {
     setUpdatingId(id);
@@ -86,6 +93,28 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
       setNotifyMsg("通信エラーが発生しました");
     } finally {
       setNotifyPending(false);
+    }
+  }
+
+  async function handleAmountSave(id: string) {
+    if (!amountEdit || amountEdit.id !== id) return;
+    const val = parseInt(amountEdit.value);
+    if (isNaN(val) || val < 1) return;
+    setAmountPending(true);
+    try {
+      const res = await fetch(`/api/gojikai/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: String(val) }),
+      });
+      if (res.ok) {
+        setPayments((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, amount: val } : p))
+        );
+        setAmountEdit(null);
+      }
+    } finally {
+      setAmountPending(false);
     }
   }
 
@@ -226,7 +255,39 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-stone-700">
-                      ¥{p.amount.toLocaleString()}
+                      {amountEdit?.id === p.id ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <input
+                            type="number"
+                            min="1"
+                            value={amountEdit.value}
+                            onChange={(e) => setAmountEdit({ id: p.id, value: e.target.value })}
+                            className="w-24 h-7 rounded border border-amber-300 px-2 text-sm text-right"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleAmountSave(p.id)}
+                            disabled={amountPending}
+                            className="px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-800 disabled:opacity-50"
+                          >
+                            保存
+                          </button>
+                          <button
+                            onClick={() => setAmountEdit(null)}
+                            className="px-2 py-1 text-xs border border-stone-200 rounded hover:bg-stone-50"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAmountEdit({ id: p.id, value: String(p.amount) })}
+                          className="hover:text-amber-700 hover:underline"
+                          title="クリックして金額を変更"
+                        >
+                          ¥{p.amount.toLocaleString()}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>

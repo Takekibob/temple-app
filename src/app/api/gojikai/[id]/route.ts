@@ -14,7 +14,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, paidAt } = body;
+    const { status, paidAt, amount } = body;
 
     const payment = await prisma.gojikaiPayment.findUnique({
       where: { id },
@@ -25,12 +25,22 @@ export async function PATCH(
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
 
+    const updateData: Record<string, unknown> = {};
+    if (status !== undefined) {
+      updateData.status = status;
+      updateData.paidAt = status === "PAID" ? (paidAt ? new Date(paidAt) : new Date()) : null;
+    }
+    if (amount !== undefined) {
+      const amountInt = parseInt(amount);
+      if (isNaN(amountInt) || amountInt < 1) {
+        return NextResponse.json({ error: "金額は1円以上を入力してください" }, { status: 400 });
+      }
+      updateData.amount = amountInt;
+    }
+
     const updated = await prisma.gojikaiPayment.update({
       where: { id },
-      data: {
-        status,
-        paidAt: status === "PAID" ? (paidAt ? new Date(paidAt) : new Date()) : null,
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ payment: updated });
