@@ -1,7 +1,73 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
+// レート制限対象のパス
+const RATE_LIMITED_PATHS = [
+  "/api/auth/callback",
+  "/superadmin/login",
+  "/superadmin/init",
+  "/api/superadmin/init",
+];
+
+// 認証系: 1分間に10リクエストまで
+const authLimiter = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  prefix: "ratelimit:auth",
+});
+
+// SUPER_ADMIN 系: 1分間に5リクエストまで（厳しめ）
+const superAdminLimiter = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  prefix: "ratelimit:superadmin",
+});
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // レート制限チェック
+  const isRateLimited = RATE_LIMITED_PATHS.some((p) => pathname.startsWith(p));
+  if (isRateLimited) {
+    const isSuperAdminPath =
+      pathname.startsWith("/superadmin/login") ||
+      pathname.startsWith("/superadmin/init") ||
+      pathname.startsWith("/api/superadmin/init");
+
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip") ??
+      "anonymous";
+
+    const limiter = isSuperAdminPath ? superAdminLimiter : authLimiter;
+    const { success, limit, remaining, reset } = await limiter.limit(ip);
+
+    if (!success) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "リクエストが多すぎます。しばらく待ってから再試行してください。" },
+          {
+            status: 429,
+            headers: {
+              "X-RateLimit-Limit": String(limit),
+              "X-RateLimit-Remaining": String(remaining),
+              "X-RateLimit-Reset": String(reset),
+            },
+          }
+        );
+      }
+      return new NextResponse(
+        `<html><body style="font-family:sans-serif;text-align:center;padding:3rem">
+          <h1>429 - リクエストが多すぎます</h1>
+          <p>しばらく待ってから再試行してください。</p>
+        </body></html>`,
+        { status: 429, headers: { "Content-Type": "text/html; charset=utf-8" } }
+      );
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -28,8 +94,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   // 未認証ユーザーを / (ログイン画面) へリダイレクト
   if (!user && (pathname.startsWith("/app") || pathname.startsWith("/admin"))) {

@@ -183,8 +183,15 @@ export default async function AdminOfusePage({
                     <td className="px-4 py-3 text-stone-600">
                       {PAYMENT_LABELS[o.paymentMethod] ?? o.paymentMethod}
                     </td>
-                    <td className="px-4 py-3 text-stone-500 text-xs">
-                      {o.receiptIssued ? "発行済" : "—"}
+                    <td className="px-4 py-3 text-xs">
+                      <a
+                        href={`/api/ofuse/${o.id}/receipt`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 bg-stone-100 text-stone-600 rounded hover:bg-stone-200 transition-colors whitespace-nowrap"
+                      >
+                        {o.receiptIssued ? "PDF再発行" : "PDF発行"}
+                      </a>
                     </td>
                     <td className="px-4 py-3 text-stone-500 text-xs max-w-xs truncate">
                       {o.notes ?? "—"}

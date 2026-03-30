@@ -7,6 +7,7 @@ import MfaWarningBanner from "./MfaWarningBanner";
 const NAV_ITEMS = [
   { href: "/superadmin", label: "ダッシュボード", icon: "📊" },
   { href: "/superadmin/temples", label: "お寺一覧", icon: "🏯" },
+  { href: "/superadmin/logs", label: "操作ログ", icon: "📋" },
 ];
 
 export default async function SuperAdminLayout({

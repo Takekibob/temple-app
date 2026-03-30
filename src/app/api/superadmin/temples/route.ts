@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { sendWelcomeEmail } from "@/lib/email";
 
 // POST /api/superadmin/temples — SUPER_ADMIN による新規寺院 + ADMIN アカウント作成
 export async function POST(request: NextRequest) {
   try {
-    await requireSuperAdmin();
+    const authUser = await requireSuperAdmin();
 
     const { templeName, denomination, address, phone, adminName, adminEmail, adminPassword } =
       await request.json();
@@ -78,6 +79,26 @@ export async function POST(request: NextRequest) {
         familyName: adminName.trim(),
       },
     });
+
+    // ウェルカムメール送信（失敗しても無視）
+    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://teralog.app"}/admin`;
+    sendWelcomeEmail({
+      to: adminEmail.toLowerCase(),
+      adminName: adminName.trim(),
+      templeName: templeName.trim(),
+      loginUrl,
+    }).catch(() => {});
+
+    // 操作ログに記録
+    await prisma.superAdminLog.create({
+      data: {
+        adminId: authUser.id,
+        action: "TEMPLE_CREATE",
+        targetType: "TEMPLE",
+        targetId: temple.id,
+        detail: `${templeName} (${adminEmail})`,
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true, templeId: temple.id }, { status: 201 });
   } catch (err) {

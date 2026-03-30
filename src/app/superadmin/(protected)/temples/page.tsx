@@ -73,7 +73,7 @@ export default async function SuperAdminTemplesPage() {
                 temples.map((temple) => {
                   const admin = temple.users[0];
                   return (
-                    <tr key={temple.id} className="border-b border-stone-800/50 hover:bg-stone-800/30 transition-colors">
+                    <tr key={temple.id} className="border-b border-stone-800/50 hover:bg-stone-800/30 transition-colors cursor-pointer" onClick={() => window.location.href = `/superadmin/temples/${temple.id}`}>
                       <td className="px-4 py-3">
                         <p className="font-medium text-white">{temple.name}</p>
                         <p className="text-xs text-stone-500 mt-0.5">{temple.address}</p>

@@ -535,6 +535,22 @@ enum ActivityType {
 }
 
 // ==========================================
+// SUPER_ADMIN 操作ログ
+// ==========================================
+model SuperAdminLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  action     String   // PLAN_CHANGE, TEMPLE_CREATE, TEMPLE_SUSPEND, etc.
+  targetType String   // TEMPLE, USER, etc.
+  targetId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@map("super_admin_logs")
+}
+
+// ==========================================
 // プランステータス
 // ==========================================
 enum PlanStatus {

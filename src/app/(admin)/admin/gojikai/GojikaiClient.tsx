@@ -40,6 +40,8 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
   const [showInitForm, setShowInitForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [notifyPending, setNotifyPending] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState<string | null>(null);
 
   function updateStatus(id: string, status: string) {
     setUpdatingId(id);
@@ -62,6 +64,29 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
         setUpdatingId(null);
       }
     });
+  }
+
+  async function handleNotify() {
+    if (!confirm(`${fiscalYear}年度の未納者（${unpaid}名）に催促メールを送信しますか？`)) return;
+    setNotifyPending(true);
+    setNotifyMsg(null);
+    try {
+      const res = await fetch("/api/gojikai/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fiscalYear }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setNotifyMsg(`${json.sent}名にメールを送信しました`);
+      } else {
+        setNotifyMsg(json.error ?? "送信に失敗しました");
+      }
+    } catch {
+      setNotifyMsg("通信エラーが発生しました");
+    } finally {
+      setNotifyPending(false);
+    }
   }
 
   async function handleInit(e: React.FormEvent) {
@@ -148,7 +173,16 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
           </div>
         </form>
       ) : (
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end gap-2 mb-4">
+          {unpaid > 0 && (
+            <button
+              onClick={handleNotify}
+              disabled={notifyPending}
+              className="px-4 py-2 text-sm bg-amber-700 text-white rounded-lg hover:bg-amber-800 disabled:opacity-50"
+            >
+              {notifyPending ? "送信中…" : `未納者（${unpaid}名）に催促メール`}
+            </button>
+          )}
           <button
             onClick={() => setShowInitForm(true)}
             className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-50 text-stone-600"
@@ -156,6 +190,12 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
             年度初期化 / 金額変更
           </button>
         </div>
+      )}
+
+      {notifyMsg && (
+        <p className="text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-4 py-2 mb-4">
+          {notifyMsg}
+        </p>
       )}
 
       {payments.length === 0 ? (

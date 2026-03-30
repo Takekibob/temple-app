@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 
 export default async function AdminDashboardPage() {
   const authUser = await getAuthUser();
@@ -13,6 +14,7 @@ export default async function AdminDashboardPage() {
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   // KPI queries in parallel
   const [
@@ -22,6 +24,8 @@ export default async function AdminDashboardPage() {
     monthlyEventSignups,
     conversionCandidates,
     recentReservations,
+    recentMembers,
+    recentEventSignups,
     upcomingEvents,
   ] = await Promise.all([
     // 本日の予約数
@@ -62,6 +66,20 @@ export default async function AdminDashboardPage() {
       include: { member: { include: { user: { select: { name: true } } } } },
       orderBy: { scheduledAt: "asc" },
     }),
+    // グラフ用: 過去6ヶ月の会員登録
+    prisma.member.findMany({
+      where: { templeId: authUser.templeId, createdAt: { gte: sixMonthsAgo } },
+      select: { createdAt: true, type: true },
+    }),
+    // グラフ用: 過去6ヶ月のイベント申込
+    prisma.eventParticipation.findMany({
+      where: {
+        event: { templeId: authUser.templeId },
+        createdAt: { gte: sixMonthsAgo },
+        status: { notIn: ["CANCELLED"] },
+      },
+      select: { createdAt: true },
+    }),
     // 今後のイベント
     prisma.event.findMany({
       where: {
@@ -80,6 +98,36 @@ export default async function AdminDashboardPage() {
       take: 5,
     }),
   ]);
+
+  // グラフデータを月別に集計（過去6ヶ月）
+  const monthKeys = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const toMonthKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+  const dankaByMonth: Record<string, number> = {};
+  const goenByMonth: Record<string, number> = {};
+  for (const m of recentMembers) {
+    const key = toMonthKey(m.createdAt);
+    if (m.type === "DANKA") dankaByMonth[key] = (dankaByMonth[key] ?? 0) + 1;
+    else goenByMonth[key] = (goenByMonth[key] ?? 0) + 1;
+  }
+
+  const eventsByMonth: Record<string, number> = {};
+  for (const s of recentEventSignups) {
+    const key = toMonthKey(s.createdAt);
+    eventsByMonth[key] = (eventsByMonth[key] ?? 0) + 1;
+  }
+
+  const chartData: ChartDataPoint[] = monthKeys.map((key) => ({
+    month: key.slice(5).replace(/^0/, "") + "月",
+    danka: dankaByMonth[key] ?? 0,
+    goen: goenByMonth[key] ?? 0,
+    events: eventsByMonth[key] ?? 0,
+  }));
 
   const RESERVATION_TYPE_LABELS: Record<string, string> = {
     ANNUAL_MEMORIAL: "年忌法要",
@@ -202,6 +250,9 @@ export default async function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* グラフ */}
+      <DashboardCharts data={chartData} />
 
       {/* クイックアクション */}
       <div className="mt-6 bg-stone-100 rounded-xl p-5">

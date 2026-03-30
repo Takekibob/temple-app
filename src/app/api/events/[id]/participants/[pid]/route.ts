@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEventConfirmationEmail } from "@/lib/email";
 
 export async function PATCH(
   request: NextRequest,
@@ -32,6 +33,27 @@ export async function PATCH(
       where: { id: pid },
       data: { status },
     });
+
+    // CONFIRMED になったときに確定メールを送信
+    if (status === "CONFIRMED" && participation.status !== "CONFIRMED") {
+      const full = await prisma.eventParticipation.findUnique({
+        where: { id: pid },
+        include: {
+          member: { include: { user: { select: { email: true, name: true } } } },
+          event: true,
+        },
+      });
+      if (full?.member.user.email) {
+        sendEventConfirmationEmail({
+          to: full.member.user.email,
+          memberName: full.member.user.name,
+          eventTitle: full.event.title,
+          eventDate: full.event.eventDate,
+          startTime: full.event.startTime,
+          location: full.event.location,
+        }).catch(() => {});
+      }
+    }
 
     return NextResponse.json({ participation: updated });
   } catch (err) {

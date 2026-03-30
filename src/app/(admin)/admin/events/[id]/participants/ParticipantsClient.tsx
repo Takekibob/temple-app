@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import BulkEmailModal from "./BulkEmailModal";
 
 const STATUS_OPTIONS = [
   { value: "APPLIED", label: "申込" },
@@ -58,6 +59,7 @@ export default function ParticipantsClient({ eventId, initialParticipants }: Pro
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error">("success");
   const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   function showMsg(text: string, type: "success" | "error" = "success") {
     setMsg(text);
@@ -141,15 +143,27 @@ export default function ParticipantsClient({ eventId, initialParticipants }: Pro
         </div>
       )}
 
+      {showEmailModal && (
+        <BulkEmailModal eventId={eventId} onClose={() => setShowEmailModal(false)} />
+      )}
+
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-stone-800">参加者一覧（{active.length}名）</h2>
-        <button
-          onClick={handleBulkAttend}
-          disabled={isPending}
-          className="px-3 py-1.5 bg-teal-700 text-white text-sm rounded-lg hover:bg-teal-800 disabled:opacity-40"
-        >
-          一括出席確認
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowEmailModal(true)}
+            className="px-3 py-1.5 bg-stone-700 text-white text-sm rounded-lg hover:bg-stone-800"
+          >
+            一斉メール
+          </button>
+          <button
+            onClick={handleBulkAttend}
+            disabled={isPending}
+            className="px-3 py-1.5 bg-teal-700 text-white text-sm rounded-lg hover:bg-teal-800 disabled:opacity-40"
+          >
+            一括出席確認
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-4">
