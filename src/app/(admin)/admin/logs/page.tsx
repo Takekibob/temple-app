@@ -5,6 +5,62 @@ import Link from "next/link";
 import { ACTION_LABELS, TARGET_LABELS } from "@/lib/activityLog";
 import type { LogAction, LogTargetType } from "@/lib/activityLog";
 
+// 画面名マッピング
+const SCREEN_LABELS: Partial<Record<LogTargetType, string>> = {
+  member:       "会員管理",
+  event:        "イベント管理",
+  reservation:  "法要予約管理",
+  ofuse:        "お布施管理",
+  settings:     "設定",
+  gojikai:      "護持会費管理",
+  announcement: "お知らせ管理",
+  deceased:     "過去帳管理",
+  staff:        "スタッフ管理",
+  donation:     "寄付管理",
+  subscription: "会員プラン管理",
+};
+
+type AnyLog = {
+  action: string;
+  targetType: string | null;
+  targetName: string | null;
+  detail: unknown;
+};
+
+function describeLog(log: AnyLog): string {
+  const action = log.action as LogAction;
+  const targetType = log.targetType as LogTargetType | null;
+  const d = (log.detail ?? {}) as Record<string, unknown>;
+
+  const screen = targetType ? (SCREEN_LABELS[targetType] ?? TARGET_LABELS[targetType] ?? targetType) : null;
+  const name   = log.targetName ? `「${log.targetName}」` : "";
+
+  // ログイン・ログアウト
+  if (action === "login")  return "管理画面にログインしました";
+  if (action === "logout") return "管理画面からログアウトしました";
+
+  // エクスポート・インポート
+  if (action === "export") return `${screen ?? "データ"}をCSVエクスポートしました`;
+  if (action === "import") return `${screen ?? "データ"}をCSVインポートしました`;
+
+  // 機密閲覧
+  if (action === "view_sensitive") return `${screen ?? ""}の機密情報を閲覧しました`;
+
+  // 追加情報の抽出
+  const extras: string[] = [];
+  if (d.planName)       extras.push(`プラン: ${d.planName}`);
+  if (d.amount != null) extras.push(`金額: ¥${Number(d.amount).toLocaleString()}`);
+  if (d.type)           extras.push(`種別: ${d.type}`);
+  if (d.status)         extras.push(`ステータス: ${d.status}`);
+  if (d.fiscalYear)     extras.push(`年度: ${d.fiscalYear}`);
+  const extraStr = extras.length > 0 ? `（${extras.join("、")}）` : "";
+
+  const actionLabel = ACTION_LABELS[action] ?? action;
+  const screenStr   = screen ? `${screen} / ` : "";
+
+  return `${screenStr}${name}を${actionLabel}しました${extraStr}`;
+}
+
 const PAGE_SIZE = 50;
 
 export default async function AdminLogsPage({
@@ -162,10 +218,8 @@ export default async function AdminLogsPage({
                         <span className="font-medium">{log.targetName}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-stone-400 text-xs">
-                      {log.detail
-                        ? JSON.stringify(log.detail).slice(0, 60)
-                        : "—"}
+                    <td className="px-4 py-3 text-stone-600 text-xs">
+                      {describeLog(log)}
                     </td>
                   </tr>
                 ))}
