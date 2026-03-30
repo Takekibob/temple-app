@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import SuperAdminLogoutButton from "./SuperAdminLogoutButton";
+import MfaWarningBanner from "./MfaWarningBanner";
 
 const NAV_ITEMS = [
   { href: "/superadmin", label: "ダッシュボード", icon: "📊" },
@@ -55,6 +56,7 @@ export default async function SuperAdminLayout({
 
       {/* メインコンテンツ */}
       <main className="flex-1 overflow-auto bg-stone-950">
+        <MfaWarningBanner />
         {children}
       </main>
     </div>
