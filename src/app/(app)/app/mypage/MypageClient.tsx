@@ -431,7 +431,7 @@ export default function MypageClient({ user, member }: Props) {
           <div className="space-y-2">
             <p className="text-sm font-medium text-stone-700">表示モード</p>
             <div className="grid grid-cols-2 gap-2">
-              {([["STANDARD", "標準"], ["SIMPLE", "シンプル（大きな文字）"]] as const).map(([val, label]) => (
+              {([["STANDARD", "標準"], ["SIMPLE", "シンプル"]] as const).map(([val, label]) => (
                 <button
                   key={val}
                   type="button"
