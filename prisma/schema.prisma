@@ -73,6 +73,14 @@ model Temple {
   favoriteByMembers MemberFavoriteTemple[]
   activityLogs ActivityLog[]
   scoringRules ScoringRule[]
+  membershipPlans    MembershipPlan[]
+  donations          Donation[]
+  lineMessages       LineMessage[]
+  lineStepSequences  LineStepSequence[]
+  ocrRequests        OcrRequest[]
+  onboardingPacks    OnboardingPack[]
+  templePage         TemplePage?
+  analyticsSnapshots AnalyticsSnapshot[]
 
   @@map("temples")
 }
@@ -204,6 +212,9 @@ model Member {
   favoriteTemples  MemberFavoriteTemple[]
   stageTransitions StageTransition[]
   scoringEvents    ScoringEvent[]
+  subscriptions    MemberSubscription[]
+  donations        Donation[]
+  lineStepQueues   LineStepQueue[]
 
   @@map("members")
 }
@@ -578,6 +589,11 @@ enum ActivityType {
   KUYO_APPLY
   CONTACT
   CONSECUTIVE_MONTH
+  DONATION
+  DONATION_LARGE
+  SUBSCRIPTION_START
+  REFERRAL
+  LINE_MESSAGE_OPEN
 
   @@map("activity_type")
 }
@@ -602,6 +618,7 @@ model SuperAdminLog {
 // プランステータス
 // ==========================================
 enum PlanStatus {
+  FREE        // 無料プラン（永久）
   TRIAL       // トライアル中
   ACTIVE      // 有効（課金中）
   PAST_DUE    // 支払い遅延
@@ -707,4 +724,372 @@ model StageTransition {
 
   @@index([memberId, createdAt])
   @@map("stage_transitions")
+}
+
+// ==========================================
+// 会員プラン（サブスクリプション定義）
+// ==========================================
+model MembershipPlan {
+  id              String               @id @default(uuid())
+  templeId        String
+  temple          Temple               @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  price           Int
+  interval        SubscriptionInterval @default(MONTHLY)
+  benefits        Json?
+  maxMembers      Int?
+
+  stripePriceId   String?
+  stripeProductId String?
+
+  isActive        Boolean              @default(true)
+  sortOrder       Int                  @default(0)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  subscriptions   MemberSubscription[]
+
+  @@map("membership_plans")
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  YEARLY
+  ONE_TIME
+
+  @@map("subscription_interval")
+}
+
+// ==========================================
+// 会員サブスクリプション（加入状態）
+// ==========================================
+model MemberSubscription {
+  id                   String                   @id @default(uuid())
+  memberId             String
+  member               Member                   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 MembershipPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  templeId             String
+
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+
+  status               MemberSubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  canceledAt           DateTime?
+  cancelReason         String?
+
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  @@index([memberId, status])
+  @@index([templeId, status])
+  @@map("member_subscriptions")
+}
+
+enum MemberSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+
+  @@map("member_subscription_status")
+}
+
+// ==========================================
+// 寄付
+// ==========================================
+model Donation {
+  id              String          @id @default(uuid())
+  templeId        String
+  temple          Temple          @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  memberId        String?
+  member          Member?         @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  amount          Int
+  purpose         DonationPurpose @default(GENERAL)
+  purposeDetail   String?
+
+  paymentMethod   PaymentMethod
+
+  stripePaymentIntentId String?
+
+  donorName       String?
+  donorEmail      String?
+
+  thankyouSent    Boolean         @default(false)
+  thankyouSentAt  DateTime?
+
+  notes           String?
+  donatedAt       DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+
+  @@index([templeId, donatedAt(sort: Desc)])
+  @@map("donations")
+}
+
+enum DonationPurpose {
+  GENERAL
+  REPAIR
+  CEREMONY
+  CROWDFUNDING
+  OTHER
+
+  @@map("donation_purpose")
+}
+
+// ==========================================
+// LINE配信履歴
+// ==========================================
+model LineMessage {
+  id              String            @id @default(uuid())
+  templeId        String
+  temple          Temple            @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  messageType     LineMessageType
+  targetStage     MemberStage?
+  targetMemberIds String[]
+
+  content         Json
+
+  sentCount       Int               @default(0)
+  deliveredCount  Int               @default(0)
+  openedCount     Int               @default(0)
+
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          LineMessageStatus @default(DRAFT)
+
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+
+  @@index([templeId, createdAt(sort: Desc)])
+  @@map("line_messages")
+}
+
+enum LineMessageType {
+  BROADCAST
+  SEGMENT
+  INDIVIDUAL
+  STEP
+  REMINDER
+  THANKYOU
+
+  @@map("line_message_type")
+}
+
+enum LineMessageStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+
+  @@map("line_message_status")
+}
+
+// ==========================================
+// LINEステップ配信シーケンス
+// ==========================================
+model LineStepSequence {
+  id        String          @id @default(uuid())
+  templeId  String
+  temple    Temple          @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  name      String
+  trigger   LineStepTrigger
+
+  steps     Json
+
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  queues    LineStepQueue[]
+
+  @@map("line_step_sequences")
+}
+
+enum LineStepTrigger {
+  FIRST_EVENT_ATTEND
+  LINE_REGISTER
+  STAGE_CHANGE_PROSPECT
+  STAGE_CHANGE_CANDIDATE
+  DONATION_FIRST
+
+  @@map("line_step_trigger")
+}
+
+// ==========================================
+// LINEステップ配信キュー
+// ==========================================
+model LineStepQueue {
+  id          String          @id @default(uuid())
+  sequenceId  String
+  sequence    LineStepSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  templeId    String
+
+  currentStep Int             @default(0)
+  nextSendAt  DateTime
+  status      StepQueueStatus @default(PENDING)
+
+  startedAt   DateTime        @default(now())
+  completedAt DateTime?
+
+  @@index([nextSendAt, status])
+  @@map("line_step_queues")
+}
+
+enum StepQueueStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+
+  @@map("step_queue_status")
+}
+
+// ==========================================
+// OCR取り込みリクエスト
+// ==========================================
+model OcrRequest {
+  id            String           @id @default(uuid())
+  templeId      String
+  temple        Temple           @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  requestType   OcrRequestType
+  fileUrls      String[]
+  status        OcrRequestStatus @default(SUBMITTED)
+  extractedData Json?
+  importedCount Int              @default(0)
+
+  notes         String?
+  submittedBy   String?
+  processedBy   String?
+
+  submittedAt   DateTime         @default(now())
+  completedAt   DateTime?
+
+  @@index([templeId, submittedAt(sort: Desc)])
+  @@map("ocr_requests")
+}
+
+enum OcrRequestStatus {
+  SUBMITTED
+  PROCESSING
+  REVIEW
+  COMPLETED
+  FAILED
+
+  @@map("ocr_request_status")
+}
+
+enum OcrRequestType {
+  KAKOCHO
+  MEIBO
+  OTHER
+
+  @@map("ocr_request_type")
+}
+
+// ==========================================
+// 導入おまかせパック
+// ==========================================
+model OnboardingPack {
+  id        String               @id @default(uuid())
+  templeId  String
+  temple    Temple               @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  status    OnboardingPackStatus @default(REQUESTED)
+
+  hearingDone   Boolean   @default(false)
+  hearingDate   DateTime?
+  hearingNotes  String?
+
+  dataEntryDone  Boolean  @default(false)
+  dataEntryCount Int      @default(0)
+
+  lineSetupDone  Boolean  @default(false)
+  trainingDone   Boolean  @default(false)
+  trainingDate   DateTime?
+
+  supportEndsAt  DateTime?
+
+  stripePaymentIntentId String?
+  paidAmount     Int?
+  paidAt         DateTime?
+
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("onboarding_packs")
+}
+
+enum OnboardingPackStatus {
+  REQUESTED
+  IN_PROGRESS
+  DATA_ENTRY
+  LINE_SETUP
+  TRAINING
+  SUPPORT_PERIOD
+  COMPLETED
+
+  @@map("onboarding_pack_status")
+}
+
+// ==========================================
+// 寺院公開LP
+// ==========================================
+model TemplePage {
+  id               String             @id @default(uuid())
+  templeId         String             @unique
+  temple           Temple             @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  slug             String             @unique
+  template         TemplePageTemplate @default(CLASSIC)
+
+  heroImageUrl     String?
+  galleryImageUrls String[]
+  customSections   Json               @default("[]")
+
+  seoTitle         String?
+  seoDescription   String?
+
+  isPublished      Boolean            @default(false)
+  publishedAt      DateTime?
+  updatedAt        DateTime           @updatedAt
+
+  @@map("temple_pages")
+}
+
+enum TemplePageTemplate {
+  CLASSIC
+  MODERN
+  ZEN
+  NATURE
+
+  @@map("temple_page_template")
+}
+
+// ==========================================
+// 分析スナップショット（日次集計）
+// ==========================================
+model AnalyticsSnapshot {
+  id           String   @id @default(uuid())
+  templeId     String
+  temple       Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  snapshotDate DateTime @db.Date
+  periodType   String
+
+  metrics      Json
+
+  @@unique([templeId, snapshotDate, periodType])
+  @@index([templeId, snapshotDate(sort: Desc)])
+  @@map("analytics_snapshots")
 }

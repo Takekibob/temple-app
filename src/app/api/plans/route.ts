@@ -1,0 +1,39 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin, requireAdminOrStaff } from "@/lib/auth";
+
+export async function GET() {
+  const authUser = await requireAdminOrStaff();
+  const plans = await prisma.membershipPlan.findMany({
+    where: { templeId: authUser.templeId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      _count: { select: { subscriptions: { where: { status: "ACTIVE" } } } },
+    },
+  });
+  return NextResponse.json(plans);
+}
+
+export async function POST(request: NextRequest) {
+  const authUser = await requireAdmin();
+  const body = await request.json();
+  const { name, description, price, interval, benefits, maxMembers, sortOrder } = body;
+
+  if (!name || price == null) {
+    return NextResponse.json({ error: "name and price are required" }, { status: 400 });
+  }
+
+  const plan = await prisma.membershipPlan.create({
+    data: {
+      templeId: authUser.templeId,
+      name,
+      description,
+      price: Number(price),
+      interval: interval ?? "MONTHLY",
+      benefits: benefits ?? null,
+      maxMembers: maxMembers ? Number(maxMembers) : null,
+      sortOrder: sortOrder ?? 0,
+    },
+  });
+  return NextResponse.json(plan, { status: 201 });
+}

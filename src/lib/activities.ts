@@ -10,6 +10,11 @@ const ACTIVITY_POINTS: Record<ActivityType, number> = {
   KUYO_APPLY: 30,
   CONTACT: 15,
   CONSECUTIVE_MONTH: 10,
+  DONATION: 10,
+  DONATION_LARGE: 30,
+  SUBSCRIPTION_START: 15,
+  REFERRAL: 20,
+  LINE_MESSAGE_OPEN: 1,
 };
 
 export async function logActivity(

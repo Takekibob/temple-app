@@ -20,7 +20,9 @@ export type LogTargetType =
   | "gojikai"
   | "announcement"
   | "deceased"
-  | "staff";
+  | "staff"
+  | "donation"
+  | "subscription";
 
 export interface LogOptions {
   templeId: string;
@@ -76,4 +78,6 @@ export const TARGET_LABELS: Record<LogTargetType, string> = {
   announcement: "お知らせ",
   deceased: "過去帳",
   staff: "スタッフ",
+  donation: "寄付",
+  subscription: "サブスク",
 };

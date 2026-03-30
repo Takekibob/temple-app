@@ -9,11 +9,20 @@
       "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/page.tsx)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/api/members/[id]/)",
-      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/mypage/)"
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/mypage/)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/analytics/)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
-      "/Users/haradatakeki/Developer/temple-app/src/app/(app)/app/news"
+      "/Users/haradatakeki/Developer/temple-app/src/app/(app)/app/news",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/plans",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/donations",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/subscriptions/[id]",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/line/sequences",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/ocr/[id]",
+      "/Users/haradatakeki/Developer/temple-app/src/app/api/onboarding-pack",
+      "/Users/haradatakeki/Developer/temple-app/src/app/donate/[templeId]",
+      "/Users/haradatakeki/Developer/temple-app/src/app/temples/p"
     ]
   }
 }
