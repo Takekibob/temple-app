@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
+import SuperAdminLogoutButton from "./SuperAdminLogoutButton";
 
 const NAV_ITEMS = [
   { href: "/superadmin", label: "ダッシュボード", icon: "📊" },
@@ -48,12 +49,7 @@ export default async function SuperAdminLayout({
             <p className="text-xs font-medium text-white truncate">{authUser.name}</p>
             <p className="text-xs text-stone-500 truncate">{authUser.email}</p>
           </div>
-          <Link
-            href="/api/auth/logout"
-            className="mt-1 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-stone-400 hover:bg-stone-800 hover:text-white transition-colors"
-          >
-            ログアウト
-          </Link>
+          <SuperAdminLogoutButton />
         </div>
       </aside>
 
