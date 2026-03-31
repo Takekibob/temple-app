@@ -91,13 +91,10 @@ export async function registerWithEmail(formData: FormData) {
 
   if (signUpError || !authData.user) {
     if (signUpError?.message?.includes("already registered")) {
-      // Supabase にユーザーは存在するが DB にはない → 確認メール未クリック状態
-      // （例: Safari で登録 → Chrome でリンクを開いた場合など）
-      return {
-        error: "このメールアドレスは確認メール待ちの状態です。メールが届いていない場合は再送信できます。",
-        canResend: true,
-        email,
-      };
+      // Supabase にユーザーは存在するが DB にはない → 未確認状態
+      // OTP を再送信してそのままコード入力画面へ進む
+      await supabase.auth.resend({ type: "signup", email });
+      return { success: true, email };
     }
     return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
   }

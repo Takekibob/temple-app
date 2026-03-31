@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
-  const [resendEmail, setResendEmail] = useState<string | null>(null);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -21,13 +20,9 @@ export default function RegisterPage() {
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       setErrorMsg(null);
-      setResendEmail(null);
       const result = await registerWithEmail(formData);
       if (result?.error) {
         setErrorMsg(result.error);
-        if ("canResend" in result && result.canResend && result.email) {
-          setResendEmail(result.email as string);
-        }
       } else if (result?.success) {
         setSentEmail(result.email as string);
       }
@@ -129,27 +124,6 @@ export default function RegisterPage() {
         {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {errorMsg}
-            {resendEmail && (
-              <div className="mt-2 pt-2 border-t border-red-200">
-                {resendMsg ? (
-                  <p className="text-xs text-teal-700">{resendMsg}</p>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={isResending}
-                    onClick={() => {
-                      startResend(async () => {
-                        const result = await resendConfirmationEmail(resendEmail);
-                        setResendMsg(result?.error ?? "確認コードを再送信しました。メールをご確認ください。");
-                      });
-                    }}
-                    className="text-xs text-amber-700 hover:text-amber-800 disabled:opacity-50 font-medium"
-                  >
-                    {isResending ? "送信中…" : "確認コードを再送信する →"}
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         )}
 
