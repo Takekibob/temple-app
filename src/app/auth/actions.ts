@@ -89,25 +89,19 @@ export async function registerWithEmail(formData: FormData) {
     },
   });
 
-  // 既存の未確認ユーザーの検出（3パターン）:
-  // 旧 Supabase: error.message に "already registered"
-  // 新 Supabase A: エラーなし・user.identities が空配列
-  // 新 Supabase B: エラーなし・user が null（メール列挙攻撃対策の最新仕様）
-  const isAlreadyUnconfirmed =
-    signUpError?.message?.includes("already registered") ||
-    (!signUpError && (!authData.user || (authData.user.identities?.length ?? 1) === 0));
-
-  if (isAlreadyUnconfirmed) {
-    // OTP を再送信してそのままコード入力画面へ進む
-    await supabase.auth.resend({ type: "signup", email });
+  // 正常に新規ユーザーが作成された場合
+  if (!signUpError && authData.user && (authData.user.identities?.length ?? 1) > 0) {
     return { success: true, email };
   }
 
-  if (signUpError || !authData.user) {
-    return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
+  // それ以外（エラー・user:null・identities空）は既存未確認ユーザーの可能性が高い
+  // resend で確認。resend が成功すればユーザーは存在するのでOTP画面へ進む
+  const { error: resendError } = await supabase.auth.resend({ type: "signup", email });
+  if (!resendError) {
+    return { success: true, email };
   }
 
-  return { success: true, email };
+  return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
 }
 
 // ============================================================
