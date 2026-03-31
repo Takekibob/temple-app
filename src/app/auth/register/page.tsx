@@ -68,15 +68,15 @@ export default function RegisterPage() {
 
           <form action={handleOtpSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="token" className="text-stone-700">確認コード（6桁）</Label>
+              <Label htmlFor="token" className="text-stone-700">確認コード（8桁）</Label>
               <Input
                 id="token"
                 name="token"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
-                placeholder="000000"
+                maxLength={8}
+                placeholder="00000000"
                 required
                 autoFocus
                 className="text-center text-2xl tracking-[0.5em] border-stone-200 focus-visible:ring-amber-500"
