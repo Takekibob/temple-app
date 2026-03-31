@@ -96,6 +96,50 @@ ${location ? `場所：${location}\n` : ""}
   });
 }
 
+// ── キャンセル待ち繰り上げメール ─────────────────────────────────────────────
+export async function sendWaitlistPromotedEmail({
+  to,
+  memberName,
+  eventTitle,
+  eventDate,
+  startTime,
+  location,
+}: {
+  to: string;
+  memberName: string;
+  eventTitle: string;
+  eventDate: Date;
+  startTime: string;
+  location?: string | null;
+}) {
+  const resend = getResend();
+  const dateStr = eventDate.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+  await resend.emails.send({
+    from: `てらログ <${FROM}>`,
+    to,
+    subject: `【てらログ】「${eventTitle}」キャンセル待ちから参加確定のお知らせ`,
+    text: `
+${memberName} 様
+
+キャンセル待ちをされていた「${eventTitle}」に空きが出ました。
+参加が確定しましたのでお知らせします。
+
+▼ イベント詳細
+日時：${dateStr} ${startTime}〜
+${location ? `場所：${location}\n` : ""}
+当日は時間に余裕をもってお越しください。
+ご都合が悪い場合はお早めにキャンセルのお手続きをお願いします。
+
+てらログ
+`.trim(),
+  });
+}
+
 // ── 予約リマインダーメール（前日） ──────────────────────────────────────────
 export async function sendReservationReminderEmail({
   to,

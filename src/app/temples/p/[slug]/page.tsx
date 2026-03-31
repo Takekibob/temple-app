@@ -146,6 +146,26 @@ export default async function TemplePublicPage({ params }: Props) {
           </dl>
         </section>
 
+        {/* 会員登録CTA */}
+        <section className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+          <p className="text-lg font-bold text-stone-800 mb-1">{t.name}の会員になる</p>
+          <p className="text-sm text-stone-500 mb-5">
+            法要・イベントのご案内をアプリで受け取れます
+          </p>
+          <Link
+            href="/auth/register"
+            className="inline-block bg-amber-700 text-white px-8 py-3 rounded-xl font-medium hover:bg-amber-800 transition-colors text-sm"
+          >
+            無料で会員登録する
+          </Link>
+          <p className="text-xs text-stone-400 mt-3">
+            既にアカウントをお持ちの方は{" "}
+            <Link href="/" className="text-amber-700 hover:underline">
+              ログインはこちら
+            </Link>
+          </p>
+        </section>
+
         {/* 寄付CTA */}
         <section className="text-center py-4">
           <Link

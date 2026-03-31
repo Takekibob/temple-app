@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activities";
+import { sendWaitlistPromotedEmail } from "@/lib/email";
 
 export async function POST(
   request: NextRequest,
@@ -112,17 +113,31 @@ export async function DELETE(
       data: { status: "CANCELLED" },
     });
 
-    // Promote first waitlisted if capacity freed
+    // キャンセル待ち繰り上げ
     if (wasCounted) {
       const firstWaitlisted = await prisma.eventParticipation.findFirst({
         where: { eventId, status: "WAITLISTED" },
         orderBy: { createdAt: "asc" },
+        include: {
+          member: { include: { user: { select: { email: true, name: true } } } },
+          event: true,
+        },
       });
       if (firstWaitlisted) {
         await prisma.eventParticipation.update({
           where: { id: firstWaitlisted.id },
-          data: { status: "APPLIED" },
+          data: { status: "CONFIRMED" },
         });
+        if (firstWaitlisted.member.user.email) {
+          sendWaitlistPromotedEmail({
+            to: firstWaitlisted.member.user.email,
+            memberName: firstWaitlisted.member.user.name,
+            eventTitle: firstWaitlisted.event.title,
+            eventDate: firstWaitlisted.event.eventDate,
+            startTime: firstWaitlisted.event.startTime,
+            location: firstWaitlisted.event.location,
+          }).catch(() => {});
+        }
       }
     }
 

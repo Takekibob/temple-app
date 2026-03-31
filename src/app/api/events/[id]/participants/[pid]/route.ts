@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendEventConfirmationEmail } from "@/lib/email";
+import { sendEventConfirmationEmail, sendWaitlistPromotedEmail } from "@/lib/email";
 
 export async function PATCH(
   request: NextRequest,
@@ -33,6 +33,34 @@ export async function PATCH(
       where: { id: pid },
       data: { status },
     });
+
+    // CANCELLED になったとき: 直前がCONFIRMED/APPLIEDならキャンセル待ちを繰り上げ
+    if (status === "CANCELLED" && participation.status !== "CANCELLED" && participation.status !== "WAITLISTED") {
+      const firstWaitlisted = await prisma.eventParticipation.findFirst({
+        where: { eventId, status: "WAITLISTED" },
+        orderBy: { createdAt: "asc" },
+        include: {
+          member: { include: { user: { select: { email: true, name: true } } } },
+          event: true,
+        },
+      });
+      if (firstWaitlisted) {
+        await prisma.eventParticipation.update({
+          where: { id: firstWaitlisted.id },
+          data: { status: "CONFIRMED" },
+        });
+        if (firstWaitlisted.member.user.email) {
+          sendWaitlistPromotedEmail({
+            to: firstWaitlisted.member.user.email,
+            memberName: firstWaitlisted.member.user.name,
+            eventTitle: firstWaitlisted.event.title,
+            eventDate: firstWaitlisted.event.eventDate,
+            startTime: firstWaitlisted.event.startTime,
+            location: firstWaitlisted.event.location,
+          }).catch(() => {});
+        }
+      }
+    }
 
     // CONFIRMED になったときに確定メールを送信
     if (status === "CONFIRMED" && participation.status !== "CONFIRMED") {
