@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { registerWithEmail, resendConfirmationEmail } from "@/app/auth/actions";
+import { registerWithEmail, resendConfirmationEmail, verifySignupOtp } from "@/app/auth/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,23 +10,40 @@ import { Button } from "@/components/ui/button";
 export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const [resendEmail, setResendEmail] = useState<string | null>(null);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isResending, startResend] = useTransition();
+  const [isVerifying, startVerify] = useTransition();
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       setErrorMsg(null);
+      setResendEmail(null);
       const result = await registerWithEmail(formData);
       if (result?.error) {
         setErrorMsg(result.error);
+        if ("canResend" in result && result.canResend && result.email) {
+          setResendEmail(result.email as string);
+        }
       } else if (result?.success) {
         setSentEmail(result.email as string);
       }
     });
   }
 
+  function handleOtpSubmit(formData: FormData) {
+    const token = (formData.get("token") as string).trim();
+    startVerify(async () => {
+      setOtpError(null);
+      const result = await verifySignupOtp(sentEmail!, token);
+      if (result?.error) setOtpError(result.error);
+    });
+  }
+
+  // OTP入力画面
   if (sentEmail) {
     return (
       <div className="w-full max-w-sm">
@@ -34,18 +51,47 @@ export default function RegisterPage() {
           <div className="text-4xl mb-2">🏛</div>
           <h1 className="text-2xl font-bold text-stone-800">てらログ</h1>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 text-center space-y-3">
-          <div className="text-3xl">✅</div>
-          <p className="font-semibold text-stone-800">確認メールを送信しました</p>
-          <p className="text-sm text-stone-500">
-            <span className="font-medium text-stone-700">{sentEmail}</span> 宛に確認メールをお送りしました。
-            <br />
-            メール内のリンクをクリックして登録を完了してください。
-          </p>
-          <p className="text-xs text-stone-400 pt-2">
-            メールが届かない場合は迷惑メールフォルダもご確認ください。
-          </p>
-          <div className="pt-3 border-t border-stone-100">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-5">
+          <div className="text-center">
+            <p className="font-semibold text-stone-800">確認コードを入力してください</p>
+            <p className="text-sm text-stone-500 mt-1">
+              <span className="font-medium text-stone-700">{sentEmail}</span>
+              <br />に送信した6桁のコードを入力してください
+            </p>
+          </div>
+
+          {otpError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {otpError}
+            </div>
+          )}
+
+          <form action={handleOtpSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="token" className="text-stone-700">確認コード（6桁）</Label>
+              <Input
+                id="token"
+                name="token"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="000000"
+                required
+                autoFocus
+                className="text-center text-2xl tracking-[0.5em] border-stone-200 focus-visible:ring-amber-500"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isVerifying}
+              className="w-full bg-amber-700 hover:bg-amber-800 text-white disabled:opacity-40"
+            >
+              {isVerifying ? "確認中…" : "確認する"}
+            </Button>
+          </form>
+
+          <div className="text-center pt-2 border-t border-stone-100">
             {resendMsg ? (
               <p className="text-xs text-teal-600">{resendMsg}</p>
             ) : (
@@ -53,14 +99,15 @@ export default function RegisterPage() {
                 type="button"
                 disabled={isResending}
                 onClick={() => {
+                  setResendMsg(null);
                   startResend(async () => {
-                    const result = await resendConfirmationEmail(sentEmail!);
-                    setResendMsg(result?.error ?? "再送信しました。メールをご確認ください。");
+                    const result = await resendConfirmationEmail(sentEmail);
+                    setResendMsg(result?.error ?? "コードを再送信しました。メールをご確認ください。");
                   });
                 }}
                 className="text-xs text-amber-700 hover:text-amber-800 disabled:opacity-50"
               >
-                {isResending ? "送信中…" : "メールが届かない場合は再送信する"}
+                {isResending ? "送信中…" : "コードが届かない場合は再送信する"}
               </button>
             )}
           </div>
@@ -69,6 +116,7 @@ export default function RegisterPage() {
     );
   }
 
+  // 登録フォーム画面
   return (
     <div className="w-full max-w-sm">
       <div className="text-center mb-6">
@@ -81,6 +129,27 @@ export default function RegisterPage() {
         {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {errorMsg}
+            {resendEmail && (
+              <div className="mt-2 pt-2 border-t border-red-200">
+                {resendMsg ? (
+                  <p className="text-xs text-teal-700">{resendMsg}</p>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isResending}
+                    onClick={() => {
+                      startResend(async () => {
+                        const result = await resendConfirmationEmail(resendEmail);
+                        setResendMsg(result?.error ?? "確認コードを再送信しました。メールをご確認ください。");
+                      });
+                    }}
+                    className="text-xs text-amber-700 hover:text-amber-800 disabled:opacity-50 font-medium"
+                  >
+                    {isResending ? "送信中…" : "確認コードを再送信する →"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -141,10 +210,7 @@ export default function RegisterPage() {
 
       <p className="text-center text-sm text-stone-500 mt-5">
         既にアカウントをお持ちの方は{" "}
-        <Link
-          href="/"
-          className="text-amber-700 hover:text-amber-800 font-medium"
-        >
+        <Link href="/" className="text-amber-700 hover:text-amber-800 font-medium">
           ログインはこちら
         </Link>
       </p>

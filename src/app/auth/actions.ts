@@ -91,7 +91,13 @@ export async function registerWithEmail(formData: FormData) {
 
   if (signUpError || !authData.user) {
     if (signUpError?.message?.includes("already registered")) {
-      return { error: "このメールアドレスは既に登録されています。" };
+      // Supabase にユーザーは存在するが DB にはない → 確認メール未クリック状態
+      // （例: Safari で登録 → Chrome でリンクを開いた場合など）
+      return {
+        error: "このメールアドレスは確認メール待ちの状態です。メールが届いていない場合は再送信できます。",
+        canResend: true,
+        email,
+      };
     }
     return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
   }
@@ -124,6 +130,23 @@ export async function resetPassword(formData: FormData) {
 
   if (error) return { error: "送信に失敗しました。しばらく経ってから再度お試しください。" };
   return { success: true };
+}
+
+// ============================================================
+// OTPコード検証（新規登録）
+// ============================================================
+export async function verifySignupOtp(email: string, token: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
+  if (error) {
+    return { error: "コードが正しくないか、有効期限が切れています。再送信してお試しください。" };
+  }
+  const dbUser = await prisma.user.findUnique({
+    where: { email },
+    select: { role: true, member: { select: { id: true } } },
+  });
+  if (!dbUser || !dbUser.member) redirect("/auth/onboarding");
+  redirect("/app");
 }
 
 // ============================================================
