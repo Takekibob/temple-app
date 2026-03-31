@@ -89,12 +89,13 @@ export async function registerWithEmail(formData: FormData) {
     },
   });
 
-  // 既存の未確認ユーザーの検出（2パターン）:
-  // 旧 Supabase: error.message に "already registered" が含まれる
-  // 新 Supabase: エラーなし・user.identities が空配列（メール列挙攻撃対策の仕様）
+  // 既存の未確認ユーザーの検出（3パターン）:
+  // 旧 Supabase: error.message に "already registered"
+  // 新 Supabase A: エラーなし・user.identities が空配列
+  // 新 Supabase B: エラーなし・user が null（メール列挙攻撃対策の最新仕様）
   const isAlreadyUnconfirmed =
     signUpError?.message?.includes("already registered") ||
-    (!signUpError && authData.user && authData.user.identities?.length === 0);
+    (!signUpError && (!authData.user || (authData.user.identities?.length ?? 1) === 0));
 
   if (isAlreadyUnconfirmed) {
     // OTP を再送信してそのままコード入力画面へ進む
