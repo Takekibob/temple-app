@@ -6,6 +6,7 @@ import PromoteButton from "./PromoteButton";
 import StageChanger from "./StageChanger";
 import NotesClient from "./NotesClient";
 import { STAGE_LABELS, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
+import { logFeature } from "@/lib/featureLog";
 
 export default async function MemberDetailPage({
   params,
@@ -16,6 +17,8 @@ export default async function MemberDetailPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const { id } = await params;
+
+  void logFeature(authUser.templeId, authUser.id, "member_detail", "view");
 
   const member = await prisma.member.findFirst({
     where: { id, templeId: authUser.templeId },

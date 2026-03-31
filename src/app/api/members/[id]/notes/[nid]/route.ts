@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logFeature } from "@/lib/featureLog";
 
 // PATCH /api/members/[id]/notes/[nid] — メモ更新（編集・ピン・完了）
 export async function PATCH(
@@ -21,6 +22,13 @@ export async function PATCH(
 
     const body = await request.json();
     const { title, content, tags, followupDate, isPinned, isResolved, noteType } = body;
+
+    // アクション種別を判定してログ
+    const logAction =
+      isPinned !== undefined && Object.keys(body).length === 1 ? "pin" :
+      isResolved !== undefined && Object.keys(body).length === 1 ? "resolve" :
+      "edit";
+    void logFeature(authUser.templeId, authUser.id, "member_notes", logAction);
 
     const updated = await prisma.memberNote.update({
       where: { id: nid },
@@ -62,6 +70,7 @@ export async function DELETE(
     if (!note) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await prisma.memberNote.delete({ where: { id: nid } });
+    void logFeature(authUser.templeId, authUser.id, "member_notes", "delete");
     return NextResponse.json({ success: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";

@@ -7,6 +7,7 @@ import MemberFilters from "./MemberFilters";
 import ExportButton from "@/components/admin/ExportButton";
 import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
 import { MemberStage } from "@/generated/prisma/client";
+import { logFeature } from "@/lib/featureLog";
 
 const PAGE_SIZE = 50;
 const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
@@ -40,6 +41,8 @@ export default async function MembersPage({
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
   const { type, stage, search = "", page: pageStr = "1", tag } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
+
+  if (tag) void logFeature(authUser.templeId, authUser.id, "tag_filter", tag);
   const stageFilter = VALID_STAGES.includes(stage as MemberStage) ? (stage as MemberStage) : undefined;
 
   const where = {

@@ -1136,3 +1136,22 @@ enum NoteType {
 
   @@map("note_type")
 }
+
+
+// ==========================================
+// 機能利用ログ
+// ==========================================
+model FeatureLog {
+  id        String   @id @default(uuid())
+  templeId  String
+  userId    String
+  feature   String   // "member_notes", "tag_filter", "dashboard_widget" など
+  action    String   // "create", "edit", "delete", "pin", "view", "click" など
+
+  createdAt DateTime @default(now())
+
+  @@index([templeId])
+  @@index([feature])
+  @@index([createdAt])
+  @@map("feature_logs")
+}

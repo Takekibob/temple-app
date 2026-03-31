@@ -380,6 +380,9 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/events/analytics" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
             イベント分析
           </Link>
+          <Link href="/admin/analytics/features" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+            機能利用ログ
+          </Link>
         </div>
       </div>
     </div>

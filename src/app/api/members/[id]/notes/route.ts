@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logFeature } from "@/lib/featureLog";
 
 // GET /api/members/[id]/notes — メモ一覧取得
 export async function GET(
@@ -64,6 +65,7 @@ export async function POST(
       include: { author: { select: { name: true } } },
     });
 
+    void logFeature(authUser.templeId, authUser.id, "member_notes", "create");
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
