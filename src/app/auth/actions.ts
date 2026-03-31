@@ -89,13 +89,20 @@ export async function registerWithEmail(formData: FormData) {
     },
   });
 
+  // 既存の未確認ユーザーの検出（2パターン）:
+  // 旧 Supabase: error.message に "already registered" が含まれる
+  // 新 Supabase: エラーなし・user.identities が空配列（メール列挙攻撃対策の仕様）
+  const isAlreadyUnconfirmed =
+    signUpError?.message?.includes("already registered") ||
+    (!signUpError && authData.user && authData.user.identities?.length === 0);
+
+  if (isAlreadyUnconfirmed) {
+    // OTP を再送信してそのままコード入力画面へ進む
+    await supabase.auth.resend({ type: "signup", email });
+    return { success: true, email };
+  }
+
   if (signUpError || !authData.user) {
-    if (signUpError?.message?.includes("already registered")) {
-      // Supabase にユーザーは存在するが DB にはない → 未確認状態
-      // OTP を再送信してそのままコード入力画面へ進む
-      await supabase.auth.resend({ type: "signup", email });
-      return { success: true, email };
-    }
     return { error: "登録に失敗しました。しばらく経ってから再度お試しください。" };
   }
 
