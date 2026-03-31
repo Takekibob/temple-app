@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 interface Payment {
@@ -43,7 +43,13 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
   const [initPending, setInitPending] = useState(false);
   const [initAmount, setInitAmount] = useState(String(ruleAmount ?? 10000));
   const [showInitForm, setShowInitForm] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // router.refresh() 後にサーバーから届いた新しい payments を反映
+  useEffect(() => {
+    setPayments(initialPayments);
+  }, [initialPayments]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [notifyPending, setNotifyPending] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState<string | null>(null);
@@ -124,6 +130,11 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
 
   async function handleInit(e: React.FormEvent) {
     e.preventDefault();
+    // 金額入力後に確認画面へ
+    setShowConfirm(true);
+  }
+
+  async function executeInit() {
     setInitPending(true);
     setErrorMsg(null);
     try {
@@ -135,12 +146,15 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
       if (!res.ok) {
         const json = await res.json();
         setErrorMsg(json.error ?? "エラーが発生しました");
+        setShowConfirm(false);
       } else {
         setShowInitForm(false);
+        setShowConfirm(false);
         router.refresh();
       }
     } catch {
       setErrorMsg("通信エラーが発生しました");
+      setShowConfirm(false);
     } finally {
       setInitPending(false);
     }
@@ -174,36 +188,72 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
           {errorMsg && (
             <p className="text-red-600 text-sm mb-3">{errorMsg}</p>
           )}
-          <p className="text-sm font-medium text-stone-700 mb-3">
-            {fiscalYear}年度 檀家全員の護持会費レコードを作成/更新します
-          </p>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="text-xs text-stone-600 block mb-1">金額（円）</label>
-              <input
-                type="number"
-                min="1"
-                value={initAmount}
-                onChange={(e) => setInitAmount(e.target.value)}
-                className="w-full h-9 rounded-md border border-stone-200 px-3 text-sm"
-                required
-              />
+
+          {/* 確認ダイアログ */}
+          {showConfirm ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-stone-800">
+                本当に実行しますか？
+              </p>
+              <p className="text-sm text-stone-600">
+                {fiscalYear}年度の護持会費を <span className="font-bold text-amber-700">¥{Number(initAmount).toLocaleString()}</span> で全檀家分のレコードを作成/更新します。
+              </p>
+              <p className="text-xs text-stone-500 bg-white border border-stone-200 rounded-lg px-3 py-2">
+                ・既に納付済みのレコードは変更されません<br />
+                ・未納・免除のレコードの金額が更新されます
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={executeInit}
+                  disabled={initPending}
+                  className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-50"
+                >
+                  {initPending ? "処理中…" : "実行する"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(false)}
+                  disabled={initPending}
+                  className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-50 disabled:opacity-50"
+                >
+                  戻る
+                </button>
+              </div>
             </div>
-            <button
-              type="submit"
-              disabled={initPending}
-              className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-50"
-            >
-              {initPending ? "処理中…" : "作成する"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowInitForm(false)}
-              className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
-            >
-              キャンセル
-            </button>
-          </div>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-stone-700 mb-3">
+                {fiscalYear}年度 檀家全員の護持会費レコードを作成/更新します
+              </p>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="text-xs text-stone-600 block mb-1">金額（円）</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={initAmount}
+                    onChange={(e) => setInitAmount(e.target.value)}
+                    className="w-full h-9 rounded-md border border-stone-200 px-3 text-sm"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+                >
+                  次へ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInitForm(false)}
+                  className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </>
+          )}
         </form>
       ) : (
         <div className="flex justify-end gap-2 mb-4">
