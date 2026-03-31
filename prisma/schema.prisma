@@ -81,6 +81,7 @@ model Temple {
   onboardingPacks    OnboardingPack[]
   templePage         TemplePage?
   analyticsSnapshots AnalyticsSnapshot[]
+  memberNotes        MemberNote[]
 
   @@map("temples")
 }
@@ -115,6 +116,7 @@ model User {
   pushSubscriptions PushSubscription[]
   activityLogs ActivityLog[]
   proxyMembers Member[] @relation("ProxyMembers")
+  memberNotes  MemberNote[]
 
   @@map("users")
 }
@@ -171,6 +173,8 @@ model Member {
   engagementScore  Int        @default(0)
   promotedAt       DateTime?  // ご縁さん→檀家に昇格した日時
   notes            String?
+  summaryNote      String?    // 一行概要メモ（一覧表示用）
+  priorityTags     String[]   @default([]) // ["要フォロー","VIP","要注意"]
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -215,6 +219,7 @@ model Member {
   subscriptions    MemberSubscription[]
   donations        Donation[]
   lineStepQueues   LineStepQueue[]
+  memberNotes      MemberNote[]
 
   @@map("members")
 }
@@ -1092,4 +1097,42 @@ model AnalyticsSnapshot {
   @@unique([templeId, snapshotDate, periodType])
   @@index([templeId, snapshotDate(sort: Desc)])
   @@map("analytics_snapshots")
+}
+
+// ==========================================
+// 檀家メモ・対応履歴
+// ==========================================
+model MemberNote {
+  id        String   @id @default(uuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  templeId  String
+  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+
+  noteType  NoteType @default(MEMO)
+  title     String?               // 対応履歴・フォローの見出し
+  content   String                // 本文
+  tags      String[] @default([]) // ["要フォロー","VIP","要注意","体調注意","遠方","一人暮らし","跡継ぎ不在"]
+
+  followupDate DateTime? @db.Date // フォロー予定日
+  isResolved   Boolean   @default(false) // フォロー完了
+  isPinned     Boolean   @default(false) // ピン留め
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([templeId])
+  @@index([followupDate])
+  @@map("member_notes")
+}
+
+enum NoteType {
+  MEMO        // 一般メモ
+  INTERACTION // 対応履歴
+  FOLLOWUP    // フォロー予定
+
+  @@map("note_type")
 }

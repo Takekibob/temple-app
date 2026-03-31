@@ -11,11 +11,22 @@ import { MemberStage } from "@/generated/prisma/client";
 const PAGE_SIZE = 50;
 const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
 
+const TAG_COLORS: Record<string, string> = {
+  要フォロー: "bg-amber-100 text-amber-800",
+  要注意: "bg-red-100 text-red-700",
+  VIP: "bg-green-100 text-green-800",
+  体調注意: "bg-orange-100 text-orange-700",
+  遠方: "bg-blue-100 text-blue-700",
+  一人暮らし: "bg-purple-100 text-purple-700",
+  跡継ぎ不在: "bg-stone-100 text-stone-600",
+};
+
 interface SearchParams {
   type?: string;
   stage?: string;
   search?: string;
   page?: string;
+  tag?: string;
 }
 
 export default async function MembersPage({
@@ -27,7 +38,7 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, stage, search = "", page: pageStr = "1" } = await searchParams;
+  const { type, stage, search = "", page: pageStr = "1", tag } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
   const stageFilter = VALID_STAGES.includes(stage as MemberStage) ? (stage as MemberStage) : undefined;
 
@@ -35,6 +46,7 @@ export default async function MembersPage({
     templeId: authUser.templeId,
     ...(type === "DANKA" || type === "GOEN" ? { type: type as "DANKA" | "GOEN" } : {}),
     ...(stageFilter ? { stage: stageFilter } : {}),
+    ...(tag ? { priorityTags: { has: tag } } : {}),
     ...(search
       ? {
           OR: [
@@ -92,7 +104,7 @@ export default async function MembersPage({
 
       {/* フィルター */}
       <Suspense fallback={<div className="h-10" />}>
-        <MemberFilters currentType={type} currentSearch={search} />
+        <MemberFilters currentType={type} currentSearch={search} currentTag={tag} />
       </Suspense>
 
       {/* テーブル */}
@@ -113,15 +125,27 @@ export default async function MembersPage({
             <tbody>
               {members.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-stone-400">
+                  <td colSpan={7} className="text-center py-12 text-stone-400">
                     会員が見つかりません
                   </td>
                 </tr>
               ) : (
                 members.map((member) => (
                   <tr key={member.id} className="border-b border-stone-50 hover:bg-stone-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-stone-800">
-                      {member.user.name}
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-stone-800">{member.user.name}</p>
+                      {member.summaryNote && (
+                        <p className="text-xs text-stone-400 mt-0.5 truncate max-w-[180px]">{member.summaryNote}</p>
+                      )}
+                      {member.priorityTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {member.priorityTags.map((t) => (
+                            <span key={t} className={`px-1.5 py-0.5 rounded text-xs font-medium ${TAG_COLORS[t] ?? "bg-stone-100 text-stone-600"}`}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-stone-600">{member.familyName}</td>
                     <td className="px-4 py-3">

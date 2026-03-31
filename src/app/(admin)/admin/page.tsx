@@ -12,6 +12,7 @@ export default async function AdminDashboardPage() {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
+  const twoWeeksLater = new Date(todayStart.getTime() + 14 * 86400000);
 
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -27,6 +28,8 @@ export default async function AdminDashboardPage() {
     recentMembers,
     recentEventSignups,
     upcomingEvents,
+    upcomingFollowups,
+    recentInteractions,
   ] = await Promise.all([
     // 本日の予約数
     prisma.reservation.count({
@@ -95,6 +98,33 @@ export default async function AdminDashboardPage() {
         },
       },
       orderBy: { eventDate: "asc" },
+      take: 5,
+    }),
+    // 今後2週間のフォロー予定（未完了）
+    prisma.memberNote.findMany({
+      where: {
+        templeId: authUser.templeId,
+        noteType: "FOLLOWUP",
+        isResolved: false,
+        followupDate: { gte: todayStart, lte: twoWeeksLater },
+      },
+      include: {
+        member: { include: { user: { select: { name: true } } } },
+      },
+      orderBy: { followupDate: "asc" },
+      take: 10,
+    }),
+    // 最近の対応履歴（全スタッフ）
+    prisma.memberNote.findMany({
+      where: {
+        templeId: authUser.templeId,
+        noteType: "INTERACTION",
+      },
+      include: {
+        member: { include: { user: { select: { name: true } } } },
+        author: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
       take: 5,
     }),
   ]);
@@ -253,6 +283,80 @@ export default async function AdminDashboardPage() {
 
       {/* グラフ */}
       <DashboardCharts data={chartData} />
+
+      {/* フォロー予定・対応履歴 */}
+      <div className="grid lg:grid-cols-2 gap-6 mt-6">
+        {/* 今後2週間のフォロー予定 */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-stone-800">⏰ フォロー予定（2週間以内）</h2>
+            <Link href="/admin/members" className="text-xs text-amber-700 hover:underline">
+              会員一覧 →
+            </Link>
+          </div>
+          {upcomingFollowups.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">予定はありません</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {upcomingFollowups.map((note) => (
+                <li key={note.id} className="py-3">
+                  <Link href={`/admin/members/${note.memberId}`} className="flex items-start gap-3 hover:opacity-70 transition-opacity">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-stone-800">
+                        {note.member.user.name}
+                      </p>
+                      {note.title && (
+                        <p className="text-xs text-stone-600 mt-0.5 truncate">{note.title}</p>
+                      )}
+                      <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{note.content}</p>
+                    </div>
+                    <span className="text-xs font-medium text-teal-700 shrink-0">
+                      {note.followupDate
+                        ? new Date(note.followupDate).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })
+                        : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* 最近の対応履歴 */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-stone-800">📋 最近の対応履歴</h2>
+            <Link href="/admin/members" className="text-xs text-amber-700 hover:underline">
+              会員一覧 →
+            </Link>
+          </div>
+          {recentInteractions.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">対応履歴がありません</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {recentInteractions.map((note) => (
+                <li key={note.id} className="py-3">
+                  <Link href={`/admin/members/${note.memberId}`} className="flex items-start gap-3 hover:opacity-70 transition-opacity">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-stone-800">
+                        {note.member.user.name}
+                        <span className="ml-2 text-xs font-normal text-stone-400">{note.author.name}</span>
+                      </p>
+                      {note.title && (
+                        <p className="text-xs text-stone-600 mt-0.5 truncate">{note.title}</p>
+                      )}
+                      <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{note.content}</p>
+                    </div>
+                    <span className="text-xs text-stone-400 shrink-0">
+                      {new Date(note.createdAt).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
 
       {/* クイックアクション */}
       <div className="mt-6 bg-stone-100 rounded-xl p-5">

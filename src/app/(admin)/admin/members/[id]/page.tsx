@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import PromoteButton from "./PromoteButton";
 import StageChanger from "./StageChanger";
+import NotesClient from "./NotesClient";
 import { STAGE_LABELS, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
 
 export default async function MemberDetailPage({
@@ -35,6 +36,10 @@ export default async function MemberDetailPage({
         select: { id: true, fiscalYear: true, amount: true, status: true, paidAt: true },
       },
       activities: { orderBy: { createdAt: "desc" }, take: 20 },
+      memberNotes: {
+        include: { author: { select: { name: true } } },
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+      },
     },
   });
 
@@ -42,9 +47,15 @@ export default async function MemberDetailPage({
 
   const interestTags = Array.isArray(member.interestTags) ? (member.interestTags as string[]) : [];
   const isDanka = member.type === "DANKA";
-
-  // 転換候補: ご縁さんでスコア70以上
   const isConversionCandidate = !isDanka && member.engagementScore >= 70;
+
+  // MemberNote を Client Component に渡せる形にシリアライズ
+  const serializedNotes = member.memberNotes.map((n) => ({
+    ...n,
+    followupDate: n.followupDate ? n.followupDate.toISOString().slice(0, 10) : null,
+    createdAt: n.createdAt.toISOString(),
+    updatedAt: n.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="p-6 max-w-4xl">
@@ -122,6 +133,28 @@ export default async function MemberDetailPage({
                 </>
               )}
             </dl>
+            {/* サマリーメモ・優先度タグ */}
+            {(member.summaryNote || member.priorityTags.length > 0) && (
+              <div className="mt-3 pt-3 border-t border-stone-100 space-y-2">
+                {member.priorityTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {member.priorityTags.map((tag) => (
+                      <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tag === "要フォロー" ? "bg-amber-100 text-amber-800" :
+                        tag === "要注意" ? "bg-red-100 text-red-700" :
+                        tag === "VIP" ? "bg-green-100 text-green-800" :
+                        "bg-stone-100 text-stone-600"
+                      }`}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {member.summaryNote && (
+                  <p className="text-sm text-stone-600 leading-relaxed">{member.summaryNote}</p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* 檀家専用: 過去帳 */}
@@ -205,6 +238,17 @@ export default async function MemberDetailPage({
               )}
             </section>
           )}
+
+          {/* メモ・対応履歴 */}
+          <section className="bg-white rounded-xl border border-stone-200 p-4">
+            <h2 className="font-semibold text-stone-800 mb-3">
+              メモ・対応履歴
+              <span className="ml-2 text-xs font-normal text-stone-400">
+                ({member.memberNotes.length}件)
+              </span>
+            </h2>
+            <NotesClient memberId={id} initialNotes={serializedNotes} />
+          </section>
 
           {/* イベント参加履歴 */}
           <section className="bg-white rounded-xl border border-stone-200 p-4">
