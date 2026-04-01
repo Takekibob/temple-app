@@ -13,15 +13,33 @@ export async function GET(request: NextRequest) {
     const yearsBack = Math.min(10, parseInt(searchParams.get("years") ?? "5"));
     const currentYear = new Date().getFullYear();
 
-    const ofuseRecords = await prisma.ofuse.findMany({
-      where: {
-        templeId: authUser.templeId,
-        paidAt: {
-          gte: new Date(`${currentYear - yearsBack + 1}-01-01`),
+    const rangeStart = new Date(`${currentYear - yearsBack + 1}-01-01`);
+
+    const [ofuseRecords, gojikaiRecords, eventFeeRecords] = await Promise.all([
+      prisma.ofuse.findMany({
+        where: { templeId: authUser.templeId, paidAt: { gte: rangeStart } },
+        select: { paidAt: true, amount: true, type: true },
+      }),
+      prisma.gojikaiPayment.findMany({
+        where: {
+          member: { templeId: authUser.templeId },
+          status: "PAID",
+          paidAt: { gte: rangeStart },
         },
-      },
-      select: { paidAt: true, amount: true, type: true },
-    });
+        select: { paidAt: true, amount: true },
+      }),
+      prisma.eventParticipation.findMany({
+        where: {
+          event: {
+            templeId: authUser.templeId,
+            fee: { gt: 0 },
+            eventDate: { gte: rangeStart },
+          },
+          status: { in: ["CONFIRMED", "ATTENDED"] },
+        },
+        select: { event: { select: { eventDate: true, fee: true } } },
+      }),
+    ]);
 
     const yearlyData: Record<number, { total: number; byType: Record<string, number> }> = {};
     for (let y = currentYear - yearsBack + 1; y <= currentYear; y++) {
@@ -34,6 +52,23 @@ export async function GET(request: NextRequest) {
       yearlyData[year].total += record.amount;
       yearlyData[year].byType[record.type] =
         (yearlyData[year].byType[record.type] ?? 0) + record.amount;
+    }
+
+    for (const record of gojikaiRecords) {
+      if (!record.paidAt) continue;
+      const year = record.paidAt.getFullYear();
+      if (!yearlyData[year]) continue;
+      yearlyData[year].total += record.amount;
+      yearlyData[year].byType["GOJIKAI"] =
+        (yearlyData[year].byType["GOJIKAI"] ?? 0) + record.amount;
+    }
+
+    for (const record of eventFeeRecords) {
+      const year = record.event.eventDate.getFullYear();
+      if (!yearlyData[year]) continue;
+      yearlyData[year].total += record.event.fee;
+      yearlyData[year].byType["EVENT_FEE"] =
+        (yearlyData[year].byType["EVENT_FEE"] ?? 0) + record.event.fee;
     }
 
     const data = Object.entries(yearlyData).map(([year, val]) => ({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendGojikaiReminderEmail } from "@/lib/email";
+import { sendLineNotification } from "@/lib/line";
 
 // POST /api/gojikai/notify — 未納の護持会費を持つ檀家にメール送信
 export async function POST(request: NextRequest) {
@@ -31,36 +32,45 @@ export async function POST(request: NextRequest) {
     });
 
     let sent = 0;
-    let noEmail = 0;
+    let lineSent = 0;
+    let noContact = 0;
     let failed = 0;
     let firstError = "";
+
+    const lineMsg = `【${temple.name}】\n${fiscalYear}年度の護持会費（¥${unpaidPayments[0]?.amount?.toLocaleString() ?? ""}）がまだお済みでない方へご連絡いたします。\nご確認の程よろしくお願いいたします。`;
 
     await Promise.allSettled(
       unpaidPayments.map(async (p) => {
         const email = p.member.user.email;
-        if (!email) {
-          noEmail++;
-          return;
-        }
-        try {
-          await sendGojikaiReminderEmail({
-            to: email,
-            memberName: p.member.user.name,
-            templeName: temple.name,
-            fiscalYear: p.fiscalYear,
-            amount: p.amount,
-          });
-          sent++;
-        } catch (err) {
-          failed++;
-          if (!firstError) {
-            firstError = err instanceof Error ? err.message : String(err);
+        let contacted = false;
+
+        // メール送信
+        if (email) {
+          try {
+            await sendGojikaiReminderEmail({
+              to: email,
+              memberName: p.member.user.name,
+              templeName: temple.name,
+              fiscalYear: p.fiscalYear,
+              amount: p.amount,
+            });
+            sent++;
+            contacted = true;
+          } catch (err) {
+            failed++;
+            if (!firstError) firstError = err instanceof Error ? err.message : String(err);
           }
         }
+
+        // LINE送信（LINE連携済みの場合）
+        const lineOk = await sendLineNotification(p.memberId, lineMsg);
+        if (lineOk) { lineSent++; contacted = true; }
+
+        if (!contacted) noContact++;
       })
     );
 
-    return NextResponse.json({ sent, noEmail, failed, firstError: firstError || null });
+    return NextResponse.json({ sent, lineSent, noContact, failed, firstError: firstError || null });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
     if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });

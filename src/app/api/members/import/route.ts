@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
+import { validatePhone, validatePostalCode } from "@/lib/memberValidation";
 
 interface CsvRow {
   name: string;
@@ -48,6 +49,22 @@ export async function POST(request: NextRequest) {
       if (!["DANKA", "GOEN"].includes(row.type.toUpperCase())) {
         results.push({ row: rowNum, success: false, error: `typeは DANKA または GOEN である必要があります (got: ${row.type})` });
         continue;
+      }
+
+      if (row.phone) {
+        const phoneErr = validatePhone(row.phone);
+        if (phoneErr) {
+          results.push({ row: rowNum, success: false, error: `電話番号: ${phoneErr}` });
+          continue;
+        }
+      }
+
+      if (row.postalCode) {
+        const postalErr = validatePostalCode(row.postalCode);
+        if (postalErr) {
+          results.push({ row: rowNum, success: false, error: `郵便番号: ${postalErr}` });
+          continue;
+        }
       }
 
       try {

@@ -92,8 +92,10 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
       const json = await res.json();
       if (res.ok) {
         const parts: string[] = [];
-        if (json.sent > 0) parts.push(`${json.sent}名に送信しました`);
-        if (json.noEmail > 0) parts.push(`${json.noEmail}名はメールアドレス未登録のためスキップ`);
+        if (json.sent > 0) parts.push(`メール ${json.sent}名`);
+        if (json.lineSent > 0) parts.push(`LINE ${json.lineSent}名`);
+        if (parts.length > 0) parts[parts.length - 1] += "に送信しました";
+        if (json.noContact > 0) parts.push(`${json.noContact}名は連絡先なしのためスキップ`);
         if (json.failed > 0) parts.push(`${json.failed}名は送信失敗${json.firstError ? `（${json.firstError}）` : ""}`);
         setNotifyMsg(parts.length > 0 ? parts.join("、") : "送信対象がありませんでした");
       } else {

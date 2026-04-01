@@ -12,16 +12,34 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get("year") ?? String(new Date().getFullYear()));
 
-    const ofuseRecords = await prisma.ofuse.findMany({
-      where: {
-        templeId: authUser.templeId,
-        paidAt: {
-          gte: new Date(`${year}-01-01`),
-          lt: new Date(`${year + 1}-01-01`),
+    const startDate = new Date(`${year}-01-01`);
+    const endDate = new Date(`${year + 1}-01-01`);
+
+    const [ofuseRecords, gojikaiRecords, eventFeeRecords] = await Promise.all([
+      prisma.ofuse.findMany({
+        where: { templeId: authUser.templeId, paidAt: { gte: startDate, lt: endDate } },
+        select: { paidAt: true, amount: true, type: true },
+      }),
+      prisma.gojikaiPayment.findMany({
+        where: {
+          member: { templeId: authUser.templeId },
+          status: "PAID",
+          paidAt: { gte: startDate, lt: endDate },
         },
-      },
-      select: { paidAt: true, amount: true, type: true },
-    });
+        select: { paidAt: true, amount: true },
+      }),
+      prisma.eventParticipation.findMany({
+        where: {
+          event: {
+            templeId: authUser.templeId,
+            fee: { gt: 0 },
+            eventDate: { gte: startDate, lt: endDate },
+          },
+          status: { in: ["CONFIRMED", "ATTENDED"] },
+        },
+        select: { event: { select: { eventDate: true, fee: true } } },
+      }),
+    ]);
 
     // 月別集計
     const monthlyData: Record<number, { total: number; byType: Record<string, number> }> = {};
@@ -36,6 +54,21 @@ export async function GET(request: NextRequest) {
         (monthlyData[month].byType[record.type] ?? 0) + record.amount;
     }
 
+    for (const record of gojikaiRecords) {
+      if (!record.paidAt) continue;
+      const month = record.paidAt.getMonth() + 1;
+      monthlyData[month].total += record.amount;
+      monthlyData[month].byType["GOJIKAI"] =
+        (monthlyData[month].byType["GOJIKAI"] ?? 0) + record.amount;
+    }
+
+    for (const record of eventFeeRecords) {
+      const month = record.event.eventDate.getMonth() + 1;
+      monthlyData[month].total += record.event.fee;
+      monthlyData[month].byType["EVENT_FEE"] =
+        (monthlyData[month].byType["EVENT_FEE"] ?? 0) + record.event.fee;
+    }
+
     const data = Array.from({ length: 12 }, (_, i) => ({
       month: i + 1,
       label: `${i + 1}月`,
@@ -47,7 +80,7 @@ export async function GET(request: NextRequest) {
       OTHER: monthlyData[i + 1].byType["OTHER"] ?? 0,
     }));
 
-    const yearTotal = ofuseRecords.reduce((sum, r) => sum + r.amount, 0);
+    const yearTotal = data.reduce((sum, d) => sum + d.total, 0);
 
     return NextResponse.json({ year, data, yearTotal });
   } catch (err) {

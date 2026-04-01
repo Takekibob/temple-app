@@ -35,6 +35,8 @@ interface PerformanceEvent {
   date: string;
   category: string;
   capacity: number | null;
+  fee: number;
+  revenue: number | null;
   applied: number;
   attended: number;
   participationRate: number | null;
@@ -50,7 +52,7 @@ interface Props {
   acquisitionData: { label: string; count: number }[];
 }
 
-type SortKey = "date" | "rate" | "rating";
+type SortKey = "date" | "rate" | "rating" | "revenue";
 
 const PIE_COLORS = ["#b45309", "#d97706", "#fde68a"];
 
@@ -80,9 +82,8 @@ export default function EventAnalyticsClient({
 
   const sortedEvents = [...performanceEvents].sort((a, b) => {
     if (sortKey === "date") return b.date.localeCompare(a.date);
-    if (sortKey === "rate") {
-      return (b.participationRate ?? -1) - (a.participationRate ?? -1);
-    }
+    if (sortKey === "rate") return (b.participationRate ?? -1) - (a.participationRate ?? -1);
+    if (sortKey === "revenue") return (b.revenue ?? -1) - (a.revenue ?? -1);
     return (b.avgRating ?? -1) - (a.avgRating ?? -1);
   });
 
@@ -216,11 +217,12 @@ export default function EventAnalyticsClient({
           <h2 className="font-semibold text-stone-800">イベント別パフォーマンス</h2>
           <div className="flex items-center gap-1 text-xs text-stone-500">
             <span>並び替え:</span>
-            {(["date", "rate", "rating"] as SortKey[]).map((key) => {
+            {(["date", "rate", "rating", "revenue"] as SortKey[]).map((key) => {
               const labels: Record<SortKey, string> = {
                 date: "日付",
                 rate: "参加率",
                 rating: "評価",
+                revenue: "収益",
               };
               return (
                 <button
@@ -253,6 +255,7 @@ export default function EventAnalyticsClient({
                   <th className="text-right px-3 py-2 font-medium">参加</th>
                   <th className="text-right px-3 py-2 font-medium">参加率</th>
                   <th className="text-right px-3 py-2 font-medium">評価</th>
+                  <th className="text-right px-3 py-2 font-medium">収益</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,6 +299,13 @@ export default function EventAnalyticsClient({
                     <td className="px-3 py-2 text-right">
                       {e.avgRating != null ? (
                         <span className="text-amber-600 font-medium">★{e.avgRating}</span>
+                      ) : (
+                        <span className="text-stone-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right text-stone-700">
+                      {e.revenue != null ? (
+                        <span className="font-medium">¥{e.revenue.toLocaleString()}</span>
                       ) : (
                         <span className="text-stone-400">—</span>
                       )}

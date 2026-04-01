@@ -35,6 +35,7 @@ export default async function EventAnalyticsPage() {
       category: true,
       eventDate: true,
       capacity: true,
+      fee: true,
       status: true,
       participations: {
         select: {
@@ -171,6 +172,8 @@ export default async function EventAnalyticsPage() {
       date: e.eventDate.toISOString().slice(0, 10),
       category: getCategoryLabel(e.category),
       capacity: e.capacity,
+      fee: e.fee,
+      revenue: e.fee > 0 ? e.fee * attended : null,
       applied,
       attended,
       participationRate: e.capacity
