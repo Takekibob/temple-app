@@ -8,10 +8,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const authUser = await getAuthUser();
 
   if (!authUser) redirect("/");
+  if (authUser.role === "SUPER_ADMIN") redirect("/superadmin");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const temple = await prisma.temple.findUnique({
-    where: { id: authUser.templeId },
+    where: { id: authUser.templeId! },
     select: { name: true, planStatus: true },
   });
 
