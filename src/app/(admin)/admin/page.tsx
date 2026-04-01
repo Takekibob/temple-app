@@ -7,6 +7,7 @@ import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 export default async function AdminDashboardPage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
+  if (authUser.role === "SUPER_ADMIN") redirect("/superadmin");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const now = new Date();

@@ -4,6 +4,9 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
 import LoginForm from "./auth/login/LoginForm";
 
+// セッション状態によってリダイレクト先が変わるため毎回サーバーで評価する
+export const dynamic = "force-dynamic";
+
 export default async function RootPage() {
   const supabase = await createServerSupabaseClient();
   const {
