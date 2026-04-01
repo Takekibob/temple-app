@@ -3,6 +3,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { sendWelcomeEmail } from "@/lib/email";
+import { validatePhone } from "@/lib/memberValidation";
 
 // POST /api/superadmin/temples — SUPER_ADMIN による新規寺院 + ADMIN アカウント作成
 export async function POST(request: NextRequest) {
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
 
     const supabaseAdmin = createAdminSupabaseClient();
 

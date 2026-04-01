@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
+import { validatePhone } from "@/lib/memberValidation";
 
 const ALLOWED_FIELDS = [
   "name", "denomination", "address", "phone", "email", "description",
@@ -57,6 +58,10 @@ export async function PATCH(request: NextRequest) {
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "NO_CHANGES" }, { status: 400 });
+    }
+    if (typeof data.phone === "string" && data.phone) {
+      const phoneErr = validatePhone(data.phone);
+      if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
     }
 
     const temple = await prisma.temple.update({

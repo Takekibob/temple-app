@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
+import { validatePhone, validatePostalCode, normalizePostalCode } from "@/lib/memberValidation";
 
 const PAGE_SIZE = 50;
 
@@ -64,6 +65,14 @@ export async function POST(request: NextRequest) {
     if (!["DANKA", "GOEN"].includes(type)) {
       return NextResponse.json({ error: "会員種別が不正です" }, { status: 400 });
     }
+    if (phone) {
+      const phoneErr = validatePhone(phone);
+      if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
+    }
+    if (postalCode) {
+      const postalErr = validatePostalCode(postalCode);
+      if (postalErr) return NextResponse.json({ error: postalErr }, { status: 400 });
+    }
 
     // User レコード作成
     const user = await prisma.user.create({
@@ -83,7 +92,7 @@ export async function POST(request: NextRequest) {
         familyName,
         phone: phone || undefined,
         address: address || undefined,
-        postalCode: postalCode || undefined,
+        postalCode: postalCode ? normalizePostalCode(postalCode) : undefined,
         notes: notes || undefined,
       },
     });

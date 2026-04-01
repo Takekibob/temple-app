@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
+import { validatePhone, validatePostalCode, normalizePostalCode } from "@/lib/memberValidation";
 
 const INTEREST_TAG_VALUES = [
   "坐禅",
@@ -31,6 +32,14 @@ export async function updateProfile(formData: FormData) {
   );
 
   if (!name) return { error: "名前は必須です。" };
+  if (phone) {
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) return { error: phoneErr };
+  }
+  if (postalCode) {
+    const postalErr = validatePostalCode(postalCode);
+    if (postalErr) return { error: postalErr };
+  }
 
   await prisma.user.update({
     where: { email: user.email! },
@@ -47,7 +56,7 @@ export async function updateProfile(formData: FormData) {
       data: {
         interestTags: selectedTags,
         address: address || undefined,
-        postalCode: postalCode || undefined,
+        postalCode: postalCode ? normalizePostalCode(postalCode) : undefined,
       },
     });
   }

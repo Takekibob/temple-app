@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { validatePhone } from "@/lib/memberValidation";
 
 type MemberType = "DANKA" | "GOEN" | null;
 type Step = 1 | 2 | 3;
@@ -129,6 +130,8 @@ export default function OnboardingClient({ defaultName }: { defaultName: string 
     if (memberType === "DANKA") {
       if (!familyName.trim()) { setErrorMsg("家名を入力してください。"); return; }
       if (!phone.trim()) { setErrorMsg("電話番号を入力してください。"); return; }
+      const phoneErr = validatePhone(phone);
+      if (phoneErr) { setErrorMsg(phoneErr); return; }
       if (!address.trim()) { setErrorMsg("住所を入力してください。"); return; }
       setErrorMsg(null);
       setStep(3);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { validatePhone, validatePostalCode, normalizePostalCode } from "@/lib/memberValidation";
 
 export async function POST(
   request: NextRequest,
@@ -30,6 +31,15 @@ export async function POST(
       if (!m.email || !m.name || !m.familyName) {
         errors.push(`スキップ: name/email/familyName が不足`);
         continue;
+      }
+      if (m.phone) {
+        const phoneErr = validatePhone(m.phone);
+        if (phoneErr) { errors.push(`${m.name}: 電話番号 - ${phoneErr}`); continue; }
+      }
+      if (m.postalCode) {
+        const postalErr = validatePostalCode(m.postalCode);
+        if (postalErr) { errors.push(`${m.name}: 郵便番号 - ${postalErr}`); continue; }
+        m.postalCode = normalizePostalCode(m.postalCode);
       }
 
       // Supabase Auth ユーザー作成

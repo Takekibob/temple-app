@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, MemberType } from "@/generated/prisma/enums";
+import { validatePhone } from "@/lib/memberValidation";
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest) {
   }
   if (memberType === "DANKA" && (!familyName?.trim() || !address?.trim() || !phone?.trim())) {
     return NextResponse.json({ error: "檀家登録には家名・住所・電話番号が必要です" }, { status: 400 });
+  }
+  if (phone) {
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
   }
   if (memberType === "DANKA" && !selectedTempleId) {
     return NextResponse.json({ error: "所属するお寺を選択してください" }, { status: 400 });
