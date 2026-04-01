@@ -13,9 +13,12 @@ export default async function AdminDashboardPage() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
   const twoWeeksLater = new Date(todayStart.getTime() + 14 * 86400000);
+  const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const currentFiscalYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
 
   // KPI queries in parallel
   const [
@@ -30,6 +33,9 @@ export default async function AdminDashboardPage() {
     upcomingEvents,
     upcomingFollowups,
     recentInteractions,
+    unpaidGojikai,
+    churnRisk,
+    scoreUpMembers,
   ] = await Promise.all([
     // 本日の予約数
     prisma.reservation.count({
@@ -125,6 +131,43 @@ export default async function AdminDashboardPage() {
         author: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    // 今年度の未納（檀家のみ）
+    prisma.gojikaiPayment.findMany({
+      where: {
+        member: { templeId: authUser.templeId, type: "DANKA" },
+        fiscalYear: currentFiscalYear,
+        status: "UNPAID",
+      },
+      include: { member: { include: { user: { select: { name: true } } } } },
+      orderBy: { member: { user: { name: "asc" } } },
+      take: 8,
+    }),
+    // 離脱予兆（1年以上未接触）
+    prisma.member.findMany({
+      where: {
+        templeId: authUser.templeId,
+        type: "DANKA",
+        OR: [
+          { lastContactAt: { lte: oneYearAgo } },
+          { lastContactAt: null, createdAt: { lte: oneYearAgo } },
+        ],
+      },
+      include: { user: { select: { name: true } } },
+      orderBy: [{ lastContactAt: "asc" }],
+      take: 5,
+    }),
+    // スコアアップ通知（先月以降にスコアが上がったご縁さん）
+    prisma.member.findMany({
+      where: {
+        templeId: authUser.templeId,
+        type: "GOEN",
+        engagementScore: { gte: 30 },
+        updatedAt: { gte: oneMonthAgo },
+      },
+      include: { user: { select: { name: true } } },
+      orderBy: { engagementScore: "desc" },
       take: 5,
     }),
   ]);
@@ -358,6 +401,99 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* 未納アラート・離脱予兆・スコアアップ通知 */}
+      <div className="grid lg:grid-cols-3 gap-6 mt-6">
+        {/* 未納アラート */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-stone-800">
+              💴 護持会費 未納
+              {unpaidGojikai.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
+                  {unpaidGojikai.length}
+                </span>
+              )}
+            </h2>
+            <Link href="/admin/gojikai" className="text-xs text-amber-700 hover:underline">
+              管理 →
+            </Link>
+          </div>
+          {unpaidGojikai.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">未納なし ✅</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {unpaidGojikai.map((p) => (
+                <li key={p.id} className="py-2.5">
+                  <Link href={`/admin/members/${p.memberId}`} className="flex items-center justify-between hover:opacity-70">
+                    <p className="text-sm text-stone-800">{p.member.user.name}</p>
+                    <span className="text-xs font-medium text-red-600">¥{p.amount.toLocaleString()}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* 離脱予兆 */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-stone-800">
+              ⚠️ 離脱予兆
+              {churnRisk.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                  {churnRisk.length}
+                </span>
+              )}
+            </h2>
+            <Link href="/admin/churn" className="text-xs text-amber-700 hover:underline">
+              詳細 →
+            </Link>
+          </div>
+          {churnRisk.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">問題なし ✅</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {churnRisk.map((m) => {
+                const lastDate = m.lastContactAt ?? m.createdAt;
+                const monthsAgo = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+                return (
+                  <li key={m.id} className="py-2.5">
+                    <Link href={`/admin/members/${m.id}`} className="flex items-center justify-between hover:opacity-70">
+                      <p className="text-sm text-stone-800">{m.user.name}</p>
+                      <span className="text-xs font-medium text-orange-600">{monthsAgo}ヶ月前</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* スコアアップ通知 */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-stone-800">⭐ スコアアップ</h2>
+            <Link href="/admin/conversion" className="text-xs text-amber-700 hover:underline">
+              転換管理 →
+            </Link>
+          </div>
+          {scoreUpMembers.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">今月の変動なし</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {scoreUpMembers.map((m) => (
+                <li key={m.id} className="py-2.5">
+                  <Link href={`/admin/members/${m.id}`} className="flex items-center justify-between hover:opacity-70">
+                    <p className="text-sm text-stone-800">{m.user.name}</p>
+                    <span className="text-xs font-semibold text-teal-600">{m.engagementScore}pt</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
       {/* クイックアクション */}
       <div className="mt-6 bg-stone-100 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-stone-600 mb-3">クイックアクション</h2>
@@ -382,6 +518,9 @@ export default async function AdminDashboardPage() {
           </Link>
           <Link href="/admin/analytics/features" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
             機能利用ログ
+          </Link>
+          <Link href="/admin/churn" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+            離脱予兆
           </Link>
         </div>
       </div>

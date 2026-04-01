@@ -65,6 +65,11 @@ export async function POST(
       include: { author: { select: { name: true } } },
     });
 
+    // INTERACTION メモ作成時は lastContactAt を更新
+    if ((noteType ?? "MEMO") === "INTERACTION") {
+      void prisma.member.update({ where: { id: memberId }, data: { lastContactAt: new Date() } });
+    }
+
     void logFeature(authUser.templeId, authUser.id, "member_notes", "create");
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {

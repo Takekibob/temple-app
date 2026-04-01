@@ -175,6 +175,7 @@ model Member {
   notes            String?
   summaryNote      String?    // 一行概要メモ（一覧表示用）
   priorityTags     String[]   @default([]) // ["要フォロー","VIP","要注意"]
+  lastContactAt    DateTime?  // 最終接触日（離脱検知用）— INTERACTION メモ・予約・お布施で更新
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 

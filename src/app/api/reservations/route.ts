@@ -116,6 +116,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // 予約作成 = 接触として lastContactAt 更新
+    void prisma.member.update({ where: { id: authUser.member.id }, data: { lastContactAt: new Date() } });
+
     logActivity({
       templeId: authUser.templeId,
       userId: authUser.id,
