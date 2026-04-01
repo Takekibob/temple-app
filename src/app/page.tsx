@@ -17,7 +17,10 @@ export default async function RootPage() {
     });
 
     if (dbUser?.isActive) {
-      if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+      if (dbUser.role === "SUPER_ADMIN") {
+        redirect("/superadmin");
+      }
+      if (["ADMIN", "STAFF"].includes(dbUser.role)) {
         redirect("/admin");
       }
       if (!dbUser.member) {
