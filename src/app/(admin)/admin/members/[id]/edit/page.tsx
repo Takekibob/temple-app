@@ -6,6 +6,11 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  validatePhone,
+  validatePostalCode,
+  normalizePostalCode,
+} from "@/lib/memberValidation";
 
 interface MemberData {
   id: string;
@@ -19,6 +24,11 @@ interface MemberData {
   user: { name: string; email: string; phone: string };
 }
 
+type FieldErrors = {
+  phone?: string;
+  postalCode?: string;
+};
+
 export default function MemberEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -26,6 +36,7 @@ export default function MemberEditPage() {
   const [member, setMember] = useState<MemberData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     fetch(`/api/members/${id}`)
@@ -34,15 +45,31 @@ export default function MemberEditPage() {
       .catch(() => setErrorMsg("データの取得に失敗しました"));
   }, [id]);
 
+  function validateFields(phone: string, postalCode: string): FieldErrors {
+    const errors: FieldErrors = {};
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) errors.phone = phoneErr;
+    const postalErr = validatePostalCode(postalCode);
+    if (postalErr) errors.postalCode = postalErr;
+    return errors;
+  }
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const phone = (form.get("phone") as string) ?? "";
+    const postalCode = (form.get("postalCode") as string) ?? "";
+
+    const errors = validateFields(phone, postalCode);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     const payload = {
       name: form.get("name"),
-      phone: form.get("phone"),
+      phone: phone || null,
       familyName: form.get("familyName"),
       address: form.get("address"),
-      postalCode: form.get("postalCode"),
+      postalCode: postalCode ? normalizePostalCode(postalCode) : null,
       notes: form.get("notes"),
       engagementScore: parseInt(form.get("engagementScore") as string) || 0,
     };
@@ -55,7 +82,8 @@ export default function MemberEditPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        setErrorMsg("更新に失敗しました");
+        const data = await res.json();
+        setErrorMsg(data.error ?? "更新に失敗しました");
       } else {
         setSuccessMsg("更新しました");
         setTimeout(() => router.push(`/admin/members/${id}`), 800);
@@ -89,7 +117,18 @@ export default function MemberEditPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="phone" className="text-stone-700">電話番号</Label>
-            <Input id="phone" name="phone" type="tel" defaultValue={member.user.phone ?? member.phone} />
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              defaultValue={member.user.phone ?? member.phone ?? ""}
+              placeholder="090-1234-5678"
+              onChange={() => setFieldErrors((prev) => ({ ...prev, phone: undefined }))}
+              className={fieldErrors.phone ? "border-red-400 focus:ring-red-400" : ""}
+            />
+            {fieldErrors.phone && (
+              <p className="text-xs text-red-600">{fieldErrors.phone}</p>
+            )}
           </div>
         </div>
 
@@ -100,13 +139,23 @@ export default function MemberEditPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="postalCode" className="text-stone-700">郵便番号</Label>
-            <Input id="postalCode" name="postalCode" defaultValue={member.postalCode ?? ""} placeholder="123-4567" />
+            <Input
+              id="postalCode"
+              name="postalCode"
+              defaultValue={member.postalCode ?? ""}
+              placeholder="123-4567"
+              onChange={() => setFieldErrors((prev) => ({ ...prev, postalCode: undefined }))}
+              className={fieldErrors.postalCode ? "border-red-400 focus:ring-red-400" : ""}
+            />
+            {fieldErrors.postalCode && (
+              <p className="text-xs text-red-600">{fieldErrors.postalCode}</p>
+            )}
           </div>
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="address" className="text-stone-700">住所</Label>
-          <Input id="address" name="address" defaultValue={member.address ?? ""} />
+          <Input id="address" name="address" defaultValue={member.address ?? ""} placeholder="都道府県から入力" />
         </div>
 
         {member.type === "GOEN" && (
@@ -132,6 +181,12 @@ export default function MemberEditPage() {
             defaultValue={member.notes ?? ""}
             className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
+        </div>
+
+        {/* 入力フォーマットガイド */}
+        <div className="text-xs text-stone-400 bg-stone-50 rounded-lg p-3 space-y-0.5">
+          <p>• 電話番号：ハイフンあり・なしどちらでも可（例：090-1234-5678 / 0312345678）</p>
+          <p>• 郵便番号：7桁で入力してください（例：123-4567）</p>
         </div>
 
         <div className="flex gap-3 pt-2">

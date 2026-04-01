@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { changeStage } from "@/lib/scoring";
 import { MemberStage } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+import { validateTypeStage } from "@/lib/memberValidation";
 
 const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
 
@@ -20,6 +22,16 @@ export async function POST(request: NextRequest) {
     if (!memberId || !VALID_STAGES.includes(toStage)) {
       return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 });
     }
+
+    // タイプとステージの整合性チェック
+    const member = await prisma.member.findFirst({
+      where: { id: memberId, templeId: authUser.templeId },
+      select: { type: true },
+    });
+    if (!member) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+    const typeStageErr = validateTypeStage(member.type, toStage);
+    if (typeStageErr) return NextResponse.json({ error: typeStageErr }, { status: 400 });
 
     await changeStage({
       memberId,

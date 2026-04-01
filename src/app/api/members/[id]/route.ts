@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
+import { validatePhone, validatePostalCode, normalizePostalCode } from "@/lib/memberValidation";
 
 export async function GET(
   _request: NextRequest,
@@ -53,6 +54,13 @@ export async function PATCH(
 
     const { name, phone, type, familyName, address, postalCode, notes, engagementScore } = body;
 
+    // バリデーション
+    const phoneErr = phone !== undefined ? validatePhone(phone) : null;
+    if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
+
+    const postalErr = postalCode !== undefined ? validatePostalCode(postalCode) : null;
+    if (postalErr) return NextResponse.json({ error: postalErr }, { status: 400 });
+
     const [member] = await Promise.all([
       prisma.member.update({
         where: { id },
@@ -60,7 +68,7 @@ export async function PATCH(
           ...(type !== undefined && { type }),
           ...(familyName !== undefined && { familyName }),
           ...(address !== undefined && { address }),
-          ...(postalCode !== undefined && { postalCode }),
+          ...(postalCode !== undefined && { postalCode: postalCode ? normalizePostalCode(postalCode) : null }),
           ...(notes !== undefined && { notes }),
           ...(engagementScore !== undefined && { engagementScore }),
         },

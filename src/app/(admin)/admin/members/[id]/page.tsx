@@ -82,7 +82,7 @@ export default async function MemberDetailPage({
                 >
                   {isDanka ? "檀家" : "ご縁さん"}
                 </span>
-                <StageChanger memberId={id} currentStage={member.stage} />
+                <StageChanger memberId={id} currentStage={member.stage} memberType={member.type} />
                 {isConversionCandidate && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
                     転換候補
