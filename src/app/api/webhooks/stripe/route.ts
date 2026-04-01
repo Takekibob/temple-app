@@ -47,7 +47,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const { eventId, memberId, numGuests: numGuestsStr } = session.metadata ?? {};
+  const { eventId, memberId, numGuests: numGuestsStr, donationId } = session.metadata ?? {};
+
+  // 寄付決済完了
+  if (donationId) {
+    await handleDonationCompleted(session, donationId);
+    return;
+  }
+
   if (!eventId || !memberId) {
     console.error("checkout.session.completed: missing eventId or memberId in metadata");
     return;
@@ -109,6 +116,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       paymentMethod: "ONLINE",
       receiptIssued: false,
       notes: `イベント「${participation.event.title}」参加費 ${numGuests}名`,
+    },
+  });
+}
+
+async function handleDonationCompleted(session: Stripe.Checkout.Session, donationId: string) {
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : (session.payment_intent as Stripe.PaymentIntent | null)?.id ?? null;
+
+  // 冪等性: stripePaymentIntentId が既に確定済みなら処理しない
+  const existing = await prisma.donation.findUnique({ where: { id: donationId } });
+  if (!existing) {
+    console.error(`handleDonationCompleted: donation ${donationId} not found`);
+    return;
+  }
+
+  await prisma.donation.update({
+    where: { id: donationId },
+    data: {
+      stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId,
+      donatedAt: new Date(),
     },
   });
 }

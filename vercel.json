@@ -20,6 +20,26 @@
     {
       "path": "/api/cron/trial-expiry",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/line-steps",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/line-scheduled",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/analytics-snapshot",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/inactive-check",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-check",
+      "schedule": "0 0 * * *"
     }
   ],
   "env": {

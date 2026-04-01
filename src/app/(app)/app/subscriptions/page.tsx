@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import SubscribeButton from "./SubscribeButton";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -105,17 +106,7 @@ export default async function SubscriptionsPage() {
                       ¥{plan.price.toLocaleString()}
                       <span className="text-xs font-normal text-stone-500 ml-1">/ {INTERVAL_LABELS[plan.interval]}</span>
                     </p>
-                    {!isSubscribed && (
-                      <form action={`/api/subscriptions`} method="POST">
-                        <input type="hidden" name="planId" value={plan.id} />
-                        <button
-                          type="submit"
-                          className="bg-amber-700 text-white px-4 py-1.5 rounded-lg text-xs hover:bg-amber-800"
-                        >
-                          加入する
-                        </button>
-                      </form>
-                    )}
+                    {!isSubscribed && <SubscribeButton planId={plan.id} />}
                   </div>
                 </div>
               );
