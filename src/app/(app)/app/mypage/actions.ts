@@ -64,3 +64,20 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/app/mypage");
   return { success: true };
 }
+
+export async function updatePushEnabled(enabled: boolean) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "ログインが必要です。" };
+
+  await prisma.user.update({
+    where: { email: user.email! },
+    data: { pushEnabled: enabled },
+  });
+
+  revalidatePath("/app/mypage/notifications");
+  return { success: true };
+}
