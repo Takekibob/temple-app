@@ -32,13 +32,22 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(new URL("/?error=account_disabled", origin));
         }
 
+        // SUPER_ADMIN は member を持たないため先に処理
+        if (dbUser?.role === "SUPER_ADMIN") {
+          await prisma.user.update({
+            where: { email: user.email },
+            data: { lastLoginAt: new Date() },
+          });
+          return NextResponse.redirect(new URL("/superadmin", origin));
+        }
+
         // DBユーザーなし or membersレコードなし → オンボーディングへ
         if (!dbUser || !dbUser.member) {
           return NextResponse.redirect(new URL("/auth/onboarding", origin));
         }
 
         // 管理者・スタッフ → 管理画面へ
-        if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+        if (["ADMIN", "STAFF"].includes(dbUser.role)) {
           await prisma.user.update({
             where: { email: user.email },
             data: { lastLoginAt: new Date() },
