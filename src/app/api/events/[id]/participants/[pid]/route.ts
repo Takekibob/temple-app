@@ -62,7 +62,7 @@ export async function PATCH(
       }
     }
 
-    // CONFIRMED になったときに確定メールを送信
+    // CONFIRMED になったときに確定メール＆個人宛お知らせを作成
     if (status === "CONFIRMED" && participation.status !== "CONFIRMED") {
       const full = await prisma.eventParticipation.findUnique({
         where: { id: pid },
@@ -71,15 +71,30 @@ export async function PATCH(
           event: true,
         },
       });
-      if (full?.member.user.email) {
-        sendEventConfirmationEmail({
-          to: full.member.user.email,
-          memberName: full.member.user.name,
-          eventTitle: full.event.title,
-          eventDate: full.event.eventDate,
-          startTime: full.event.startTime,
-          location: full.event.location,
-        }).catch(() => {});
+      if (full) {
+        if (full.member.user.email) {
+          sendEventConfirmationEmail({
+            to: full.member.user.email,
+            memberName: full.member.user.name,
+            eventTitle: full.event.title,
+            eventDate: full.event.eventDate,
+            startTime: full.event.startTime,
+            location: full.event.location,
+          }).catch(() => {});
+        }
+        const eventDateStr = full.event.eventDate.toLocaleDateString("ja-JP", {
+          year: "numeric", month: "long", day: "numeric",
+        });
+        await prisma.announcement.create({
+          data: {
+            templeId: authUser.templeId,
+            memberId: full.memberId,
+            title: `「${full.event.title}」への参加が確定しました`,
+            body: `${eventDateStr} ${full.event.startTime}〜${full.event.endTime} に開催される「${full.event.title}」への参加が確定しました。\n\n当日のご参加をお待ちしております。`,
+            targetSegment: "ALL",
+            publishedAt: new Date(),
+          },
+        });
       }
     }
 

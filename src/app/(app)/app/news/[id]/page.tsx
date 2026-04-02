@@ -24,10 +24,16 @@ export default async function NewsDetailPage({
 
   if (!announcement) notFound();
 
-  // セグメントアクセスチェック
-  const seg = announcement.targetSegment;
-  if (seg === "DANKA" && memberType !== "DANKA") redirect("/app/news");
-  if (seg === "GOEN" && memberType !== "GOEN") redirect("/app/news");
+  // アクセスチェック
+  if (announcement.memberId) {
+    // 個人宛: 本人のみ閲覧可
+    if (announcement.memberId !== authUser.member?.id) redirect("/app/news");
+  } else {
+    // 全体向け: セグメントチェック
+    const seg = announcement.targetSegment;
+    if (seg === "DANKA" && memberType !== "DANKA") redirect("/app/news");
+    if (seg === "GOEN" && memberType !== "GOEN") redirect("/app/news");
+  }
 
   return (
     <div className="p-4 max-w-lg mx-auto">

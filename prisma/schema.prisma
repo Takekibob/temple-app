@@ -225,6 +225,7 @@ model Member {
   donations        Donation[]
   lineStepQueues   LineStepQueue[]
   memberNotes      MemberNote[]
+  announcements    Announcement[]
 
   @@map("members")
 }
@@ -516,6 +517,7 @@ enum GojikaiStatus {
 model Announcement {
   id            String           @id @default(uuid())
   templeId      String
+  memberId      String?          // 個人宛通知の場合に設定（nullは全体向け）
   title         String
   body          String
   targetSegment AnnouncementTarget @default(ALL)
@@ -524,7 +526,8 @@ model Announcement {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  temple  Temple @relation(fields: [templeId], references: [id])
+  temple  Temple  @relation(fields: [templeId], references: [id])
+  member  Member? @relation(fields: [memberId], references: [id])
 
   @@map("announcements")
 }

@@ -3,6 +3,15 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
 
+const RESERVATION_TYPE_LABELS: Record<string, string> = {
+  ANNUAL_MEMORIAL: "年忌法要",
+  MONTHLY_MEMORIAL: "月命日",
+  NIBON: "新盆",
+  KUYO: "供養",
+  FUNERAL: "葬儀",
+  OTHER: "法要",
+};
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -86,6 +95,28 @@ export async function PATCH(
         deceasedPerson: { select: { id: true, name: true } },
       },
     });
+
+    // CONFIRMED になったとき: 個人宛お知らせを作成
+    if (status === "CONFIRMED" && reservation.status !== "CONFIRMED") {
+      const typeLabel = RESERVATION_TYPE_LABELS[reservation.type] ?? "法要";
+      const scheduledDate = new Date(updated.scheduledAt);
+      const dateStr = scheduledDate.toLocaleDateString("ja-JP", {
+        year: "numeric", month: "long", day: "numeric",
+      });
+      const timeStr = scheduledDate.toLocaleTimeString("ja-JP", {
+        hour: "2-digit", minute: "2-digit",
+      });
+      await prisma.announcement.create({
+        data: {
+          templeId: authUser.templeId,
+          memberId: reservation.memberId,
+          title: `${typeLabel}のご予約が確定しました`,
+          body: `${dateStr} ${timeStr} からの${typeLabel}のご予約が確定しました。\n\nご不明な点がございましたら、お寺までお問い合わせください。`,
+          targetSegment: "ALL",
+          publishedAt: new Date(),
+        },
+      });
+    }
 
     logActivity({
       templeId: authUser.templeId,

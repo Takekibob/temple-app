@@ -26,13 +26,17 @@ export default async function NewsPage() {
     where: {
       templeId: authUser.templeId,
       publishedAt: { not: null, lte: new Date() },
-      targetSegment: { in: allowedSegments },
+      OR: [
+        { memberId: null, targetSegment: { in: allowedSegments } },
+        ...(authUser.member ? [{ memberId: authUser.member.id }] : []),
+      ],
     },
     orderBy: { publishedAt: "desc" },
     select: {
       id: true,
       title: true,
       targetSegment: true,
+      memberId: true,
       publishedAt: true,
       body: true,
     },
@@ -56,7 +60,11 @@ export default async function NewsPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    {a.targetSegment !== "ALL" && (
+                    {a.memberId ? (
+                      <span className="inline-block text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mb-1 font-medium">
+                        あなた宛
+                      </span>
+                    ) : a.targetSegment !== "ALL" && (
                       <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full mb-1 font-medium">
                         {SEGMENT_LABELS[a.targetSegment]}限定
                       </span>
