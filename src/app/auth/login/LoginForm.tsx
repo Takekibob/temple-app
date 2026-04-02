@@ -42,7 +42,8 @@ export default function LoginForm() {
       if (result?.error) {
         setErrorMsg(result.error);
       } else if (result?.redirect) {
-        router.push(result.redirect);
+        // フルリロードでセッションクッキーを確実に反映させる
+        window.location.href = result.redirect;
       }
     });
   }
