@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const authUser = await requireAdmin();
   const body = await request.json();
-  const { name, description, price, interval, benefits, maxMembers, sortOrder } = body;
+  const { templateKey, name, description, price, interval, benefits, maxMembers, sortOrder } = body;
 
   if (!name || price == null) {
     return NextResponse.json({ error: "name and price are required" }, { status: 400 });
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
   const plan = await prisma.membershipPlan.create({
     data: {
       templeId: authUser.templeId,
+      templateKey: templateKey ?? null,
       name,
       description,
       price: Number(price),

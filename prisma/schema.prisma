@@ -756,6 +756,8 @@ model MembershipPlan {
   templeId        String
   temple          Temple               @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
+  templateKey     String?              // 定義済みテンプレートキー（BASIC / MONTHLY_SUPPORT / PREMIUM）
+
   name            String
   description     String?
   price           Int

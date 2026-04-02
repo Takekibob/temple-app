@@ -85,6 +85,7 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "⚙️", label: "設定", href: "/admin/settings", adminOnly: true, excludePrefix: "/admin/settings/scoring" },
       { icon: "🎯", label: "スコアリング設定", href: "/admin/settings/scoring", adminOnly: true },
       { icon: "👥", label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
+      { icon: "🎫", label: "会員プラン", href: "/admin/plans", adminOnly: true },
       { icon: "💳", label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
       { icon: "🔍", label: "操作ログ", href: "/admin/logs", adminOnly: true },
     ],
