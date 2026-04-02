@@ -69,6 +69,7 @@ export default function AnnualEventsClient({ initialEvents }: { initialEvents: A
   );
   const [templateLoading, startTemplate] = useTransition();
   const [templateDone, setTemplateDone] = useState(false);
+  const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -440,6 +441,35 @@ export default function AnnualEventsClient({ initialEvents }: { initialEvents: A
         </div>
       )}
 
+      {/* ── Template 重複確認ダイアログ ─────────────── */}
+      {showTemplateConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <p className="text-base font-semibold text-stone-800 mb-2">⚠️ 重複登録の注意</p>
+            <p className="text-sm text-stone-600 mb-3">
+              すでに <span className="font-semibold text-amber-700">{events.length}件</span> の行事が登録されています。
+            </p>
+            <p className="text-sm text-stone-600 mb-5">
+              テンプレートを一括登録すると、既存の行事と<span className="font-semibold text-red-600">重複して追加</span>されます。同じ行事が複数登録されても自動では削除されません。
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowTemplateConfirm(false)}
+                className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => { setShowTemplateConfirm(false); handleTemplateRegister(); }}
+                className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+              >
+                重複を理解した上で登録する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Template Modal ──────────────────────────── */}
       {showTemplate && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
@@ -502,7 +532,13 @@ export default function AnnualEventsClient({ initialEvents }: { initialEvents: A
                       キャンセル
                     </button>
                     <button
-                      onClick={handleTemplateRegister}
+                      onClick={() => {
+                        if (events.length > 0) {
+                          setShowTemplateConfirm(true);
+                        } else {
+                          handleTemplateRegister();
+                        }
+                      }}
                       disabled={templateLoading || templateSelected.size === 0}
                       className="px-5 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-50"
                     >
