@@ -44,6 +44,16 @@ export async function POST(
       data: { paymentStatus: "REFUNDED" },
     });
 
+    // 対応する Ofuse(EVENT_FEE) レコードを削除
+    await prisma.ofuse.deleteMany({
+      where: {
+        memberId: participation.memberId,
+        type: "EVENT_FEE",
+        amount: participation.paymentAmount ?? undefined,
+        notes: { contains: participation.event.title },
+      },
+    });
+
     return NextResponse.json({ refund: { id: refund.id, status: refund.status }, participation: updated });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";

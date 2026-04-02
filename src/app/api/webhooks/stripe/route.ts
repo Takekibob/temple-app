@@ -153,9 +153,26 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
-  // stripePaymentIntentId で参加レコードを特定して返金済みに更新
+  // 対象の参加レコードを取得して返金済みに更新
+  const participations = await prisma.eventParticipation.findMany({
+    where: { stripePaymentIntentId: paymentIntentId },
+    include: { event: { select: { title: true } } },
+  });
+
   await prisma.eventParticipation.updateMany({
     where: { stripePaymentIntentId: paymentIntentId },
     data: { paymentStatus: "REFUNDED" },
   });
+
+  // 対応する Ofuse(EVENT_FEE) レコードを削除
+  for (const p of participations) {
+    await prisma.ofuse.deleteMany({
+      where: {
+        memberId: p.memberId,
+        type: "EVENT_FEE",
+        amount: p.paymentAmount ?? undefined,
+        notes: { contains: p.event.title },
+      },
+    });
+  }
 }

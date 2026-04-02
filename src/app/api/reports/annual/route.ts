@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     const [ofuseRecords, gojikaiRecords, eventFeeRecords] = await Promise.all([
       prisma.ofuse.findMany({
-        // GOJIKAI は GojikaiPayment で集計するため除外（二重計上防止）
-        where: { templeId: authUser.templeId, paidAt: { gte: rangeStart }, type: { not: "GOJIKAI" } },
+        // GOJIKAI は GojikaiPayment、EVENT_FEE は EventParticipation で集計するため除外（二重計上防止）
+        where: { templeId: authUser.templeId, paidAt: { gte: rangeStart }, type: { notIn: ["GOJIKAI", "EVENT_FEE"] } },
         select: { paidAt: true, amount: true, type: true },
       }),
       prisma.gojikaiPayment.findMany({
@@ -37,8 +37,9 @@ export async function GET(request: NextRequest) {
             eventDate: { gte: rangeStart },
           },
           status: { in: ["CONFIRMED", "ATTENDED"] },
+          paymentStatus: { not: "REFUNDED" },
         },
-        select: { event: { select: { eventDate: true, fee: true } } },
+        select: { paymentAmount: true, event: { select: { eventDate: true, fee: true } } },
       }),
     ]);
 
@@ -67,9 +68,10 @@ export async function GET(request: NextRequest) {
     for (const record of eventFeeRecords) {
       const year = record.event.eventDate.getFullYear();
       if (!yearlyData[year]) continue;
-      yearlyData[year].total += record.event.fee;
+      const amount = record.paymentAmount ?? record.event.fee;
+      yearlyData[year].total += amount;
       yearlyData[year].byType["EVENT_FEE"] =
-        (yearlyData[year].byType["EVENT_FEE"] ?? 0) + record.event.fee;
+        (yearlyData[year].byType["EVENT_FEE"] ?? 0) + amount;
     }
 
     const data = Object.entries(yearlyData).map(([year, val]) => ({

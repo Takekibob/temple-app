@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     const [ofuseRecords, gojikaiRecords, eventFeeRecords] = await Promise.all([
       prisma.ofuse.findMany({
-        // GOJIKAI は GojikaiPayment で集計するため除外（二重計上防止）
-        where: { templeId: authUser.templeId, paidAt: { gte: startDate, lt: endDate }, type: { not: "GOJIKAI" } },
+        // GOJIKAI は GojikaiPayment、EVENT_FEE は EventParticipation で集計するため除外（二重計上防止）
+        where: { templeId: authUser.templeId, paidAt: { gte: startDate, lt: endDate }, type: { notIn: ["GOJIKAI", "EVENT_FEE"] } },
         select: { paidAt: true, amount: true, type: true },
       }),
       prisma.gojikaiPayment.findMany({
@@ -37,8 +37,9 @@ export async function GET(request: NextRequest) {
             eventDate: { gte: startDate, lt: endDate },
           },
           status: { in: ["CONFIRMED", "ATTENDED"] },
+          paymentStatus: { not: "REFUNDED" },
         },
-        select: { event: { select: { eventDate: true, fee: true } } },
+        select: { paymentAmount: true, event: { select: { eventDate: true, fee: true } } },
       }),
     ]);
 
@@ -65,9 +66,10 @@ export async function GET(request: NextRequest) {
 
     for (const record of eventFeeRecords) {
       const month = record.event.eventDate.getMonth() + 1;
-      monthlyData[month].total += record.event.fee;
+      const amount = record.paymentAmount ?? record.event.fee;
+      monthlyData[month].total += amount;
       monthlyData[month].byType["EVENT_FEE"] =
-        (monthlyData[month].byType["EVENT_FEE"] ?? 0) + record.event.fee;
+        (monthlyData[month].byType["EVENT_FEE"] ?? 0) + amount;
     }
 
     const data = Array.from({ length: 12 }, (_, i) => ({
