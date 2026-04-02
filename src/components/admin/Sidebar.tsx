@@ -36,6 +36,7 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "📅", label: "予約", href: "/admin/reservations" },
       { icon: "👥", label: "会員", href: "/admin/members" },
       { icon: "📖", label: "過去帳", href: "/admin/deceased" },
+      { icon: "✏️", label: "情報変更申請", href: "/admin/change-requests" },
     ],
   },
   {

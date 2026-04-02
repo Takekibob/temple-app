@@ -88,6 +88,7 @@ model Temple {
   templePage         TemplePage?
   analyticsSnapshots AnalyticsSnapshot[]
   memberNotes        MemberNote[]
+  memberChangeRequests MemberChangeRequest[]
 
   @@map("temples")
 }
@@ -123,6 +124,7 @@ model User {
   activityLogs ActivityLog[]
   proxyMembers Member[] @relation("ProxyMembers")
   memberNotes  MemberNote[]
+  reviewedChangeRequests MemberChangeRequest[]
 
   @@map("users")
 }
@@ -228,6 +230,7 @@ model Member {
   lineStepQueues   LineStepQueue[]
   memberNotes      MemberNote[]
   announcements    Announcement[]
+  changeRequests   MemberChangeRequest[]
 
   @@map("members")
 }
@@ -1224,4 +1227,35 @@ enum BlogPostStatus {
   PUBLISHED
 
   @@map("blog_post_status")
+}
+
+// ==========================================
+// 檀家情報変更申請
+// ==========================================
+model MemberChangeRequest {
+  id             String              @id @default(uuid())
+  memberId       String
+  templeId       String
+  status         ChangeRequestStatus @default(PENDING)
+  requestData    Json                // { familyName?, address?, postalCode?, phone?, email? }
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  rejectedReason String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  member   Member @relation(fields: [memberId], references: [id])
+  temple   Temple @relation(fields: [templeId], references: [id])
+  reviewer User?  @relation(fields: [reviewedBy], references: [id])
+
+  @@index([templeId, status])
+  @@map("member_change_requests")
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("change_request_status")
 }
