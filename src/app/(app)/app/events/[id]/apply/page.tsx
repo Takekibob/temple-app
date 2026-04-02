@@ -16,7 +16,7 @@ export default async function EventApplyPage({
   const isDanka = authUser.member.type === "DANKA";
 
   const event = await prisma.event.findFirst({
-    where: { id, templeId: authUser.templeId, status: "PUBLISHED" },
+    where: { id, status: "PUBLISHED" },
     include: {
       _count: {
         select: { participations: { where: { status: { notIn: ["CANCELLED", "WAITLISTED"] } } } },
@@ -25,7 +25,12 @@ export default async function EventApplyPage({
   });
 
   if (!event) notFound();
-  if (event.visibility === "DANKA_ONLY" && !isDanka) redirect("/app/events");
+
+  // DANKA_ONLY は自寺院の檀家のみ（detail ページと同じチェック）
+  if (event.visibility === "DANKA_ONLY") {
+    const isMyTempleDanka = isDanka && authUser.member.templeId === event.templeId;
+    if (!isMyTempleDanka) redirect("/app/events");
+  }
 
   // Check existing participation
   const existing = await prisma.eventParticipation.findUnique({

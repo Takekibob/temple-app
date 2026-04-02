@@ -20,11 +20,15 @@ export default function RegisterPage() {
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       setErrorMsg(null);
-      const result = await registerWithEmail(formData);
-      if (result?.error) {
-        setErrorMsg(result.error);
-      } else if (result?.success) {
-        setSentEmail(result.email as string);
+      try {
+        const result = await registerWithEmail(formData);
+        if (result?.error) {
+          setErrorMsg(result.error);
+        } else if (result?.success) {
+          setSentEmail(result.email as string);
+        }
+      } catch {
+        setErrorMsg("通信エラーが発生しました。再度お試しください。");
       }
     });
   }
@@ -33,8 +37,12 @@ export default function RegisterPage() {
     const token = (formData.get("token") as string).trim();
     startVerify(async () => {
       setOtpError(null);
-      const result = await verifySignupOtp(sentEmail!, token);
-      if (result?.error) setOtpError(result.error);
+      try {
+        const result = await verifySignupOtp(sentEmail!, token);
+        if (result?.error) setOtpError(result.error);
+      } catch {
+        setOtpError("通信エラーが発生しました。再度お試しください。");
+      }
     });
   }
 
