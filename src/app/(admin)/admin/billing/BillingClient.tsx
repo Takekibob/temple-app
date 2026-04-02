@@ -204,9 +204,13 @@ export default function BillingClient() {
         </div>
 
         {/* プランヘッダー */}
-        <div className="grid grid-cols-3 border-b border-stone-100 text-center text-xs font-semibold">
+        <div className="grid grid-cols-4 border-b border-stone-100 text-center text-xs font-semibold">
           <div className="px-3 py-3 text-stone-400 text-left pl-5">機能</div>
-          <div className="px-3 py-3 bg-blue-50 text-blue-700 border-x border-stone-100">
+          <div className="px-3 py-3 bg-stone-50 text-stone-600 border-x border-stone-100">
+            <p>フリー</p>
+            <p className="font-normal text-stone-400 mt-0.5">無料 / 永続</p>
+          </div>
+          <div className="px-3 py-3 bg-blue-50 text-blue-700 border-r border-stone-100">
             <p>トライアル</p>
             <p className="font-normal text-blue-500 mt-0.5">無料 / 30日間</p>
           </div>
@@ -218,26 +222,35 @@ export default function BillingClient() {
 
         {/* 機能行 */}
         {[
-          { label: "檀家・会員管理", trial: "500件まで", standard: "500件まで" },
-          { label: "予約・法要管理", trial: true, standard: true },
-          { label: "イベント管理・参加費決済", trial: true, standard: true },
-          { label: "お布施・収支管理", trial: true, standard: true },
-          { label: "護持会費管理・催促メール", trial: true, standard: true },
-          { label: "お知らせ配信", trial: true, standard: true },
-          { label: "LINE連携・ステップ配信", trial: true, standard: true },
-          { label: "メール・プッシュ通知", trial: true, standard: true },
-          { label: "年忌リマインダー", trial: true, standard: true },
-          { label: "OCR会員一括取込", trial: true, standard: true },
-          { label: "エンゲージメント分析", trial: true, standard: true },
-          { label: "スタッフアカウント追加", trial: true, standard: true },
-          { label: "会員向けサブスクプラン", trial: true, standard: true },
+          { label: "檀家・会員管理",           free: "50件まで",  trial: "500件まで", standard: "500件まで" },
+          { label: "予約・法要管理",           free: true,        trial: true,        standard: true },
+          { label: "イベント管理・参加費決済", free: false,       trial: true,        standard: true },
+          { label: "お布施・収支管理",         free: false,       trial: true,        standard: true },
+          { label: "護持会費管理・催促メール", free: false,       trial: true,        standard: true },
+          { label: "お知らせ配信",             free: true,        trial: true,        standard: true },
+          { label: "LINE連携・ステップ配信",   free: false,       trial: true,        standard: true },
+          { label: "メール・プッシュ通知",     free: false,       trial: true,        standard: true },
+          { label: "年忌リマインダー",         free: false,       trial: true,        standard: true },
+          { label: "OCR会員一括取込",          free: false,       trial: true,        standard: true },
+          { label: "エンゲージメント分析",     free: false,       trial: true,        standard: true },
+          { label: "スタッフアカウント追加",   free: false,       trial: true,        standard: true },
+          { label: "会員向けサブスクプラン",   free: false,       trial: true,        standard: true },
         ].map((row, i) => (
           <div
             key={i}
-            className={`grid grid-cols-3 border-b border-stone-50 text-sm ${i % 2 === 0 ? "" : "bg-stone-50/50"}`}
+            className={`grid grid-cols-4 border-b border-stone-50 text-sm ${i % 2 === 0 ? "" : "bg-stone-50/50"}`}
           >
             <div className="px-5 py-2.5 text-stone-700">{row.label}</div>
-            <div className="px-3 py-2.5 bg-blue-50/40 border-x border-stone-100 text-center">
+            <div className="px-3 py-2.5 bg-stone-50/60 border-x border-stone-100 text-center">
+              {typeof row.free === "string" ? (
+                <span className="text-xs text-stone-600 font-medium">{row.free}</span>
+              ) : row.free ? (
+                <span className="text-green-500 font-bold">✓</span>
+              ) : (
+                <span className="text-stone-300">—</span>
+              )}
+            </div>
+            <div className="px-3 py-2.5 bg-blue-50/40 border-r border-stone-100 text-center">
               {typeof row.trial === "string" ? (
                 <span className="text-xs text-blue-700 font-medium">{row.trial}</span>
               ) : (
