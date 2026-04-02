@@ -71,39 +71,36 @@ export default async function ReservationsPage() {
           <h2 className="text-sm font-medium text-stone-500 mb-2">予定</h2>
           <ul className="space-y-3">
             {upcoming.map((r) => (
-              <li key={r.id} className="bg-white rounded-xl border border-stone-200 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-stone-800">{TYPE_LABELS[r.type] ?? r.type}</p>
-                    {r.deceasedPerson && (
-                      <p className="text-xs text-stone-500 mt-0.5">{r.deceasedPerson.name}</p>
-                    )}
-                    <p className="text-sm text-stone-600 mt-1">
-                      {r.scheduledAt.toLocaleDateString("ja-JP", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        weekday: "short",
-                      })}{" "}
-                      {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <p className="text-xs text-stone-400 mt-0.5">{r.durationMin}分</p>
+              <li key={r.id}>
+                <Link
+                  href={`/app/reservations/${r.id}`}
+                  className="block bg-white rounded-xl border border-stone-200 p-4 hover:border-amber-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-stone-800">{TYPE_LABELS[r.type] ?? r.type}</p>
+                      {r.deceasedPerson && (
+                        <p className="text-xs text-stone-500 mt-0.5">{r.deceasedPerson.name}</p>
+                      )}
+                      <p className="text-sm text-stone-600 mt-1">
+                        {r.scheduledAt.toLocaleDateString("ja-JP", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          weekday: "short",
+                        })}{" "}
+                        {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      <p className="text-xs text-stone-400 mt-0.5">{r.durationMin}分</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
+                        {STATUS_LABELS[r.status]}
+                      </span>
+                      <span className="text-stone-300 text-sm">›</span>
+                    </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                    {STATUS_LABELS[r.status]}
-                  </span>
-                </div>
-                {(r.status === "PENDING" || r.status === "CONFIRMED") && (
-                  <div className="flex items-center gap-4 mt-3">
-                    <Link
-                      href={`/app/reservations/${r.id}/edit`}
-                      className="text-xs text-amber-700 hover:underline"
-                    >
-                      内容を変更する
-                    </Link>
-                    <CancelButton id={r.id} />
-                  </div>
-                )}
+                </Link>
               </li>
             ))}
           </ul>
@@ -127,18 +124,24 @@ export default async function ReservationsPage() {
           <h2 className="text-sm font-medium text-stone-500 mb-2">過去の予約（直近1年）</h2>
           <ul className="space-y-2">
             {recentPast.map((r) => (
-              <li key={r.id} className="bg-white rounded-xl border border-stone-100 p-3">
-                <div className="flex items-center justify-between">
+              <li key={r.id}>
+                <Link
+                  href={`/app/reservations/${r.id}`}
+                  className="flex items-center justify-between bg-white rounded-xl border border-stone-100 p-3 hover:border-stone-200 transition-colors"
+                >
                   <div>
                     <p className="text-sm font-medium text-stone-700">{TYPE_LABELS[r.type] ?? r.type}</p>
                     <p className="text-xs text-stone-400 mt-0.5">
                       {r.scheduledAt.toLocaleDateString("ja-JP")}
                     </p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                    {STATUS_LABELS[r.status]}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
+                      {STATUS_LABELS[r.status]}
+                    </span>
+                    <span className="text-stone-300 text-sm">›</span>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

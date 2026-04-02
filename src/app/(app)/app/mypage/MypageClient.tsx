@@ -89,35 +89,54 @@ export default function MypageClient({ user, member, templeId, subscriptionPlanN
           </div>
         </div>
 
-        {/* サービス */}
-        {member && (
-          <NavSection title="サービス">
+        {/* よく使う機能（檀家） */}
+        {isDanka && (
+          <NavSection title="よく使う機能">
+            <NavItem href="/app/reservations" icon="📿" label="法要予約" />
+            <NavItem href="/app/ofuse" icon="💰" label="お布施履歴" />
+            <NavItem href="/app/deceased" icon="📖" label="過去帳" />
+          </NavSection>
+        )}
+
+        {/* よく使う機能（ご縁さん） */}
+        {isGoen && (
+          <NavSection title="よく使う機能">
             <NavItem href="/app/subscriptions" icon="🎫" label="会員プラン"
               badge={subscriptionPlanName ? <span className="text-xs text-teal-600 font-medium">加入中</span> : undefined} />
-            {templeId && <NavItem href={`/app/temples/${templeId}`} icon="🏯" label="お寺について" />}
-            <NavItem href="/app/donations/new" icon="🎁" label="寄付する" />
+            <NavItem href="/app/events" icon="📅" label="イベント一覧" />
+            <NavItem href="/app/events/my" icon="❤️" label="参加予定のイベント" />
           </NavSection>
         )}
 
         {/* 履歴・記録 */}
         {member && (
           <NavSection title="履歴・記録">
-            <NavItem href="/app/events/my" icon="❤️" label="参加したイベント" />
+            <NavItem href="/app/events/my" icon="❤️" label="イベント参加履歴" />
+            {isDanka && <NavItem href="/app/reservations" icon="📿" label="法要予約履歴" />}
             {isDanka && <NavItem href="/app/ofuse" icon="💰" label="お布施履歴" />}
-            {isDanka && <NavItem href="/app/deceased" icon="📖" label="過去帳" />}
             <NavItem href="/app/donations" icon="🙏" label="寄付履歴" />
           </NavSection>
         )}
 
-        {/* 設定 */}
-        <NavSection title="設定">
+        {/* お寺・サービス */}
+        {member && (
+          <NavSection title="お寺・サービス">
+            {templeId && <NavItem href={`/app/temples/${templeId}`} icon="🏯" label="お寺について" />}
+            {isGoen && <NavItem href="/app/subscriptions" icon="🎫" label="会員プラン"
+              badge={subscriptionPlanName ? <span className="text-xs text-teal-600 font-medium">加入中</span> : undefined} />}
+            <NavItem href="/app/donations/new" icon="🎁" label="寄付する" />
+          </NavSection>
+        )}
+
+        {/* アカウント設定 */}
+        <NavSection title="アカウント設定">
+          {isDanka && <NavItem href="/app/mypage/danka-info" icon="📋" label="檀家情報" />}
           <NavItem href="/app/mypage/display" icon="🖥️" label="表示設定" />
           <NavItem href="/app/mypage/notifications" icon="🔔" label="通知設定" />
-          {isDanka && <NavItem href="/app/mypage/danka-info" icon="📋" label="檀家情報" />}
           <NavItem
             href="/app/mypage/line"
             icon="💚"
-            label="LINE設定"
+            label="LINE連携"
             badge={
               lineLinked
                 ? <span className="text-xs text-green-600 font-medium">連携済み</span>

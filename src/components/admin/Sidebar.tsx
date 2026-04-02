@@ -12,6 +12,7 @@ interface NavItem {
   adminOnly?: boolean;
   excludePrefix?: string;
   activePrefix?: string;
+  badgeKey?: "changeRequests";
 }
 
 interface NavSection {
@@ -24,6 +25,7 @@ interface SidebarProps {
   userName: string;
   isAdmin: boolean;
   planStatus?: string;
+  pendingChangeRequests?: number;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -33,10 +35,10 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "檀家管理",
     items: [
-      { icon: "📅", label: "予約", href: "/admin/reservations" },
-      { icon: "👥", label: "会員", href: "/admin/members" },
+      { icon: "📅", label: "法要予約", href: "/admin/reservations" },
+      { icon: "👥", label: "会員一覧", href: "/admin/members" },
       { icon: "📖", label: "過去帳", href: "/admin/deceased" },
-      { icon: "✏️", label: "情報変更申請", href: "/admin/change-requests" },
+      { icon: "✏️", label: "情報変更申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
     ],
   },
   {
@@ -50,8 +52,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "イベント管理",
     items: [
-      { icon: "🎋", label: "イベント", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
-      { icon: "🔬", label: "分析", href: "/admin/events/analytics", adminOnly: true },
+      { icon: "🎋", label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
+      { icon: "🔬", label: "イベント分析", href: "/admin/events/analytics", adminOnly: true },
     ],
   },
   {
@@ -59,7 +61,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: "📢", label: "お知らせ", href: "/admin/announcements" },
       { icon: "📝", label: "ブログ", href: "/admin/blog" },
-      { icon: "📅", label: "行事", href: "/admin/annual-events" },
+      { icon: "📅", label: "年間行事", href: "/admin/annual-events" },
       { icon: "💚", label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },
@@ -92,7 +94,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export default function Sidebar({ templeName, userName, isAdmin, planStatus }: SidebarProps) {
+export default function Sidebar({ templeName, userName, isAdmin, planStatus, pendingChangeRequests = 0 }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -208,7 +210,12 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus }: S
                       }`}
                     >
                       <span className="text-base">{item.icon}</span>
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.badgeKey === "changeRequests" && pendingChangeRequests > 0 && (
+                        <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                          {pendingChangeRequests > 9 ? "9+" : pendingChangeRequests}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>

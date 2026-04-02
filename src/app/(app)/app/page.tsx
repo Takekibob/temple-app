@@ -44,10 +44,13 @@ const GOEN_QUICK_SUBSCRIBED: QuickItem[] = [
   { icon: "🎁", label: "寄付", href: "/app/donations" },
 ];
 
-const GOEN_QUICK_FREE: QuickItem[] = [
-  ...GOEN_QUICK_BASE,
-  { icon: "🏯", label: "お寺について", href: "/app/temples" },
-];
+// GOEN_QUICK_FREE は templeId が必要なので関数で生成
+function getGoenQuickFree(templeId: string | null | undefined): QuickItem[] {
+  return [
+    ...GOEN_QUICK_BASE,
+    { icon: "🏯", label: "お寺について", href: templeId ? `/app/temples/${templeId}` : "/app/events" },
+  ];
+}
 
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
@@ -173,7 +176,7 @@ export default async function AppHomePage() {
     ? DANKA_QUICK
     : isSubscribed
     ? GOEN_QUICK_SUBSCRIBED
-    : GOEN_QUICK_FREE;
+    : getGoenQuickFree(authUser.templeId);
 
   const [exclusiveBlog, exclusiveEvent] = exclusivePreview ?? [null, null];
 

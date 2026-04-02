@@ -11,10 +11,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (authUser.role === "SUPER_ADMIN") redirect("/superadmin");
   if (authUser.role === "MEMBER") redirect("/app");
 
-  const temple = await prisma.temple.findUnique({
-    where: { id: authUser.templeId! },
-    select: { name: true, planStatus: true },
-  });
+  const [temple, pendingChangeRequests] = await Promise.all([
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId! },
+      select: { name: true, planStatus: true },
+    }),
+    prisma.memberChangeRequest.count({
+      where: { templeId: authUser.templeId!, status: "PENDING" },
+    }),
+  ]);
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
   const planStatus = temple?.planStatus ?? "TRIAL";
@@ -27,6 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         userName={authUser.name}
         isAdmin={isAdmin}
         planStatus={planStatus}
+        pendingChangeRequests={pendingChangeRequests}
       />
       <main className="flex-1 min-w-0 pt-14 lg:pt-0 relative">
         {/* CANCELLED / SUSPENDED: コンテンツ上に課金ゲートをオーバーレイ */}

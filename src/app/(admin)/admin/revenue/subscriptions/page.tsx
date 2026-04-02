@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
 import Link from "next/link";
+import CancelSubButton from "./CancelSubButton";
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   ACTIVE:   { label: "有効",       className: "bg-green-100 text-green-700" },
@@ -142,6 +143,7 @@ export default async function SubscriptionsPage({
                 <th className="px-4 py-3 text-right text-xs font-medium text-stone-500">金額</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-stone-500">ステータス</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-stone-500">次回更新</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-stone-500"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-50">
@@ -173,6 +175,11 @@ export default async function SubscriptionsPage({
                         : sub.canceledAt
                         ? `解約: ${new Date(sub.canceledAt).toLocaleDateString("ja-JP")}`
                         : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {sub.status === "ACTIVE" && (
+                        <CancelSubButton subId={sub.id} />
+                      )}
                     </td>
                   </tr>
                 );
