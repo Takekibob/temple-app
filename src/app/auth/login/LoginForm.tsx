@@ -50,19 +50,9 @@ export default function LoginForm() {
         }
         return;
       }
-      // ブラウザ側でセッション確立後、サーバー側でロールを確認してリダイレクト
-      const res = await fetch("/api/auth/me");
-      const json = await res.json();
-      if (json?.role === "SUPER_ADMIN") {
-        window.location.href = "/superadmin";
-      } else if (json?.role === "ADMIN" || json?.role === "STAFF") {
-        window.location.href = "/admin";
-      } else if (!res.ok || !json?.role) {
-        await supabase.auth.signOut();
-        setErrorMsg("アカウントの登録が完了していません。お手数ですが再度新規登録をお試しください。");
-      } else {
-        window.location.href = next;
-      }
+      // セッション確立後、ルートページへフルリロード
+      // page.tsx (force-dynamic) がサーバー側でロール判定して各ページへリダイレクトする
+      window.location.href = "/";
     });
   }
 
