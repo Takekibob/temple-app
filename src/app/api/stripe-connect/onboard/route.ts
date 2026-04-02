@@ -45,6 +45,7 @@ export async function POST() {
       refresh_url: `${SITE_URL}/admin/billing?connect=refresh`,
       return_url: `${SITE_URL}/admin/billing?connect=return`,
       type: "account_onboarding",
+      collection_options: { fields: "eventually_due" },
     });
 
     return NextResponse.json({ url: accountLink.url });
