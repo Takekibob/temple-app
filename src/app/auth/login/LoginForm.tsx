@@ -39,7 +39,11 @@ export default function LoginForm() {
     startTransition(async () => {
       setErrorMsg(null);
       const result = await loginWithEmail(formData);
-      if (result?.error) setErrorMsg(result.error);
+      if (result?.error) {
+        setErrorMsg(result.error);
+      } else if (result?.redirect) {
+        router.push(result.redirect);
+      }
     });
   }
 

@@ -47,17 +47,17 @@ export async function loginWithEmail(formData: FormData) {
       await supabase.auth.signOut();
       return { error: "このアカウントは無効化されています。管理者にお問い合わせください。" };
     }
-    // 最終ログイン日時を更新・スタッフ管理者は管理画面へ
+    // 最終ログイン日時を更新
     await prisma.user.update({ where: { email: authUser.email! }, data: { lastLoginAt: new Date() } });
     if (dbUser.role === "SUPER_ADMIN") {
-      redirect("/superadmin");
+      return { redirect: "/superadmin" };
     }
     if (["ADMIN", "STAFF"].includes(dbUser.role)) {
-      redirect("/admin");
+      return { redirect: "/admin" };
     }
   }
 
-  redirect("/app");
+  return { redirect: "/app" };
 }
 
 // ============================================================

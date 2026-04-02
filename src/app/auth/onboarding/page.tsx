@@ -19,8 +19,11 @@ export default async function OnboardingPage() {
       select: { role: true, member: { select: { id: true } } },
     });
 
+    if (dbUser?.role === "SUPER_ADMIN") {
+      redirect("/superadmin");
+    }
     if (dbUser?.member) {
-      if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+      if (["ADMIN", "STAFF"].includes(dbUser.role)) {
         redirect("/admin");
       }
       redirect("/app");
