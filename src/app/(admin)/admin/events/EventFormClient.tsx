@@ -39,6 +39,7 @@ const VISIBILITIES = [
 export default function EventFormClient({ initialData, isEdit, customCategories = [] }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
   const [imageUploading, setImageUploading] = useState(false);
@@ -48,6 +49,24 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
   const initialDate = initialData?.eventDate
     ? new Date(initialData.eventDate).toISOString().split("T")[0]
     : "";
+
+  async function handleDelete() {
+    if (!confirm("このイベントを削除しますか？この操作は取り消せません。")) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/events/${initialData!.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "削除に失敗しました");
+      } else {
+        router.push("/admin/events");
+      }
+    } catch {
+      setErrorMsg("通信エラーが発生しました");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -340,6 +359,20 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
             キャンセル
           </Link>
         </div>
+
+        {isEdit && (
+          <div className="pt-2 border-t border-stone-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDelete}
+              disabled={isDeleting || isPending}
+              className="w-full border-red-200 text-red-600 hover:bg-red-50"
+            >
+              {isDeleting ? "削除中…" : "このイベントを削除する"}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );

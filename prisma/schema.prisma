@@ -316,6 +316,7 @@ model Reservation {
   cateringOrder     Boolean           @default(false)
   cateringCount     Int?
   cateringDetail    String?
+  memberEditedAt    DateTime?         // 利用者が内容変更した最終日時
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

@@ -31,7 +31,7 @@ export default async function AdminReservationDetailPage({
           user: { select: { name: true, email: true, phone: true } },
         },
       },
-      deceasedPerson: true,
+      deceasedPerson: { select: { name: true, relationship: true } },
     },
   });
 
@@ -47,7 +47,14 @@ export default async function AdminReservationDetailPage({
       >
         ← 法要予約一覧
       </Link>
-      <h1 className="text-xl font-bold text-stone-800 mb-6">予約詳細</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-xl font-bold text-stone-800">予約詳細</h1>
+        {reservation.memberEditedAt && (
+          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+            内容変更あり（{reservation.memberEditedAt.toLocaleDateString("ja-JP")} {reservation.memberEditedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）
+          </span>
+        )}
+      </div>
 
       <div className="space-y-4">
         {/* 予約情報 */}
@@ -92,6 +99,30 @@ export default async function AdminReservationDetailPage({
                 <dd className="text-stone-800">{reservation.notes}</dd>
               </>
             )}
+
+            {reservation.attendees != null && (
+              <>
+                <dt className="text-stone-400">参列人数</dt>
+                <dd className="text-stone-800">{reservation.attendees}名</dd>
+              </>
+            )}
+
+            <dt className="text-stone-400">お清め</dt>
+            <dd className="text-stone-800">{reservation.purificationRequired ? "あり" : "なし"}</dd>
+
+            <dt className="text-stone-400">お花</dt>
+            <dd className="text-stone-800">
+              {reservation.flowerOrder
+                ? `注文あり${reservation.flowerDetail ? `（${reservation.flowerDetail}）` : ""}`
+                : "なし"}
+            </dd>
+
+            <dt className="text-stone-400">お料理</dt>
+            <dd className="text-stone-800">
+              {reservation.cateringOrder
+                ? `注文あり${reservation.cateringCount ? `・${reservation.cateringCount}名分` : ""}${reservation.cateringDetail ? `（${reservation.cateringDetail}）` : ""}`
+                : "なし"}
+            </dd>
 
             <dt className="text-stone-400">予約日</dt>
             <dd className="text-stone-400">{reservation.createdAt.toLocaleDateString("ja-JP")}</dd>

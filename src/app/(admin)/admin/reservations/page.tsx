@@ -147,6 +147,7 @@ function ReservationCalendar({
     durationMin: number;
     status: string;
     notes: string | null;
+    memberEditedAt: Date | null;
     member: { user: { name: string } };
     deceasedPerson: { name: string } | null;
   }>;
@@ -193,6 +194,11 @@ function ReservationCalendar({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {r.memberEditedAt && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        内容変更あり
+                      </span>
+                    )}
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
                       {STATUS_LABELS[r.status]}
                     </span>

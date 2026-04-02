@@ -161,6 +161,7 @@ export default async function AdminOfusePage({
                   <th className="text-left px-4 py-3 text-stone-500 font-medium">支払方法</th>
                   <th className="text-left px-4 py-3 text-stone-500 font-medium">領収書</th>
                   <th className="text-left px-4 py-3 text-stone-500 font-medium">備考</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
@@ -195,6 +196,14 @@ export default async function AdminOfusePage({
                     </td>
                     <td className="px-4 py-3 text-stone-500 text-xs max-w-xs truncate">
                       {o.notes ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/ofuse/${o.id}/edit`}
+                        className="text-xs text-amber-700 hover:underline whitespace-nowrap"
+                      >
+                        編集
+                      </Link>
                     </td>
                   </tr>
                 ))}

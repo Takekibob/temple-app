@@ -115,3 +115,37 @@ export async function PATCH(
     return NextResponse.json({ error: "更新に失敗しました" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authUser = await requireAuth();
+    if (!["ADMIN", "SUPER_ADMIN"].includes(authUser.role)) {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+    const { id } = await params;
+
+    const event = await prisma.event.findFirst({ where: { id, templeId: authUser.templeId } });
+    if (!event) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+    // 参加者がいる場合は削除不可
+    const participantCount = await prisma.eventParticipation.count({
+      where: { eventId: id, status: { notIn: ["CANCELLED"] } },
+    });
+    if (participantCount > 0) {
+      return NextResponse.json(
+        { error: `参加者が${participantCount}名います。先にキャンセル処理を行ってください。` },
+        { status: 400 }
+      );
+    }
+
+    await prisma.event.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "UNAUTHORIZED") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    return NextResponse.json({ error: "削除に失敗しました" }, { status: 500 });
+  }
+}

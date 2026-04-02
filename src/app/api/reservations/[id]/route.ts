@@ -90,6 +90,7 @@ export async function PATCH(
       const updated = await prisma.reservation.update({
         where: { id },
         data: {
+          memberEditedAt: new Date(),
           ...(deceasedPersonId !== undefined ? { deceasedPersonId: deceasedPersonId || null } : {}),
           ...(notes !== undefined ? { notes: notes || null } : {}),
           ...(attendees !== undefined ? { attendees: attendees ? Number(attendees) : null } : {}),
@@ -118,6 +119,7 @@ export async function PATCH(
     const updated = await prisma.reservation.update({
       where: { id },
       data: {
+        memberEditedAt: null, // 管理者が確認したのでバッジをクリア
         ...(status ? { status } : {}),
         ...(scheduledAt ? { scheduledAt: new Date(scheduledAt) } : {}),
         ...(durationMin ? { durationMin } : {}),

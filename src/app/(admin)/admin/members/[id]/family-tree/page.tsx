@@ -84,17 +84,25 @@ export default async function FamilyTreePage({
       </div>
 
       {/* 凡例・操作 */}
-      {member.deceasedPersons.length > 0 && (
-        <div className="mt-10 flex items-center justify-between text-xs text-stone-400 border-t border-stone-100 pt-4">
-          <span>故人 {member.deceasedPersons.length}名</span>
+      <div className="mt-10 flex items-center justify-between text-xs text-stone-400 border-t border-stone-100 pt-4">
+        <span>故人 {member.deceasedPersons.length}名</span>
+        <div className="flex items-center gap-4">
           <Link
-            href={`/admin/deceased?memberId=${id}`}
-            className="text-amber-700 hover:underline"
+            href={`/admin/deceased/new?memberId=${id}`}
+            className="text-amber-700 hover:underline font-medium"
           >
-            過去帳を管理する →
+            ＋ 過去帳に追加する
           </Link>
+          {member.deceasedPersons.length > 0 && (
+            <Link
+              href={`/admin/deceased?memberId=${id}`}
+              className="text-stone-400 hover:underline"
+            >
+              一覧で管理する →
+            </Link>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

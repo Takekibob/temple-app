@@ -12,8 +12,20 @@ interface Member {
   user: { name: string };
 }
 
+interface InitialData {
+  id: string;
+  memberId: string;
+  type: string;
+  amount: number;
+  paidAt: string;
+  paymentMethod: string;
+  receiptIssued: boolean;
+  notes: string | null;
+}
+
 interface Props {
   members: Member[];
+  initial?: InitialData;
 }
 
 // 護持会費は GojikaiPayment で管理するため除外（二重計上防止）
@@ -30,12 +42,15 @@ const PAYMENT_OPTIONS = [
   { value: "ONLINE", label: "オンライン" },
 ];
 
-export default function OfuseFormClient({ members }: Props) {
+export default function OfuseFormClient({ members, initial }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const isEdit = !!initial;
   const today = new Date().toISOString().split("T")[0];
+  const initialDate = initial?.paidAt ? new Date(initial.paidAt).toISOString().split("T")[0] : today;
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,18 +60,22 @@ export default function OfuseFormClient({ members }: Props) {
     startTransition(async () => {
       setErrorMsg(null);
       try {
-        const res = await fetch("/api/ofuse", {
-          method: "POST",
+        const url = isEdit ? `/api/ofuse/${initial.id}` : "/api/ofuse";
+        const method = isEdit ? "PATCH" : "POST";
+        const body: Record<string, unknown> = {
+          type: data.get("type"),
+          amount: data.get("amount"),
+          paidAt: data.get("paidAt"),
+          paymentMethod: data.get("paymentMethod"),
+          receiptIssued: data.get("receiptIssued") === "on",
+          notes: data.get("notes") || null,
+        };
+        if (!isEdit) body.memberId = data.get("memberId");
+
+        const res = await fetch(url, {
+          method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            memberId: data.get("memberId"),
-            type: data.get("type"),
-            amount: data.get("amount"),
-            paidAt: data.get("paidAt"),
-            paymentMethod: data.get("paymentMethod"),
-            receiptIssued: data.get("receiptIssued") === "on",
-            notes: data.get("notes") || null,
-          }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           const json = await res.json();
@@ -71,6 +90,23 @@ export default function OfuseFormClient({ members }: Props) {
     });
   }
 
+  async function handleDelete() {
+    if (!confirm("このお布施記録を削除しますか？この操作は取り消せません。")) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/ofuse/${initial!.id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/admin/ofuse");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error ?? "削除に失敗しました");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {errorMsg && (
@@ -79,24 +115,26 @@ export default function OfuseFormClient({ members }: Props) {
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="memberId" className="text-stone-700">
-          会員 <span className="text-red-500">*</span>
-        </Label>
-        <select
-          id="memberId"
-          name="memberId"
-          required
-          className="w-full h-10 rounded-md border border-stone-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-        >
-          <option value="">-- 会員を選択 --</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.user.name}{m.familyName ? ` (${m.familyName}家)` : ""}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!isEdit && (
+        <div className="space-y-1.5">
+          <Label htmlFor="memberId" className="text-stone-700">
+            会員 <span className="text-red-500">*</span>
+          </Label>
+          <select
+            id="memberId"
+            name="memberId"
+            required
+            className="w-full h-10 rounded-md border border-stone-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            <option value="">-- 会員を選択 --</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.user.name}{m.familyName ? ` (${m.familyName}家)` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
@@ -107,6 +145,7 @@ export default function OfuseFormClient({ members }: Props) {
             id="type"
             name="type"
             required
+            defaultValue={initial?.type ?? "HOUYO"}
             className="w-full h-10 rounded-md border border-stone-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             {TYPE_OPTIONS.map((opt) => (
@@ -125,6 +164,7 @@ export default function OfuseFormClient({ members }: Props) {
             id="paymentMethod"
             name="paymentMethod"
             required
+            defaultValue={initial?.paymentMethod ?? "CASH"}
             className="w-full h-10 rounded-md border border-stone-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             {PAYMENT_OPTIONS.map((opt) => (
@@ -147,6 +187,7 @@ export default function OfuseFormClient({ members }: Props) {
             type="number"
             min="1"
             required
+            defaultValue={initial?.amount ?? ""}
             placeholder="10000"
             className="border-stone-200 focus-visible:ring-amber-500"
           />
@@ -162,20 +203,19 @@ export default function OfuseFormClient({ members }: Props) {
             type="date"
             required
             max={today}
-            defaultValue={today}
+            defaultValue={initialDate}
             className="border-stone-200 focus-visible:ring-amber-500"
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="notes" className="text-stone-700">
-          備考
-        </Label>
+        <Label htmlFor="notes" className="text-stone-700">備考</Label>
         <Input
           id="notes"
           name="notes"
           type="text"
+          defaultValue={initial?.notes ?? ""}
           placeholder="メモ（任意）"
           className="border-stone-200 focus-visible:ring-amber-500"
         />
@@ -186,6 +226,7 @@ export default function OfuseFormClient({ members }: Props) {
           id="receiptIssued"
           name="receiptIssued"
           type="checkbox"
+          defaultChecked={initial?.receiptIssued ?? false}
           className="rounded border-stone-300 text-amber-700 focus:ring-amber-500"
         />
         <Label htmlFor="receiptIssued" className="text-stone-700 font-normal cursor-pointer">
@@ -197,7 +238,7 @@ export default function OfuseFormClient({ members }: Props) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() => router.push("/admin/ofuse")}
           className="flex-1 border-stone-200 text-stone-600"
         >
           キャンセル
@@ -207,9 +248,23 @@ export default function OfuseFormClient({ members }: Props) {
           disabled={isPending}
           className="flex-1 bg-amber-700 hover:bg-amber-800 text-white"
         >
-          {isPending ? "保存中…" : "保存する"}
+          {isPending ? "保存中…" : isEdit ? "変更を保存" : "保存する"}
         </Button>
       </div>
+
+      {isEdit && (
+        <div className="pt-2 border-t border-stone-100">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+          >
+            {isDeleting ? "削除中…" : "この記録を削除する"}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
