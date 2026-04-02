@@ -12,6 +12,8 @@ export default async function EventApplyPage({
   if (!authUser) redirect("/");
   if (!authUser.member) redirect("/app");
 
+  const isAdminOrStaff = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
+
   const { id } = await params;
   const isDanka = authUser.member.type === "DANKA";
 
@@ -41,6 +43,19 @@ export default async function EventApplyPage({
   }
 
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
+
+  if (isAdminOrStaff) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+        <div className="max-w-sm text-center">
+          <p className="text-stone-600 mb-4">管理者・スタッフはイベントへの申込ができません。</p>
+          <a href={`/app/events/${id}`} className="text-amber-700 text-sm hover:text-amber-900">
+            イベント詳細に戻る
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ApplyClient

@@ -9,6 +9,9 @@ export async function POST(request: NextRequest) {
     if (!authUser.member) {
       return NextResponse.json({ error: "会員情報が見つかりません" }, { status: 403 });
     }
+    if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role)) {
+      return NextResponse.json({ error: "管理者・スタッフはイベントへの申込ができません" }, { status: 403 });
+    }
 
     const { eventId, numGuests = 1 } = await request.json();
 
