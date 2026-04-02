@@ -46,6 +46,12 @@ export default async function SubscriptionsPage() {
         <p className="text-sm text-stone-500 mt-0.5">サブスクリプションプランの確認・加入</p>
       </div>
 
+      {isAdminOrStaff && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 mb-6 text-center">
+          管理者・スタッフはこの機能を利用できません
+        </div>
+      )}
+
       {/* 加入中プラン */}
       {mySubscriptions.length > 0 && (
         <div className="mb-6">

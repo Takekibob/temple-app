@@ -27,6 +27,7 @@ export default async function DonationsPage() {
     }),
   ]);
 
+  const isAdminOrStaff = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
   const total = donations.reduce((sum, d) => sum + d.amount, 0);
   const donationEnabled = temple?.stripeConnectOnboarded ?? false;
 
@@ -39,7 +40,11 @@ export default async function DonationsPage() {
         </p>
       </div>
 
-      {donationEnabled ? (
+      {isAdminOrStaff ? (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 mb-6 text-center">
+          管理者・スタッフはこの機能を利用できません
+        </div>
+      ) : donationEnabled ? (
         <Link
           href="/app/donations/new"
           className="block w-full bg-amber-700 text-white text-center py-3 rounded-xl text-sm font-medium mb-6 hover:bg-amber-800"
