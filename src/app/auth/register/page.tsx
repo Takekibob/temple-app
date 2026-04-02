@@ -51,7 +51,7 @@ export default function RegisterPage() {
             <p className="font-semibold text-stone-800">確認コードを入力してください</p>
             <p className="text-sm text-stone-500 mt-1">
               <span className="font-medium text-stone-700">{sentEmail}</span>
-              <br />に送信した6桁のコードを入力してください
+              <br />に送信した8桁のコードを入力してください
             </p>
           </div>
 
