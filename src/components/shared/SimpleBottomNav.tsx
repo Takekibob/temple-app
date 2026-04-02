@@ -30,7 +30,18 @@ export default function SimpleBottomNav({ isDanka }: Props) {
         </div>
       )}
       <div className="flex items-center justify-around px-4 py-3 gap-2">
-        {isDanka && (
+        <Link
+          href="/app"
+          className={`${btnBase} flex-1 py-3 ${
+            pathname === "/app"
+              ? "bg-amber-700 text-white"
+              : "bg-stone-100 text-stone-700"
+          }`}
+        >
+          <span className="text-xl">🏠</span>
+          <span>ホーム</span>
+        </Link>
+        {isDanka ? (
           <Link
             href="/app/reservations"
             className={`${btnBase} flex-1 py-3 ${
@@ -42,18 +53,19 @@ export default function SimpleBottomNav({ isDanka }: Props) {
             <span className="text-xl">📿</span>
             <span>法要予約</span>
           </Link>
+        ) : (
+          <Link
+            href="/app/events"
+            className={`${btnBase} flex-1 py-3 ${
+              pathname.startsWith("/app/events")
+                ? "bg-amber-700 text-white"
+                : "bg-stone-100 text-stone-700"
+            }`}
+          >
+            <span className="text-xl">📅</span>
+            <span>イベント</span>
+          </Link>
         )}
-        <Link
-          href="/app/events"
-          className={`${btnBase} flex-1 py-3 ${
-            pathname.startsWith("/app/events")
-              ? "bg-amber-700 text-white"
-              : "bg-stone-100 text-stone-700"
-          }`}
-        >
-          <span className="text-xl">📅</span>
-          <span>イベント</span>
-        </Link>
         <Link
           href="/app/news"
           className={`${btnBase} flex-1 py-3 ${

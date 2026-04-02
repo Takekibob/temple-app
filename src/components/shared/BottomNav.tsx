@@ -24,24 +24,31 @@ export default function BottomNav({ isDanka }: BottomNavProps) {
         <span className="text-xl">🏠</span>
         <span>ホーム</span>
       </Link>
-      <Link href="/app/calendar" className={linkClass("/app/calendar")}>
-        <span className="text-xl">📆</span>
-        <span>カレンダー</span>
-      </Link>
-      {isDanka && (
-        <Link href="/app/reservations" className={linkClass("/app/reservations")}>
-          <span className="text-xl">📿</span>
-          <span>法要予約</span>
-        </Link>
+
+      {isDanka ? (
+        <>
+          <Link href="/app/reservations" className={linkClass("/app/reservations")}>
+            <span className="text-xl">📿</span>
+            <span>法要予約</span>
+          </Link>
+          <Link href="/app/events" className={linkClass("/app/events")}>
+            <span className="text-xl">📅</span>
+            <span>イベント</span>
+          </Link>
+        </>
+      ) : (
+        <>
+          <Link href="/app/events" className={linkClass("/app/events")}>
+            <span className="text-xl">📅</span>
+            <span>イベント</span>
+          </Link>
+          <Link href="/app/blog" className={linkClass("/app/blog")}>
+            <span className="text-xl">📝</span>
+            <span>ブログ</span>
+          </Link>
+        </>
       )}
-      <Link href="/app/events" className={linkClass("/app/events")}>
-        <span className="text-xl">📅</span>
-        <span>イベント</span>
-      </Link>
-      <Link href="/app/blog" className={linkClass("/app/blog")}>
-        <span className="text-xl">📝</span>
-        <span>ブログ</span>
-      </Link>
+
       <Link href="/app/news" className={linkClass("/app/news")}>
         <span className="text-xl">📢</span>
         <span>お知らせ</span>
