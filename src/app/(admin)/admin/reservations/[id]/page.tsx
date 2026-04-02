@@ -47,13 +47,27 @@ export default async function AdminReservationDetailPage({
       >
         ← 法要予約一覧
       </Link>
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-xl font-bold text-stone-800">予約詳細</h1>
-        {reservation.memberEditedAt && (
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-            内容変更あり（{reservation.memberEditedAt.toLocaleDateString("ja-JP")} {reservation.memberEditedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）
-          </span>
-        )}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-stone-800">予約詳細</h1>
+          {reservation.memberEditedAt && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              内容変更あり（{reservation.memberEditedAt.toLocaleDateString("ja-JP")} {reservation.memberEditedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）
+            </span>
+          )}
+          {reservation.isAdminCreated && (
+            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+              代理入力
+            </span>
+          )}
+        </div>
+        <Link
+          href={`/admin/reservations/${id}/print`}
+          target="_blank"
+          className="px-3 py-1.5 text-sm border border-stone-200 text-stone-600 rounded-lg hover:bg-stone-50"
+        >
+          印刷
+        </Link>
       </div>
 
       <div className="space-y-4">

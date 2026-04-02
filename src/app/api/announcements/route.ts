@@ -23,17 +23,22 @@ export async function GET() {
       ? ["ALL", "GOEN"]
       : ["ALL"];
 
+    const memberId = authUser.member?.id ?? null;
     const announcements = await prisma.announcement.findMany({
       where: {
         templeId: authUser.templeId,
         publishedAt: { not: null, lte: new Date() },
-        targetSegment: { in: allowedSegments },
+        OR: [
+          { targetSegment: { in: allowedSegments }, memberId: null },
+          ...(memberId ? [{ memberId }] : []),
+        ],
       },
       orderBy: { publishedAt: "desc" },
       select: {
         id: true,
         title: true,
         targetSegment: true,
+        memberId: true,
         publishedAt: true,
         createdAt: true,
       },
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
     const authUser = await requireAdminOrStaff();
 
     const body = await request.json();
-    const { title, body: content, targetSegment, publish, sendPush, sendLine } = body;
+    const { title, body: content, targetSegment, memberId, publish, sendPush, sendLine } = body;
 
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: "タイトルと本文は必須です" }, { status: 400 });
@@ -62,12 +67,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "不正なセグメント値です" }, { status: 400 });
     }
 
+    // Validate individual member if specified
+    if (memberId) {
+      const member = await prisma.member.findFirst({ where: { id: memberId, templeId: authUser.templeId } });
+      if (!member) return NextResponse.json({ error: "会員が見つかりません" }, { status: 404 });
+    }
+
     const announcement = await prisma.announcement.create({
       data: {
         templeId: authUser.templeId,
         title: title.trim(),
         body: content.trim(),
         targetSegment: targetSegment ?? "ALL",
+        memberId: memberId || null,
         publishedAt: publish ? new Date() : null,
         pushSent: false,
       },

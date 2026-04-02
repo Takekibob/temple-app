@@ -37,6 +37,7 @@ const PAYMENT_COLORS: Record<string, string> = {
 
 interface Participant {
   id: string;
+  memberId: string;
   status: string;
   numGuests: number;
   paymentStatus: string;
@@ -48,18 +49,28 @@ interface Participant {
   };
 }
 
+interface TemplateMember {
+  id: string;
+  name: string;
+  familyName: string;
+}
+
 interface Props {
   eventId: string;
   initialParticipants: Participant[];
+  allMembers: TemplateMember[];
 }
 
-export default function ParticipantsClient({ eventId, initialParticipants }: Props) {
+export default function ParticipantsClient({ eventId, initialParticipants, allMembers }: Props) {
   const [participants, setParticipants] = useState(initialParticipants);
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error">("success");
   const [refundingId, setRefundingId] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addMemberId, setAddMemberId] = useState("");
+  const [addGuests, setAddGuests] = useState(1);
 
   function showMsg(text: string, type: "success" | "error" = "success") {
     setMsg(text);
@@ -104,6 +115,42 @@ export default function ParticipantsClient({ eventId, initialParticipants }: Pro
     } finally {
       setRefundingId(null);
     }
+  }
+
+  function handleManualAdd() {
+    if (!addMemberId) return;
+    startTransition(async () => {
+      const res = await fetch(`/api/events/${eventId}/participants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: addMemberId, numGuests: addGuests }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const p = data.participation;
+        const existing = participants.find((x) => x.memberId === addMemberId);
+        if (existing) {
+          setParticipants((prev) => prev.map((x) => x.memberId === addMemberId ? { ...x, status: "CONFIRMED", numGuests: addGuests } : x));
+        } else {
+          setParticipants((prev) => [...prev, {
+            id: p.id,
+            memberId: p.memberId,
+            status: p.status,
+            numGuests: p.numGuests,
+            paymentStatus: p.paymentStatus,
+            stripePaymentIntentId: null,
+            createdAt: new Date().toISOString(),
+            member: { familyName: p.member.familyName, user: { name: p.member.user.name, email: p.member.user.email, phone: p.member.user.phone } },
+          }]);
+        }
+        setShowAddForm(false);
+        setAddMemberId("");
+        setAddGuests(1);
+        showMsg("参加者を追加しました");
+      } else {
+        showMsg(data.error ?? "追加に失敗しました", "error");
+      }
+    });
   }
 
   // 一括出席確認
@@ -151,6 +198,12 @@ export default function ParticipantsClient({ eventId, initialParticipants }: Pro
         <h2 className="font-semibold text-stone-800">参加者一覧（{active.length}名）</h2>
         <div className="flex gap-2">
           <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className="px-3 py-1.5 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          >
+            手動追加
+          </button>
+          <button
             onClick={() => setShowEmailModal(true)}
             className="px-3 py-1.5 bg-stone-700 text-white text-sm rounded-lg hover:bg-stone-800"
           >
@@ -165,6 +218,52 @@ export default function ParticipantsClient({ eventId, initialParticipants }: Pro
           </button>
         </div>
       </div>
+
+      {showAddForm && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3 space-y-3">
+          <h3 className="text-sm font-semibold text-stone-800">参加者を手動追加</h3>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-stone-600 mb-1">会員</label>
+              <select
+                value={addMemberId}
+                onChange={(e) => setAddMemberId(e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+              >
+                <option value="">選択してください</option>
+                {allMembers
+                  .filter((m) => !participants.some((p) => p.memberId === m.id && p.status !== "CANCELLED"))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}（{m.familyName}家）</option>
+                  ))}
+              </select>
+            </div>
+            <div className="w-20">
+              <label className="block text-xs font-medium text-stone-600 mb-1">人数</label>
+              <input
+                type="number"
+                min={1}
+                value={addGuests}
+                onChange={(e) => setAddGuests(Number(e.target.value))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+              />
+            </div>
+            <button
+              onClick={handleManualAdd}
+              disabled={isPending || !addMemberId}
+              className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-40"
+            >
+              追加
+            </button>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-2 text-sm text-stone-500 hover:text-stone-700"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-4">
         <div className="overflow-x-auto">

@@ -277,6 +277,52 @@ export default async function MemberDetailPage({
 
         {/* 右カラム: エンゲージメント + 対応履歴 */}
         <div className="space-y-4">
+          {/* LINE連携状況 */}
+          <section className="bg-white rounded-xl border border-stone-200 p-4">
+            <h2 className="font-semibold text-stone-800 mb-3">LINE連携</h2>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`w-2 h-2 rounded-full ${member.lineUserId ? "bg-green-500" : "bg-stone-300"}`} />
+              <span className="text-sm font-medium text-stone-700">
+                {member.lineUserId ? "連携済み" : "未連携"}
+              </span>
+            </div>
+            {member.lineUserId && (
+              <dl className="space-y-1 text-xs text-stone-500">
+                <div className="flex justify-between">
+                  <dt>通知有効</dt>
+                  <dd className={member.lineNotifyEnabled ? "text-teal-700 font-medium" : "text-stone-400"}>
+                    {member.lineNotifyEnabled ? "有効" : "無効"}
+                  </dd>
+                </div>
+                {member.lineNotifyEnabled && (
+                  <>
+                    <div className="flex justify-between">
+                      <dt>予約通知</dt>
+                      <dd>{member.notifyReservation ? "✓" : "—"}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>イベント通知</dt>
+                      <dd>{member.notifyEvent ? "✓" : "—"}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>命日通知</dt>
+                      <dd>{member.notifyAnniversary ? "✓" : "—"}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>お知らせ通知</dt>
+                      <dd>{member.notifyAnnouncement ? "✓" : "—"}</dd>
+                    </div>
+                  </>
+                )}
+              </dl>
+            )}
+            {!member.lineUserId && member.lineCode && member.lineCodeExpiresAt && (
+              <p className="text-xs text-amber-600 mt-1">
+                連携コード有効期限: {member.lineCodeExpiresAt.toLocaleDateString("ja-JP")}
+              </p>
+            )}
+          </section>
+
           {/* エンゲージメントスコア */}
           <section className="bg-white rounded-xl border border-stone-200 p-4 text-center">
             <p className="text-xs text-stone-400 mb-1">エンゲージメントスコア</p>

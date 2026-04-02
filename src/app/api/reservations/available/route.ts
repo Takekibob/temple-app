@@ -19,14 +19,22 @@ export async function GET(request: NextRequest) {
     const dayEnd = new Date(`${date}T23:59:59`);
 
     // Fetch existing reservations for that day
-    const existing = await prisma.reservation.findMany({
-      where: {
-        templeId: authUser.templeId,
-        status: { notIn: ["CANCELLED"] },
-        scheduledAt: { gte: dayStart, lte: dayEnd },
-      },
-      select: { scheduledAt: true, durationMin: true },
-    });
+    const [existing, blocks] = await Promise.all([
+      prisma.reservation.findMany({
+        where: {
+          templeId: authUser.templeId,
+          status: { notIn: ["CANCELLED"] },
+          scheduledAt: { gte: dayStart, lte: dayEnd },
+        },
+        select: { scheduledAt: true, durationMin: true },
+      }),
+      prisma.reservationBlock.findMany({
+        where: { templeId: authUser.templeId, date },
+      }),
+    ]);
+
+    // If any full-day block exists, no slots available
+    const hasFullDayBlock = blocks.some((b) => !b.startTime && !b.endTime);
 
     // Generate candidate slots: 9:00, 10:00, ... 16:00 (last start for 60-min = 16:00)
     const slots: { time: string; available: boolean }[] = [];
@@ -37,10 +45,22 @@ export async function GET(request: NextRequest) {
       slotStart.setMinutes(minutesFromMidnight);
       const slotEnd = new Date(slotStart.getTime() + duration * 60 * 1000);
 
-      // Check conflict
+      // Check reservation conflict
       const hasConflict = existing.some((r) => {
         const rEnd = new Date(r.scheduledAt.getTime() + r.durationMin * 60 * 1000);
         return slotStart < rEnd && slotEnd > r.scheduledAt;
+      });
+
+      // Check block conflict
+      const slotMinutes = minutesFromMidnight;
+      const slotEndMinutes = slotMinutes + duration;
+      const isBlocked = hasFullDayBlock || blocks.some((b) => {
+        if (!b.startTime || !b.endTime) return false;
+        const [bsh, bsm] = b.startTime.split(":").map(Number);
+        const [beh, bem] = b.endTime.split(":").map(Number);
+        const bStart = bsh * 60 + bsm;
+        const bEnd = beh * 60 + bem;
+        return slotMinutes < bEnd && slotEndMinutes > bStart;
       });
 
       // Skip past slots
@@ -49,7 +69,7 @@ export async function GET(request: NextRequest) {
       const hh = String(Math.floor(minutesFromMidnight / 60)).padStart(2, "0");
       const mm = String(minutesFromMidnight % 60).padStart(2, "0");
 
-      slots.push({ time: `${hh}:${mm}`, available: !hasConflict && !isPast });
+      slots.push({ time: `${hh}:${mm}`, available: !hasConflict && !isBlocked && !isPast });
     }
 
     return NextResponse.json({ slots });

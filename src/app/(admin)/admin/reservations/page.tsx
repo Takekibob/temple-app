@@ -92,6 +92,20 @@ export default async function AdminReservationsPage({
             <p className="text-sm text-amber-700 mt-0.5">確認待ち {pendingCount} 件</p>
           )}
         </div>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/reservations/blocks"
+            className="px-3 py-2 text-sm border border-stone-200 text-stone-600 rounded-lg hover:bg-stone-50"
+          >
+            予約不可日設定
+          </Link>
+          <Link
+            href="/admin/reservations/new"
+            className="px-3 py-2 text-sm bg-amber-700 text-white rounded-lg hover:bg-amber-800"
+          >
+            代理予約入力
+          </Link>
+        </div>
       </div>
 
       {/* Month navigation */}
@@ -158,6 +172,7 @@ function ReservationCalendar({
     status: string;
     notes: string | null;
     memberEditedAt: Date | null;
+    isAdminCreated: boolean;
     member: { user: { name: string } };
     deceasedPerson: { name: string } | null;
   }>;
@@ -205,6 +220,11 @@ function ReservationCalendar({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {r.isAdminCreated && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                        代理入力
+                      </span>
+                    )}
                     {r.memberEditedAt && (
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                         内容変更あり

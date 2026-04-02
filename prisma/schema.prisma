@@ -76,6 +76,7 @@ model Temple {
   pushSubscriptions PushSubscription[]
   favoriteByMembers MemberFavoriteTemple[]
   blogPosts    BlogPost[]
+  reservationBlocks ReservationBlock[]
   activityLogs ActivityLog[]
   scoringRules ScoringRule[]
   membershipPlans    MembershipPlan[]
@@ -318,6 +319,7 @@ model Reservation {
   cateringCount     Int?
   cateringDetail    String?
   memberEditedAt    DateTime?         // 利用者が内容変更した最終日時
+  isAdminCreated    Boolean           @default(false) // 管理者代理入力
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -327,6 +329,24 @@ model Reservation {
   ofuse           Ofuse[]
 
   @@map("reservations")
+}
+
+// ==========================================
+// 予約不可ブロック
+// ==========================================
+model ReservationBlock {
+  id        String   @id @default(uuid())
+  templeId  String
+  date      String   // YYYY-MM-DD
+  startTime String?  // HH:MM (null = 全日)
+  endTime   String?  // HH:MM (null = 全日)
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  temple Temple @relation(fields: [templeId], references: [id])
+
+  @@map("reservation_blocks")
 }
 
 enum ReservationType {

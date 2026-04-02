@@ -53,29 +53,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authUser = await requireAuth();
-    if (!authUser.member) {
-      return NextResponse.json({ error: "会員情報が見つかりません" }, { status: 403 });
-    }
-    if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role)) {
-      return NextResponse.json({ error: "管理者・スタッフは法要の予約ができません" }, { status: 403 });
-    }
-    if (authUser.member.type !== "DANKA") {
-      return NextResponse.json({ error: "法要予約は檀家のみ利用できます" }, { status: 403 });
-    }
+    const isAdmin = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
     const body = await request.json();
     const {
       type, scheduledAt, durationMin = 60, deceasedPersonId, notes,
       attendees, purificationRequired, flowerOrder, flowerDetail,
       cateringOrder, cateringCount, cateringDetail,
+      // Admin proxy: memberId can be specified by admin
+      memberId: proxyMemberId,
     } = body;
+
+    // Determine the target member
+    let targetMemberId: string;
+    if (isAdmin) {
+      // Admin must specify a memberId
+      if (!proxyMemberId) {
+        return NextResponse.json({ error: "memberId is required for admin" }, { status: 400 });
+      }
+      const targetMember = await prisma.member.findFirst({
+        where: { id: proxyMemberId, templeId: authUser.templeId, type: "DANKA" },
+      });
+      if (!targetMember) {
+        return NextResponse.json({ error: "指定された檀家が見つかりません" }, { status: 404 });
+      }
+      targetMemberId = targetMember.id;
+    } else {
+      if (!authUser.member) {
+        return NextResponse.json({ error: "会員情報が見つかりません" }, { status: 403 });
+      }
+      if (authUser.member.type !== "DANKA") {
+        return NextResponse.json({ error: "法要予約は檀家のみ利用できます" }, { status: 403 });
+      }
+      targetMemberId = authUser.member.id;
+    }
 
     if (!type || !scheduledAt) {
       return NextResponse.json({ error: "種別と日時は必須です" }, { status: 400 });
     }
 
     const start = new Date(scheduledAt);
-    if (start <= new Date()) {
+    // Admin can create past reservations (for record-keeping)
+    if (!isAdmin && start <= new Date()) {
       return NextResponse.json({ error: "過去の日時は指定できません" }, { status: 400 });
     }
     if (durationMin < 30 || durationMin > 240) {
@@ -89,18 +108,11 @@ export async function POST(request: NextRequest) {
         templeId: authUser.templeId,
         status: { notIn: ["CANCELLED"] },
         scheduledAt: { lt: end },
-        AND: [
-          {
-            scheduledAt: {
-              gte: new Date(start.getTime() - 240 * 60 * 1000),
-            },
-          },
-        ],
+        AND: [{ scheduledAt: { gte: new Date(start.getTime() - 240 * 60 * 1000) } }],
       },
     });
 
     if (conflict) {
-      // Precise overlap check
       const conflictEnd = new Date(conflict.scheduledAt.getTime() + conflict.durationMin * 60 * 1000);
       if (start < conflictEnd && end > conflict.scheduledAt) {
         return NextResponse.json({ error: "その時間帯はすでに予約が入っています" }, { status: 409 });
@@ -110,13 +122,13 @@ export async function POST(request: NextRequest) {
     const reservation = await prisma.reservation.create({
       data: {
         templeId: authUser.templeId,
-        memberId: authUser.member.id,
+        memberId: targetMemberId,
         type,
         scheduledAt: start,
         durationMin,
         deceasedPersonId: deceasedPersonId || null,
         notes: notes || null,
-        status: "PENDING",
+        status: isAdmin ? "CONFIRMED" : "PENDING",
         attendees: attendees ? Number(attendees) : null,
         purificationRequired: purificationRequired ?? false,
         flowerOrder: flowerOrder ?? false,
@@ -124,14 +136,14 @@ export async function POST(request: NextRequest) {
         cateringOrder: cateringOrder ?? false,
         cateringCount: cateringOrder && cateringCount ? Number(cateringCount) : null,
         cateringDetail: cateringOrder ? (cateringDetail || null) : null,
+        isAdminCreated: isAdmin,
       },
       include: {
         deceasedPerson: { select: { id: true, name: true } },
       },
     });
 
-    // 予約作成 = 接触として lastContactAt 更新
-    void prisma.member.update({ where: { id: authUser.member.id }, data: { lastContactAt: new Date() } });
+    void prisma.member.update({ where: { id: targetMemberId }, data: { lastContactAt: new Date() } });
 
     logActivity({
       templeId: authUser.templeId,
@@ -139,7 +151,7 @@ export async function POST(request: NextRequest) {
       action: "create",
       targetType: "reservation",
       targetId: reservation.id,
-      targetName: `${type} ${start.toISOString().slice(0, 10)}`,
+      targetName: `${type} ${start.toISOString().slice(0, 10)}${isAdmin ? " (代理)" : ""}`,
     });
 
     return NextResponse.json({ reservation }, { status: 201 });

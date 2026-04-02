@@ -39,6 +39,13 @@ export default async function AdminEventParticipantsPage({
     (p) => !["CANCELLED", "WAITLISTED"].includes(p.status)
   ).reduce((sum, p) => sum + p.numGuests, 0);
 
+  // Load temple members for manual add
+  const templeMembers = await prisma.member.findMany({
+    where: { templeId: authUser.templeId },
+    select: { id: true, familyName: true, user: { select: { name: true } } },
+    orderBy: { familyName: "asc" },
+  });
+
   return (
     <div className="p-6 max-w-4xl">
       <Link href="/admin/events" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
@@ -69,6 +76,7 @@ export default async function AdminEventParticipantsPage({
         eventId={id}
         initialParticipants={event.participations.map((p) => ({
           id: p.id,
+          memberId: p.memberId,
           status: p.status,
           numGuests: p.numGuests,
           paymentStatus: p.paymentStatus,
@@ -82,6 +90,11 @@ export default async function AdminEventParticipantsPage({
               phone: p.member.user.phone,
             },
           },
+        }))}
+        allMembers={templeMembers.map((m) => ({
+          id: m.id,
+          name: m.user.name,
+          familyName: m.familyName,
         }))}
       />
     </div>
