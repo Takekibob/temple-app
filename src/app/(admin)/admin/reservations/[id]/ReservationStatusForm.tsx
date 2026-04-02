@@ -5,7 +5,6 @@ import { useState, useTransition } from "react";
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "確認待ち" },
   { value: "CONFIRMED", label: "確定" },
-  { value: "COMPLETED", label: "完了" },
   { value: "CANCELLED", label: "キャンセル" },
 ] as const;
 
