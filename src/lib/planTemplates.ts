@@ -6,9 +6,7 @@ export const PLAN_TEMPLATES = [
     interval: "MONTHLY" as const,
     defaultPrice: 500,
     benefits: [
-      "お知らせ・年間行事案内",
-      "法要予約サービス",
-      "イベント参加（会員限定を含む）",
+      "会員限定イベントへの参加",
       "会員限定ブログ・コンテンツの閲覧",
     ],
     sortOrder: 0,
@@ -20,9 +18,7 @@ export const PLAN_TEMPLATES = [
     interval: "YEARLY" as const,
     defaultPrice: 5000,
     benefits: [
-      "お知らせ・年間行事案内",
-      "法要予約サービス",
-      "イベント参加（会員限定を含む）",
+      "会員限定イベントへの参加",
       "会員限定ブログ・コンテンツの閲覧",
     ],
     sortOrder: 1,
