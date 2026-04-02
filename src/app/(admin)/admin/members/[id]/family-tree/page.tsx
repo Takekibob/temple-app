@@ -49,7 +49,7 @@ export default async function FamilyTreePage({
           <div className="mt-10 text-center text-stone-400">
             <p className="text-sm">登録された故人はいません</p>
             <Link
-              href={`/admin/deceased?memberId=${id}`}
+              href={`/admin/deceased/new?memberId=${id}`}
               className="mt-3 inline-block text-sm text-amber-700 hover:underline"
             >
               過去帳に追加する →

@@ -27,6 +27,7 @@ interface InitialData {
 interface Props {
   members: Member[];
   initial?: InitialData;
+  initialMemberId?: string;
 }
 
 interface NenkiPreview {
@@ -49,13 +50,13 @@ function calcNenkiPreview(deathDateStr: string): NenkiPreview[] {
   });
 }
 
-export default function DeceasedFormClient({ members, initial }: Props) {
+export default function DeceasedFormClient({ members, initial, initialMemberId }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [memberId, setMemberId] = useState(initial?.memberId ?? "");
+  const [memberId, setMemberId] = useState(initial?.memberId ?? initialMemberId ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [kaimyo, setKaimyo] = useState(initial?.kaimyo ?? "");
   const [deathDate, setDeathDate] = useState(
