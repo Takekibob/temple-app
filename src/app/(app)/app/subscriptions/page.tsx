@@ -16,6 +16,14 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   PAUSED: { label: "一時停止", className: "bg-yellow-100 text-yellow-700" },
 };
 
+const COMPARISON_ROWS = [
+  { label: "お知らせ・年間行事案内", free: true, paid: true },
+  { label: "法要予約", free: true, paid: true },
+  { label: "一般イベントへの参加", free: true, paid: true },
+  { label: "会員限定イベントへの参加", free: false, paid: true },
+  { label: "会員限定ブログ・コンテンツの閲覧", free: false, paid: true },
+];
+
 export default async function SubscriptionsPage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
@@ -39,6 +47,8 @@ export default async function SubscriptionsPage() {
     .filter((s) => s.status === "ACTIVE")
     .map((s) => s.planId);
 
+  const isSubscribed = activeSubPlanIds.length > 0;
+
   return (
     <div className="p-4 pb-24">
       <div className="mb-6">
@@ -51,6 +61,41 @@ export default async function SubscriptionsPage() {
           管理者・スタッフはこの機能を利用できません
         </div>
       )}
+
+      {/* プラン比較表 */}
+      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
+        <div className="grid grid-cols-3 text-center text-xs font-semibold border-b border-stone-100">
+          <div className="py-3 text-stone-500">機能</div>
+          <div className="py-3 text-stone-600 bg-stone-50 border-x border-stone-100">
+            無料会員
+          </div>
+          <div className="py-3 text-amber-800 bg-amber-50">
+            会員プラン
+          </div>
+        </div>
+        {COMPARISON_ROWS.map((row, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-3 text-center border-b border-stone-50 last:border-0"
+          >
+            <div className="py-3 px-2 text-xs text-stone-600 text-left">{row.label}</div>
+            <div className="py-3 bg-stone-50 border-x border-stone-100 flex items-center justify-center">
+              {row.free ? (
+                <span className="text-teal-600 text-sm font-bold">✓</span>
+              ) : (
+                <span className="text-stone-300 text-sm">—</span>
+              )}
+            </div>
+            <div className="py-3 bg-amber-50 flex items-center justify-center">
+              {row.paid ? (
+                <span className="text-teal-600 text-sm font-bold">✓</span>
+              ) : (
+                <span className="text-stone-300 text-sm">—</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* 加入中プラン */}
       {mySubscriptions.length > 0 && (
@@ -82,43 +127,27 @@ export default async function SubscriptionsPage() {
       )}
 
       {/* 利用可能なプラン */}
-      {availablePlans.length > 0 && (
+      {!isSubscribed && availablePlans.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-stone-600 mb-2">利用可能なプラン</h2>
+          <h2 className="text-sm font-semibold text-stone-600 mb-2">プランを選ぶ</h2>
           <div className="space-y-3">
-            {availablePlans.map((plan) => {
-              const isSubscribed = activeSubPlanIds.includes(plan.id);
-              const benefits = Array.isArray(plan.benefits) ? plan.benefits as string[] : [];
-              return (
-                <div key={plan.id} className={`bg-white rounded-xl border p-4 ${isSubscribed ? "border-amber-300" : "border-stone-200"}`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium text-stone-800">{plan.name}</h3>
-                    {isSubscribed && (
-                      <span className="text-xs text-amber-700 font-medium">加入中</span>
-                    )}
-                  </div>
-                  {plan.description && (
-                    <p className="text-xs text-stone-500 mb-2">{plan.description}</p>
-                  )}
-                  {benefits.length > 0 && (
-                    <ul className="text-xs text-stone-600 space-y-0.5 mb-3">
-                      {benefits.map((b, i) => (
-                        <li key={i} className="flex items-center gap-1">
-                          <span className="text-amber-600">・</span>{b}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-stone-800">
-                      ¥{plan.price.toLocaleString()}
-                      <span className="text-xs font-normal text-stone-500 ml-1">/ {INTERVAL_LABELS[plan.interval]}</span>
-                    </p>
-                    {!isSubscribed && <SubscribeButton planId={plan.id} isAdmin={isAdminOrStaff} />}
-                  </div>
+            {availablePlans.map((plan) => (
+              <div key={plan.id} className="bg-white rounded-xl border border-stone-200 p-4">
+                <div className="flex items-start justify-between mb-1">
+                  <h3 className="font-medium text-stone-800">{plan.name}</h3>
                 </div>
-              );
-            })}
+                {plan.description && (
+                  <p className="text-xs text-stone-500 mb-3">{plan.description}</p>
+                )}
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-stone-800">
+                    ¥{plan.price.toLocaleString()}
+                    <span className="text-xs font-normal text-stone-500 ml-1">/ {INTERVAL_LABELS[plan.interval]}</span>
+                  </p>
+                  <SubscribeButton planId={plan.id} isAdmin={isAdminOrStaff} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
