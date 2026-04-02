@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
 
     const [ofuseRecords, gojikaiRecords, eventFeeRecords] = await Promise.all([
       prisma.ofuse.findMany({
-        where: { templeId: authUser.templeId, paidAt: { gte: rangeStart } },
+        // GOJIKAI は GojikaiPayment で集計するため除外（二重計上防止）
+        where: { templeId: authUser.templeId, paidAt: { gte: rangeStart }, type: { not: "GOJIKAI" } },
         select: { paidAt: true, amount: true, type: true },
       }),
       prisma.gojikaiPayment.findMany({

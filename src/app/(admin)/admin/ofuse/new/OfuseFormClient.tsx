@@ -16,9 +16,9 @@ interface Props {
   members: Member[];
 }
 
+// 護持会費は GojikaiPayment で管理するため除外（二重計上防止）
 const TYPE_OPTIONS = [
   { value: "HOUYO", label: "法要" },
-  { value: "GOJIKAI", label: "護持会費" },
   { value: "KIFU", label: "寄付" },
   { value: "EVENT_FEE", label: "イベント参加費" },
   { value: "OTHER", label: "その他" },
