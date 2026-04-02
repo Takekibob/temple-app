@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const plan = await prisma.membershipPlan.findUnique({ where: { id: planId } });
-  if (!plan || plan.templeId !== authUser.templeId || !plan.isActive) {
+  if (!plan || !plan.isActive) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     data: {
       memberId: authUser.member.id,
       planId,
-      templeId: authUser.templeId,
+      templeId: plan.templeId,   // プランが属する寺院（自寺院以外でも可）
       status: "ACTIVE",
       currentPeriodStart: new Date(),
     },

@@ -4,8 +4,15 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import FavoriteButton from "./FavoriteButton";
+import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 
 import { getCategoryLabel } from "@/lib/eventCategories";
+
+const INTERVAL_LABELS: Record<string, string> = {
+  MONTHLY: "月額",
+  YEARLY:  "年額",
+  ONE_TIME: "一回払い",
+};
 
 export default async function TempleProfilePage({
   params,
@@ -60,6 +67,19 @@ export default async function TempleProfilePage({
     });
     isFavorite = !!fav;
   }
+
+  // このお寺の有効プラン＆加入状況
+  const [templePlans, subscribedPlanIds] = await Promise.all([
+    prisma.membershipPlan.findMany({
+      where: { templeId: id, isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    }),
+    memberId
+      ? prisma.memberSubscription
+          .findMany({ where: { memberId, templeId: id, status: "ACTIVE" }, select: { planId: true } })
+          .then((subs) => subs.map((s) => s.planId))
+      : Promise.resolve([] as string[]),
+  ]);
 
   return (
     <div className="max-w-lg mx-auto pb-8">
@@ -170,6 +190,53 @@ export default async function TempleProfilePage({
             </div>
           )}
         </div>
+
+        {/* 会員プラン */}
+        {templePlans.length > 0 && (
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold text-stone-700 mb-3">会員プラン</h2>
+            <div className="space-y-3">
+              {templePlans.map((plan) => {
+                const isSubscribed = subscribedPlanIds.includes(plan.id);
+                return (
+                  <div
+                    key={plan.id}
+                    className={`bg-white rounded-xl border p-4 ${isSubscribed ? "border-amber-300" : "border-stone-200"}`}
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <p className="font-medium text-stone-800">{plan.name}</p>
+                      {isSubscribed && (
+                        <span className="text-xs text-amber-700 font-medium">加入中</span>
+                      )}
+                    </div>
+                    {plan.description && (
+                      <p className="text-xs text-stone-500 mb-2">{plan.description}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="font-bold text-stone-800">
+                        ¥{plan.price.toLocaleString()}
+                        <span className="text-xs font-normal text-stone-500 ml-1">
+                          / {INTERVAL_LABELS[plan.interval]}
+                        </span>
+                      </p>
+                      {!isSubscribed && memberId && (
+                        <SubscribeButton planId={plan.id} />
+                      )}
+                      {!isSubscribed && !memberId && (
+                        <Link
+                          href="/auth/login"
+                          className="text-xs text-amber-700 hover:underline"
+                        >
+                          ログインして加入する →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* お気に入りボタン（ご縁さん向け） */}
         {memberId && !isMyTemple && (

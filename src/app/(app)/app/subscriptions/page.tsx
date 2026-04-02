@@ -32,11 +32,13 @@ export default async function SubscriptionsPage() {
   const isAdminOrStaff = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
   const [mySubscriptions, availablePlans] = await Promise.all([
+    // 全寺院のプラン加入状況を取得
     prisma.memberSubscription.findMany({
       where: { memberId: authUser.member.id },
-      include: { plan: true },
+      include: { plan: { include: { temple: { select: { name: true } } } } },
       orderBy: { createdAt: "desc" },
     }),
+    // 自寺院の有効プラン
     prisma.membershipPlan.findMany({
       where: { templeId: authUser.templeId, isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -107,6 +109,7 @@ export default async function SubscriptionsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium text-stone-800">{sub.plan.name}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">{sub.plan.temple.name}</p>
                     <p className="text-sm text-stone-600 mt-0.5">
                       ¥{sub.plan.price.toLocaleString()} / {INTERVAL_LABELS[sub.plan.interval]}
                     </p>
