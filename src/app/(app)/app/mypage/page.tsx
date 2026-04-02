@@ -33,36 +33,15 @@ export default async function MypagePage() {
 
   return (
     <MypageClient
-      user={{
-        name: user.name,
-        email: user.email,
-        phone: user.phone ?? "",
-        pushEnabled: user.pushEnabled,
-        role: user.role,
-        displayMode: user.displayMode,
-        fontSize: user.fontSize,
-        highContrast: user.highContrast,
-      }}
+      user={{ name: user.name, email: user.email, role: user.role }}
       member={
         user.member
-          ? {
-              id: user.member.id,
-              type: user.member.type,
-              familyName: user.member.familyName,
-              address: user.member.address ?? "",
-              postalCode: user.member.postalCode ?? "",
-              interestTags,
-              lineLinked: !!user.member.lineUserId,
-              lineNotifyEnabled: user.member.lineNotifyEnabled,
-              notifyReservation: user.member.notifyReservation,
-              notifyEvent: user.member.notifyEvent,
-              notifyAnniversary: user.member.notifyAnniversary,
-              notifyAnnouncement: user.member.notifyAnnouncement,
-            }
+          ? { id: user.member.id, type: user.member.type, familyName: user.member.familyName }
           : null
       }
       templeId={user.templeId ?? ""}
       subscriptionPlanName={activeSubscription?.plan.name ?? null}
+      lineLinked={!!user.member?.lineUserId}
     />
   );
 }
