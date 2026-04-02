@@ -154,29 +154,69 @@ export default function BillingClient() {
         </div>
       )}
 
-      {/* プラン詳細 */}
-      <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-3">
-        <div className="flex items-baseline justify-between">
-          <p className="font-semibold text-stone-800">スタンダードプラン</p>
-          <p className="text-xl font-bold text-stone-800">
-            ¥9,800<span className="text-sm font-normal text-stone-400"> / 月（税込）</span>
+      {/* プラン比較表 */}
+      <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-stone-100">
+          <p className="font-semibold text-stone-800">プラン比較</p>
+        </div>
+
+        {/* プランヘッダー */}
+        <div className="grid grid-cols-3 border-b border-stone-100 text-center text-xs font-semibold">
+          <div className="px-3 py-3 text-stone-400 text-left pl-5">機能</div>
+          <div className="px-3 py-3 bg-blue-50 text-blue-700 border-x border-stone-100">
+            <p>トライアル</p>
+            <p className="font-normal text-blue-500 mt-0.5">無料 / 30日間</p>
+          </div>
+          <div className="px-3 py-3 bg-amber-50 text-amber-800">
+            <p>スタンダード</p>
+            <p className="font-normal text-amber-600 mt-0.5">¥9,800 / 月</p>
+          </div>
+        </div>
+
+        {/* 機能行 */}
+        {[
+          { label: "檀家・会員管理", trial: "500件まで", standard: "500件まで" },
+          { label: "予約・法要管理", trial: true, standard: true },
+          { label: "イベント管理・参加費決済", trial: true, standard: true },
+          { label: "お布施・収支管理", trial: true, standard: true },
+          { label: "護持会費管理・催促メール", trial: true, standard: true },
+          { label: "お知らせ配信", trial: true, standard: true },
+          { label: "LINE連携・ステップ配信", trial: true, standard: true },
+          { label: "メール・プッシュ通知", trial: true, standard: true },
+          { label: "年忌リマインダー", trial: true, standard: true },
+          { label: "OCR会員一括取込", trial: true, standard: true },
+          { label: "エンゲージメント分析", trial: true, standard: true },
+          { label: "スタッフアカウント追加", trial: true, standard: true },
+          { label: "会員向けサブスクプラン", trial: true, standard: true },
+        ].map((row, i) => (
+          <div
+            key={i}
+            className={`grid grid-cols-3 border-b border-stone-50 text-sm ${i % 2 === 0 ? "" : "bg-stone-50/50"}`}
+          >
+            <div className="px-5 py-2.5 text-stone-700">{row.label}</div>
+            <div className="px-3 py-2.5 bg-blue-50/40 border-x border-stone-100 text-center">
+              {typeof row.trial === "string" ? (
+                <span className="text-xs text-blue-700 font-medium">{row.trial}</span>
+              ) : (
+                <span className="text-green-500 font-bold">✓</span>
+              )}
+            </div>
+            <div className="px-3 py-2.5 bg-amber-50/40 text-center">
+              {typeof row.standard === "string" ? (
+                <span className="text-xs text-amber-700 font-medium">{row.standard}</span>
+              ) : (
+                <span className="text-green-500 font-bold">✓</span>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* 解約時の注意 */}
+        <div className="px-5 py-3 bg-red-50 border-t border-red-100">
+          <p className="text-xs text-red-600">
+            ⚠️ 解約・停止後はすべての機能が利用不可になります。データは保持されます。
           </p>
         </div>
-        <ul className="text-sm text-stone-600 space-y-1.5">
-          {[
-            "檀家管理（500件まで）",
-            "イベント・法要管理",
-            "お布施・護持会費管理",
-            "お知らせ・プッシュ通知",
-            "LINE連携",
-            "メール・プッシュ通知",
-          ].map((f) => (
-            <li key={f} className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              {f}
-            </li>
-          ))}
-        </ul>
       </div>
 
       {/* アクションボタン */}
