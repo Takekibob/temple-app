@@ -13,7 +13,7 @@ export default async function MypagePage() {
 
   const user = await prisma.user.findUnique({
     where: { email: authUser.email! },
-    include: { member: true },
+    include: { member: true, temple: { select: { id: true, name: true } } },
   });
 
   if (!user) redirect("/");
@@ -21,6 +21,15 @@ export default async function MypagePage() {
   const interestTags = Array.isArray(user.member?.interestTags)
     ? (user.member.interestTags as string[])
     : [];
+
+  // GOEN: サブスクリプション状態確認
+  const activeSubscription =
+    user.member?.type === "GOEN" && user.member.id && user.templeId
+      ? await prisma.memberSubscription.findFirst({
+          where: { memberId: user.member.id, templeId: user.templeId, status: "ACTIVE" },
+          include: { plan: { select: { name: true } } },
+        })
+      : null;
 
   return (
     <MypageClient
@@ -52,6 +61,8 @@ export default async function MypagePage() {
             }
           : null
       }
+      templeId={user.templeId ?? ""}
+      subscriptionPlanName={activeSubscription?.plan.name ?? null}
     />
   );
 }

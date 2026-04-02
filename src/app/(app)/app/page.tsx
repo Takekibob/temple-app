@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
-
 import { getCategoryLabel } from "@/lib/eventCategories";
+import GoenCtaBanner from "@/components/app/GoenCtaBanner";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -15,6 +15,40 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
   OTHER: "その他",
 };
 
+// クイックアクセスアイテム定義
+type QuickItem = { icon: string; label: string; href: string };
+
+const DANKA_QUICK: QuickItem[] = [
+  { icon: "📿", label: "法要予約", href: "/app/reservations" },
+  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
+  { icon: "📖", label: "過去帳", href: "/app/deceased" },
+  { icon: "💰", label: "お布施", href: "/app/ofuse" },
+  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
+  { icon: "🎁", label: "寄付", href: "/app/donations" },
+];
+
+const GOEN_QUICK_BASE: QuickItem[] = [
+  { icon: "📅", label: "イベント", href: "/app/events" },
+  { icon: "📝", label: "ブログ", href: "/app/blog" },
+  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
+  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
+  { icon: "🎁", label: "寄付", href: "/app/donations" },
+];
+
+const GOEN_QUICK_SUBSCRIBED: QuickItem[] = [
+  { icon: "📅", label: "イベント", href: "/app/events" },
+  { icon: "📝", label: "ブログ", href: "/app/blog" },
+  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
+  { icon: "🎫", label: "会員プラン", href: "/app/subscriptions" },
+  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
+  { icon: "🎁", label: "寄付", href: "/app/donations" },
+];
+
+const GOEN_QUICK_FREE: QuickItem[] = [
+  ...GOEN_QUICK_BASE,
+  { icon: "🏯", label: "お寺について", href: "/app/temples" },
+];
+
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
@@ -23,19 +57,59 @@ export default async function AppHomePage() {
   const isGoen = authUser.member?.type === "GOEN";
   const now = new Date();
 
-  // 次回予約（檀家のみ）
-  const nextReservation = isDanka && authUser.member
-    ? await prisma.reservation.findFirst({
-        where: {
-          memberId: authUser.member.id,
-          scheduledAt: { gte: now },
-          status: { in: ["PENDING", "CONFIRMED"] },
-        },
-        orderBy: { scheduledAt: "asc" },
-      })
-    : null;
+  // GOEN: このお寺の有効なサブスクリプション確認
+  const hasSubscription =
+    isGoen && authUser.member
+      ? await prisma.memberSubscription
+          .findFirst({
+            where: {
+              memberId: authUser.member.id,
+              status: "ACTIVE",
+              templeId: authUser.templeId,
+            },
+            include: { plan: { select: { name: true } } },
+          })
+          .then((s) => s ?? null)
+      : null;
 
-  // 今後のイベント（自分が申込済み）
+  const isSubscribed = !!hasSubscription;
+
+  // GOEN 会員限定コンテンツのプレビュー（加入済み・未加入ともに取得）
+  const exclusivePreview =
+    isGoen
+      ? await Promise.all([
+          prisma.blogPost.findFirst({
+            where: { templeId: authUser.templeId, isSubscriberOnly: true, status: "PUBLISHED" },
+            orderBy: { publishedAt: "desc" },
+            select: { id: true, title: true },
+          }),
+          prisma.event.findFirst({
+            where: {
+              templeId: authUser.templeId,
+              visibility: "SUBSCRIBERS_ONLY",
+              status: "PUBLISHED",
+              eventDate: { gte: now },
+            },
+            orderBy: { eventDate: "asc" },
+            select: { id: true, title: true, eventDate: true },
+          }),
+        ])
+      : null;
+
+  // 次回予約（檀家のみ）
+  const nextReservation =
+    isDanka && authUser.member
+      ? await prisma.reservation.findFirst({
+          where: {
+            memberId: authUser.member.id,
+            scheduledAt: { gte: now },
+            status: { in: ["PENDING", "CONFIRMED"] },
+          },
+          orderBy: { scheduledAt: "asc" },
+        })
+      : null;
+
+  // 申込済みイベント
   const upcomingParticipations = authUser.member
     ? await prisma.eventParticipation.findMany({
         where: {
@@ -43,7 +117,9 @@ export default async function AppHomePage() {
           status: { in: ["APPLIED", "CONFIRMED"] },
           event: { eventDate: { gte: now } },
         },
-        include: { event: { select: { id: true, title: true, eventDate: true, startTime: true, category: true } } },
+        include: {
+          event: { select: { id: true, title: true, eventDate: true, startTime: true, category: true } },
+        },
         orderBy: { event: { eventDate: "asc" } },
         take: 3,
       })
@@ -56,11 +132,12 @@ export default async function AppHomePage() {
       templeId: authUser.templeId,
       status: "PUBLISHED",
       eventDate: { gte: now },
-      visibility: memberType === "DANKA"
-        ? { in: ["PUBLIC", "MEMBERS_ONLY", "DANKA_ONLY"] }
-        : memberType === "GOEN"
-        ? { in: ["PUBLIC", "MEMBERS_ONLY"] }
-        : "PUBLIC",
+      visibility:
+        memberType === "DANKA"
+          ? { in: ["PUBLIC", "MEMBERS_ONLY", "DANKA_ONLY"] }
+          : memberType === "GOEN"
+          ? { in: ["PUBLIC", "MEMBERS_ONLY"] }
+          : "PUBLIC",
       ...(authUser.member
         ? { participations: { none: { memberId: authUser.member.id, status: { notIn: ["CANCELLED"] } } } }
         : {}),
@@ -70,36 +147,134 @@ export default async function AppHomePage() {
   });
 
   // 最新お知らせ
-  const allowedSegments: AnnouncementTarget[] = memberType === "DANKA"
-    ? ["ALL", "DANKA"]
-    : memberType === "GOEN"
-    ? ["ALL", "GOEN"]
-    : ["ALL"];
+  const allowedSegments: AnnouncementTarget[] =
+    memberType === "DANKA" ? ["ALL", "DANKA"] : memberType === "GOEN" ? ["ALL", "GOEN"] : ["ALL"];
 
   const latestNews = await prisma.announcement.findMany({
     where: {
       templeId: authUser.templeId,
       publishedAt: { not: null, lte: now },
-      targetSegment: { in: allowedSegments },
+      OR: [
+        { targetSegment: { in: allowedSegments }, memberId: null },
+        ...(authUser.member ? [{ memberId: authUser.member.id }] : []),
+      ],
     },
     orderBy: { publishedAt: "desc" },
     take: 3,
     select: { id: true, title: true, publishedAt: true },
   });
 
-  const displayName = authUser.member?.familyName ?? authUser.name;
+  const displayName = authUser.member?.familyName
+    ? `${authUser.member.familyName}家`
+    : authUser.name;
+
+  // クイックアクセス items
+  const quickItems: QuickItem[] = isDanka
+    ? DANKA_QUICK
+    : isSubscribed
+    ? GOEN_QUICK_SUBSCRIBED
+    : GOEN_QUICK_FREE;
+
+  const [exclusiveBlog, exclusiveEvent] = exclusivePreview ?? [null, null];
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
+    <div className="p-4 pb-24 max-w-lg mx-auto">
       {/* ヘッダー挨拶 */}
       <div className="mb-5 pt-2">
-        <p className="text-xs text-stone-400">
-          {isDanka ? "檀家" : isGoen ? "ご縁さん" : ""}
-        </p>
         <h1 className="text-xl font-bold text-stone-800">
           こんにちは、{displayName}さん
         </h1>
+        {isGoen && isSubscribed && (
+          <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">
+            ✅ {hasSubscription.plan.name}
+          </span>
+        )}
+        {isGoen && !isSubscribed && (
+          <p className="text-xs text-stone-400 mt-0.5">ご縁さん</p>
+        )}
+        {isDanka && (
+          <p className="text-xs text-stone-400 mt-0.5">檀家</p>
+        )}
       </div>
+
+      {/* クイックアクセス */}
+      <div className="mb-5">
+        <div className="grid grid-cols-3 gap-2">
+          {quickItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex flex-col items-center justify-center gap-1 bg-white border border-stone-200 rounded-xl py-3 hover:border-amber-300 hover:bg-amber-50 transition-colors"
+            >
+              <span className="text-2xl">{item.icon}</span>
+              <span className="text-xs text-stone-600 font-medium">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* GOEN 未加入: 入会促進バナー（dismissable） */}
+      {isGoen && !isSubscribed && <GoenCtaBanner />}
+
+      {/* GOEN 加入済み: 会員限定コンテンツカード */}
+      {isGoen && isSubscribed && (exclusiveBlog || exclusiveEvent) && (
+        <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-amber-800 mb-2">🔓 会員限定コンテンツ</p>
+          <div className="space-y-2">
+            {exclusiveBlog && (
+              <Link
+                href={`/app/blog/${exclusiveBlog.id}`}
+                className="flex items-center gap-2 text-sm text-stone-700 hover:text-amber-800 transition-colors"
+              >
+                <span className="text-base">📝</span>
+                <span className="truncate">{exclusiveBlog.title}</span>
+              </Link>
+            )}
+            {exclusiveEvent && (
+              <Link
+                href={`/app/events/${exclusiveEvent.id}`}
+                className="flex items-center gap-2 text-sm text-stone-700 hover:text-amber-800 transition-colors"
+              >
+                <span className="text-base">📅</span>
+                <span className="truncate">{exclusiveEvent.title}</span>
+                <span className="text-xs text-stone-400 shrink-0">
+                  {exclusiveEvent.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                </span>
+              </Link>
+            )}
+          </div>
+          <Link href="/app/blog" className="text-xs text-amber-700 hover:underline mt-2 inline-block">
+            すべて見る →
+          </Link>
+        </div>
+      )}
+
+      {/* GOEN 未加入: ロックされたコンテンツのFOMO表示 */}
+      {isGoen && !isSubscribed && (exclusiveBlog || exclusiveEvent) && (
+        <div className="mb-5 bg-stone-50 border border-stone-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-stone-500 mb-2">🔒 会員限定コンテンツ</p>
+          <div className="space-y-2">
+            {exclusiveBlog && (
+              <div className="flex items-center gap-2 text-sm text-stone-400">
+                <span className="text-base">📝</span>
+                <span className="truncate blur-sm select-none">{exclusiveBlog.title}</span>
+              </div>
+            )}
+            {exclusiveEvent && (
+              <div className="flex items-center gap-2 text-sm text-stone-400">
+                <span className="text-base">📅</span>
+                <span className="truncate blur-sm select-none">{exclusiveEvent.title}</span>
+              </div>
+            )}
+          </div>
+          <Link
+            href="/app/subscriptions"
+            className="text-xs text-amber-700 hover:underline mt-2 inline-block font-medium"
+          >
+            会員登録で読める →
+          </Link>
+        </div>
+      )}
 
       {/* 檀家: 次回法要予約 */}
       {isDanka && (
@@ -112,14 +287,13 @@ export default async function AppHomePage() {
           </div>
           {nextReservation ? (
             <Link
-              href={`/app/reservations`}
+              href="/app/reservations"
               className="block bg-amber-50 border border-amber-200 rounded-xl p-4"
             >
               <p className="text-xs text-amber-700 font-medium mb-0.5">
                 {nextReservation.scheduledAt.toLocaleDateString("ja-JP", {
                   year: "numeric", month: "long", day: "numeric", weekday: "short",
-                })}
-                {" "}
+                })}{" "}
                 {nextReservation.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
               </p>
               <p className="font-semibold text-stone-800">
@@ -145,7 +319,7 @@ export default async function AppHomePage() {
       {upcomingParticipations.length > 0 && (
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-stone-600">申込済みイベント</h2>
+            <h2 className="text-sm font-semibold text-stone-600">参加予定のイベント</h2>
             <Link href="/app/events/my" className="text-xs text-amber-700 hover:underline">
               すべて →
             </Link>
@@ -160,8 +334,8 @@ export default async function AppHomePage() {
                   <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(p.event.category)}</p>
                   <p className="font-medium text-stone-800 text-sm">{p.event.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">
-                    {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                    {" "}{p.event.startTime}
+                    {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}{" "}
+                    {p.event.startTime}
                   </p>
                 </Link>
               </li>
@@ -191,8 +365,8 @@ export default async function AppHomePage() {
                   <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(e.category)}</p>
                   <p className="font-medium text-stone-800 text-sm">{e.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">
-                    {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                    {" "}{e.startTime}
+                    {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}{" "}
+                    {e.startTime}
                   </p>
                 </Link>
               </li>
@@ -228,20 +402,6 @@ export default async function AppHomePage() {
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* ご縁さん向け: お寺情報 */}
-      {isGoen && (
-        <div className="bg-gradient-to-br from-amber-50 to-stone-50 rounded-xl border border-amber-100 p-4 text-center">
-          <p className="text-sm text-stone-600 mb-1">お寺との縁を深めませんか？</p>
-          <p className="text-xs text-stone-500 mb-3">坐禅・写経・ヨガなど様々なイベントを開催しています</p>
-          <Link
-            href="/app/events"
-            className="inline-block px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
-          >
-            イベントを見る
-          </Link>
         </div>
       )}
     </div>

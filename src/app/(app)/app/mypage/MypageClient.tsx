@@ -52,9 +52,11 @@ interface Props {
     notifyAnniversary: boolean;
     notifyAnnouncement: boolean;
   } | null;
+  templeId: string;
+  subscriptionPlanName: string | null;
 }
 
-export default function MypageClient({ user, member }: Props) {
+export default function MypageClient({ user, member, templeId, subscriptionPlanName }: Props) {
   const [isPending, startTransition] = useTransition();
   const [isLogoutPending, startLogoutTransition] = useTransition();
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -311,12 +313,80 @@ export default function MypageClient({ user, member }: Props) {
               <p className="text-sm text-stone-500">{user.email}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">
               {memberTypeLabel}
             </span>
+            {member?.type === "GOEN" && subscriptionPlanName && (
+              <span className="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-medium">
+                ✅ {subscriptionPlanName}
+              </span>
+            )}
+            {member?.type === "GOEN" && !subscriptionPlanName && (
+              <Link
+                href="/app/subscriptions"
+                className="text-xs px-2 py-1 rounded-full bg-stone-100 text-stone-500 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+              >
+                会員プランなし →
+              </Link>
+            )}
           </div>
         </div>
+
+        {/* ショートカット */}
+        {member && (
+          <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-4">
+            {/* サービス */}
+            <div>
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">サービス</p>
+              <div className="space-y-1">
+                <Link href="/app/subscriptions" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                  <span className="text-sm text-stone-700 flex items-center gap-2"><span>🎫</span> 会員プラン</span>
+                  {subscriptionPlanName
+                    ? <span className="text-xs text-teal-600 font-medium">加入中</span>
+                    : <span className="text-stone-400 text-sm">›</span>}
+                </Link>
+                {templeId && (
+                  <Link href={`/app/temples/${templeId}`} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                    <span className="text-sm text-stone-700 flex items-center gap-2"><span>🏯</span> お寺について</span>
+                    <span className="text-stone-400 text-sm">›</span>
+                  </Link>
+                )}
+                <Link href="/app/donations/new" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                  <span className="text-sm text-stone-700 flex items-center gap-2"><span>🎁</span> 寄付する</span>
+                  <span className="text-stone-400 text-sm">›</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* 履歴・記録 */}
+            <div className="border-t border-stone-100 pt-3">
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">履歴・記録</p>
+              <div className="space-y-1">
+                <Link href="/app/events/my" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                  <span className="text-sm text-stone-700 flex items-center gap-2"><span>❤️</span> 参加したイベント</span>
+                  <span className="text-stone-400 text-sm">›</span>
+                </Link>
+                {member.type === "DANKA" && (
+                  <>
+                    <Link href="/app/ofuse" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                      <span className="text-sm text-stone-700 flex items-center gap-2"><span>💰</span> お布施履歴</span>
+                      <span className="text-stone-400 text-sm">›</span>
+                    </Link>
+                    <Link href="/app/deceased" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                      <span className="text-sm text-stone-700 flex items-center gap-2"><span>📖</span> 過去帳</span>
+                      <span className="text-stone-400 text-sm">›</span>
+                    </Link>
+                  </>
+                )}
+                <Link href="/app/donations" className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                  <span className="text-sm text-stone-700 flex items-center gap-2"><span>🙏</span> 寄付履歴</span>
+                  <span className="text-stone-400 text-sm">›</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* プロフィール編集フォーム */}
         <div className="bg-white rounded-2xl border border-stone-100 p-4">
@@ -648,30 +718,6 @@ export default function MypageClient({ user, member }: Props) {
           </div>
         )}
 
-        {/* 寄付・サポート */}
-        {member && (
-          <div className="bg-white rounded-2xl border border-stone-100 p-4 space-y-2">
-            <h2 className="font-semibold text-stone-800 mb-1">寄付・サポート</h2>
-            <Link
-              href="/app/donations"
-              className="flex items-center justify-between w-full py-2.5 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors"
-            >
-              <span className="text-sm text-stone-700 flex items-center gap-2">
-                <span>🙏</span> 寄付・お布施
-              </span>
-              <span className="text-stone-400 text-sm">→</span>
-            </Link>
-            <Link
-              href="/app/subscriptions"
-              className="flex items-center justify-between w-full py-2.5 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors"
-            >
-              <span className="text-sm text-stone-700 flex items-center gap-2">
-                <span>💳</span> 会員プラン
-              </span>
-              <span className="text-stone-400 text-sm">→</span>
-            </Link>
-          </div>
-        )}
 
         {/* ご縁さん：檀家昇格申請 */}
         {member?.type === "GOEN" && (
