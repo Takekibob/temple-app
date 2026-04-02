@@ -5,8 +5,8 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import FavoriteButton from "./FavoriteButton";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
-
 import { getCategoryLabel } from "@/lib/eventCategories";
+import { PLAN_TEMPLATES } from "@/lib/planTemplates";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -71,7 +71,7 @@ export default async function TempleProfilePage({
   // このお寺の有効プラン＆加入状況
   const [templePlans, subscribedPlanIds] = await Promise.all([
     prisma.membershipPlan.findMany({
-      where: { templeId: id, isActive: true },
+      where: { templeId: id, isActive: true, templateKey: { in: PLAN_TEMPLATES.map((t) => t.key) } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     }),
     memberId
