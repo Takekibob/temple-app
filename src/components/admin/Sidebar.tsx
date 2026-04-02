@@ -59,6 +59,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "配信管理",
     items: [
       { icon: "📢", label: "お知らせ", href: "/admin/announcements" },
+      { icon: "📝", label: "ブログ", href: "/admin/blog" },
       { icon: "📅", label: "行事", href: "/admin/annual-events" },
       { icon: "💚", label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],

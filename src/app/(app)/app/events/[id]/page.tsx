@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasActiveSubscription } from "@/lib/subscription";
 import CancelButton from "./CancelButton";
 import ShareButton from "@/components/shared/ShareButton";
 
@@ -46,6 +47,13 @@ export default async function AppEventDetailPage({
     if (!isMyTempleDanka) redirect("/app/events");
   }
 
+  // Visibility check: SUBSCRIBERS_ONLY は会員プラン加入者のみ
+  if (event.visibility === "SUBSCRIBERS_ONLY") {
+    if (!authUser.member) redirect("/app/events");
+    const isSubscriber = await hasActiveSubscription(authUser.member.id, event.templeId);
+    if (!isSubscriber) redirect("/app/subscriptions");
+  }
+
   // My participation
   let myParticipation = null;
   if (authUser.member) {
@@ -85,6 +93,11 @@ export default async function AppEventDetailPage({
           {event.visibility === "DANKA_ONLY" && (
             <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
               檀家限定
+            </span>
+          )}
+          {event.visibility === "SUBSCRIBERS_ONLY" && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+              会員限定
             </span>
           )}
         </div>

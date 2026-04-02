@@ -32,8 +32,8 @@ interface Props {
 
 const VISIBILITIES = [
   { value: "PUBLIC", label: "公開（誰でも）" },
-  { value: "MEMBERS_ONLY", label: "会員限定" },
   { value: "DANKA_ONLY", label: "檀家限定" },
+  { value: "SUBSCRIBERS_ONLY", label: "会員プラン加入者限定" },
 ];
 
 export default function EventFormClient({ initialData, isEdit, customCategories = [] }: Props) {

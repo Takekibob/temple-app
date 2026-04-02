@@ -38,6 +38,10 @@ export default function BottomNav({ isDanka }: BottomNavProps) {
         <span className="text-xl">📅</span>
         <span>イベント</span>
       </Link>
+      <Link href="/app/blog" className={linkClass("/app/blog")}>
+        <span className="text-xl">📝</span>
+        <span>ブログ</span>
+      </Link>
       <Link href="/app/news" className={linkClass("/app/news")}>
         <span className="text-xl">📢</span>
         <span>お知らせ</span>

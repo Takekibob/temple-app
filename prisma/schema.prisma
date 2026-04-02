@@ -75,6 +75,7 @@ model Temple {
   gojikaiRules GojikaiRule[]
   pushSubscriptions PushSubscription[]
   favoriteByMembers MemberFavoriteTemple[]
+  blogPosts    BlogPost[]
   activityLogs ActivityLog[]
   scoringRules ScoringRule[]
   membershipPlans    MembershipPlan[]
@@ -378,9 +379,10 @@ model Event {
 
 
 enum EventVisibility {
-  PUBLIC         // 誰でも
-  MEMBERS_ONLY   // 廃止予定（既存データ互換性のために残存）→ PUBLIC と同等に扱う
-  DANKA_ONLY     // 檀家限定（自寺院の檀家のみ）
+  PUBLIC              // 誰でも
+  MEMBERS_ONLY        // 廃止予定（既存データ互換性のために残存）→ PUBLIC と同等に扱う
+  DANKA_ONLY          // 檀家限定（自寺院の檀家のみ）
+  SUBSCRIBERS_ONLY    // 会員プラン加入者限定
 
   @@map("event_visibility")
 }
@@ -1173,4 +1175,33 @@ model FeatureLog {
   @@index([feature])
   @@index([createdAt])
   @@map("feature_logs")
+}
+
+// ==========================================
+// ブログ記事
+// ==========================================
+model BlogPost {
+  id               String    @id @default(uuid())
+  templeId         String
+  temple           Temple    @relation(fields: [templeId], references: [id], onDelete: Cascade)
+
+  title            String
+  body             String    // プレーンテキスト or Markdown
+  coverImageUrl    String?
+  isSubscriberOnly Boolean   @default(false)  // true = 会員プラン加入者のみ閲覧可
+  status           BlogPostStatus @default(DRAFT)
+  publishedAt      DateTime?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([templeId, status, publishedAt])
+  @@map("blog_posts")
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+
+  @@map("blog_post_status")
 }
