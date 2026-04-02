@@ -21,13 +21,13 @@ export async function loginWithEmail(formData: FormData) {
   const password = formData.get("password") as string;
 
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // signInWithPassword の戻り値から直接 user を取得（getUser() の再呼び出しを避ける）
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     if (error.message?.toLowerCase().includes("email not confirmed")) {
       return { error: "メールアドレスの認証が完了していません。登録時に届いたメールのリンクをクリックしてください。" };
     }
-    // Google 等 OAuth ユーザーがメール/パスワードでログインしようとした場合に案内
     const dbUser = await prisma.user.findUnique({ where: { email }, select: { authProvider: true } });
     if (dbUser?.authProvider === "GOOGLE") {
       return { error: "このアカウントは Google でログインしています。Googleのログインボタンをお使いください。" };
@@ -35,28 +35,26 @@ export async function loginWithEmail(formData: FormData) {
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }
 
-  // DB にユーザーレコードがない or 無効化されている場合のチェック
-  const { data: { user: authUser } } = await supabase.auth.getUser();
-  if (authUser) {
-    const dbUser = await prisma.user.findUnique({ where: { email: authUser.email! } });
-    if (!dbUser) {
-      await supabase.auth.signOut();
-      return { error: "アカウントの登録が完了していません。お手数ですが再度新規登録をお試しください。" };
-    }
-    if (!dbUser.isActive) {
-      await supabase.auth.signOut();
-      return { error: "このアカウントは無効化されています。管理者にお問い合わせください。" };
-    }
-    // 最終ログイン日時を更新
-    await prisma.user.update({ where: { email: authUser.email! }, data: { lastLoginAt: new Date() } });
-    if (dbUser.role === "SUPER_ADMIN") {
-      return { redirect: "/superadmin" };
-    }
-    if (["ADMIN", "STAFF"].includes(dbUser.role)) {
-      return { redirect: "/admin" };
-    }
+  const authedEmail = signInData?.user?.email ?? email;
+  const dbUser = await prisma.user.findUnique({ where: { email: authedEmail } });
+
+  if (!dbUser) {
+    await supabase.auth.signOut();
+    return { error: "アカウントの登録が完了していません。お手数ですが再度新規登録をお試しください。" };
+  }
+  if (!dbUser.isActive) {
+    await supabase.auth.signOut();
+    return { error: "このアカウントは無効化されています。管理者にお問い合わせください。" };
   }
 
+  await prisma.user.update({ where: { email: authedEmail }, data: { lastLoginAt: new Date() } });
+
+  if (dbUser.role === "SUPER_ADMIN") {
+    return { redirect: "/superadmin" };
+  }
+  if (["ADMIN", "STAFF"].includes(dbUser.role)) {
+    return { redirect: "/admin" };
+  }
   return { redirect: "/app" };
 }
 
