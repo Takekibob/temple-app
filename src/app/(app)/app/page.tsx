@@ -287,7 +287,7 @@ export default async function AppHomePage() {
           </div>
           {nextReservation ? (
             <Link
-              href="/app/reservations"
+              href={`/app/reservations/${nextReservation.id}`}
               className="block bg-amber-50 border border-amber-200 rounded-xl p-4"
             >
               <p className="text-xs text-amber-700 font-medium mb-0.5">

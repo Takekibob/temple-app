@@ -55,13 +55,19 @@ export default function MypageClient({ user, member, templeId, subscriptionPlanN
         {/* プロフィールカード */}
         <div className="bg-white rounded-2xl border border-stone-100 p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-lg">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-lg shrink-0">
               {user.name.charAt(0)}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="font-semibold text-stone-800">{user.name}</p>
-              <p className="text-sm text-stone-500">{user.email}</p>
+              <p className="text-sm text-stone-500 truncate">{user.email}</p>
             </div>
+            <Link
+              href="/app/mypage/profile"
+              className="shrink-0 text-xs text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+            >
+              編集
+            </Link>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">
