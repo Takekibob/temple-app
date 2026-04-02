@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
   if (!authUser.member) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
+  if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role)) {
+    return NextResponse.json({ error: "管理者・スタッフはプランへの加入ができません" }, { status: 403 });
+  }
   const body = await request.json();
   const { planId } = body;
 

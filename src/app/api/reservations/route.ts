@@ -56,6 +56,9 @@ export async function POST(request: NextRequest) {
     if (!authUser.member) {
       return NextResponse.json({ error: "会員情報が見つかりません" }, { status: 403 });
     }
+    if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role)) {
+      return NextResponse.json({ error: "管理者・スタッフは法要の予約ができません" }, { status: 403 });
+    }
     if (authUser.member.type !== "DANKA") {
       return NextResponse.json({ error: "法要予約は檀家のみ利用できます" }, { status: 403 });
     }

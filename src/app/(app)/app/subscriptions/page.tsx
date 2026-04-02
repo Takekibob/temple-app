@@ -21,6 +21,8 @@ export default async function SubscriptionsPage() {
   if (!authUser) redirect("/");
   if (!authUser.member) redirect("/app");
 
+  const isAdminOrStaff = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
+
   const [mySubscriptions, availablePlans] = await Promise.all([
     prisma.memberSubscription.findMany({
       where: { memberId: authUser.member.id },
@@ -106,7 +108,7 @@ export default async function SubscriptionsPage() {
                       ¥{plan.price.toLocaleString()}
                       <span className="text-xs font-normal text-stone-500 ml-1">/ {INTERVAL_LABELS[plan.interval]}</span>
                     </p>
-                    {!isSubscribed && <SubscribeButton planId={plan.id} />}
+                    {!isSubscribed && <SubscribeButton planId={plan.id} isAdmin={isAdminOrStaff} />}
                   </div>
                 </div>
               );
