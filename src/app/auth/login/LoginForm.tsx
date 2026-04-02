@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { loginWithEmail, getGoogleLoginUrl, getLineLoginUrl } from "@/app/auth/actions";
+import { useSearchParams } from "next/navigation";
+import { getGoogleLoginUrl, getLineLoginUrl } from "@/app/auth/actions";
+import { createClient } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 export default function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/app";
 
@@ -36,14 +36,32 @@ export default function LoginForm() {
   }, []);
 
   function handleEmailLogin(formData: FormData) {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
     startTransition(async () => {
       setErrorMsg(null);
-      const result = await loginWithEmail(formData);
-      if (result?.error) {
-        setErrorMsg(result.error);
-      } else if (result?.redirect) {
-        // フルリロードでセッションクッキーを確実に反映させる
-        window.location.href = result.redirect;
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.message?.toLowerCase().includes("email not confirmed")) {
+          setErrorMsg("メールアドレスの認証が完了していません。登録時に届いたメールのリンクをクリックしてください。");
+        } else {
+          setErrorMsg("メールアドレスまたはパスワードが正しくありません。");
+        }
+        return;
+      }
+      // ブラウザ側でセッション確立後、サーバー側でロールを確認してリダイレクト
+      const res = await fetch("/api/auth/me");
+      const json = await res.json();
+      if (json?.role === "SUPER_ADMIN") {
+        window.location.href = "/superadmin";
+      } else if (json?.role === "ADMIN" || json?.role === "STAFF") {
+        window.location.href = "/admin";
+      } else if (!res.ok || !json?.role) {
+        await supabase.auth.signOut();
+        setErrorMsg("アカウントの登録が完了していません。お手数ですが再度新規登録をお試しください。");
+      } else {
+        window.location.href = next;
       }
     });
   }
@@ -79,7 +97,7 @@ export default function LoginForm() {
       setErrorMsg(result.error);
       setOauthPending(null);
     } else if (result.url) {
-      router.push(result.url);
+      window.location.href = result.url;
     }
   }
 
@@ -91,7 +109,7 @@ export default function LoginForm() {
       setErrorMsg(result.error);
       setOauthPending(null);
     } else if (result.url) {
-      router.push(result.url);
+      window.location.href = result.url;
     }
   }
 
