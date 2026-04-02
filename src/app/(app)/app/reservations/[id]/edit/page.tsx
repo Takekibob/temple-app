@@ -20,7 +20,7 @@ export default async function EditReservationPage({
   });
 
   if (!reservation) notFound();
-  if (reservation.status !== "PENDING") redirect("/app/reservations");
+  if (reservation.status === "CANCELLED") redirect("/app/reservations");
 
   const deceasedPersons = await prisma.deceasedPerson.findMany({
     where: { memberId: authUser.member.id },

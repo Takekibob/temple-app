@@ -93,7 +93,7 @@ export default async function ReservationsPage() {
                     {STATUS_LABELS[r.status]}
                   </span>
                 </div>
-                {r.status === "PENDING" && (
+                {(r.status === "PENDING" || r.status === "CONFIRMED") && (
                   <div className="flex items-center gap-4 mt-3">
                     <Link
                       href={`/app/reservations/${r.id}/edit`}

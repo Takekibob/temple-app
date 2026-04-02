@@ -15,8 +15,9 @@ const TYPE_LABELS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "確認待ち",
   CONFIRMED: "確定",
-  COMPLETED: "完了",
+  COMPLETED: "実施済み",
   CANCELLED: "キャンセル",
+  PAST: "実施済み",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
   CONFIRMED: "bg-teal-100 text-teal-800",
   COMPLETED: "bg-stone-100 text-stone-600",
   CANCELLED: "bg-red-100 text-red-700",
+  PAST: "bg-stone-100 text-stone-600",
 };
 
 interface SearchParams {
@@ -52,7 +54,15 @@ export default async function AdminReservationsPage({
     templeId: authUser.templeId,
     scheduledAt: { gte: monthStart, lt: monthEnd },
   };
-  if (status) where.status = status;
+  if (status === "PAST") {
+    where.scheduledAt = { gte: monthStart, lt: now < monthEnd ? now : monthEnd };
+    where.status = { not: "CANCELLED" };
+  } else if (status === "PENDING" || status === "CONFIRMED") {
+    where.status = status;
+    where.scheduledAt = { gte: now < monthStart ? monthStart : now, lt: monthEnd };
+  } else if (status) {
+    where.status = status;
+  }
 
   const reservations = await prisma.reservation.findMany({
     where,
@@ -109,7 +119,7 @@ export default async function AdminReservationsPage({
           { value: "", label: "すべて" },
           { value: "PENDING", label: "確認待ち" },
           { value: "CONFIRMED", label: "確定" },
-          { value: "COMPLETED", label: "完了" },
+          { value: "PAST", label: "実施済み" },
         ].map((f) => (
           <Link
             key={f.value}
@@ -152,6 +162,7 @@ function ReservationCalendar({
     deceasedPerson: { name: string } | null;
   }>;
 }) {
+  const now = new Date();
   // Group by date
   const grouped = new Map<string, typeof reservations>();
   for (const r of reservations) {
@@ -199,9 +210,17 @@ function ReservationCalendar({
                         内容変更あり
                       </span>
                     )}
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                      {STATUS_LABELS[r.status]}
-                    </span>
+                    {(() => {
+                      const displayStatus =
+                        r.status !== "CANCELLED" && r.scheduledAt < now
+                          ? "PAST"
+                          : r.status;
+                      return (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[displayStatus]}`}>
+                          {STATUS_LABELS[displayStatus]}
+                        </span>
+                      );
+                    })()}
                     <Link
                       href={`/admin/reservations/${r.id}`}
                       className="text-amber-700 hover:text-amber-900 text-xs font-medium"

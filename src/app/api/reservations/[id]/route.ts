@@ -78,9 +78,9 @@ export async function PATCH(
         });
         return NextResponse.json({ reservation: updated });
       }
-      // Detail field editing (PENDING only)
-      if (reservation.status !== "PENDING") {
-        return NextResponse.json({ error: "確認待ちの予約のみ変更できます" }, { status: 400 });
+      // Detail field editing (not allowed after cancellation)
+      if (reservation.status === "CANCELLED") {
+        return NextResponse.json({ error: "キャンセル済みの予約は変更できません" }, { status: 400 });
       }
       const {
         deceasedPersonId, notes,
