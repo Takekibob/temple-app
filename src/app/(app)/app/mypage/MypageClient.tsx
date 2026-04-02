@@ -111,7 +111,6 @@ export default function MypageClient({ user, member, templeId, subscriptionPlanN
 
         {/* 設定 */}
         <NavSection title="設定">
-          <NavItem href="/app/mypage/profile" icon="👤" label="プロフィール編集" />
           <NavItem href="/app/mypage/display" icon="🖥️" label="表示設定" />
           <NavItem href="/app/mypage/notifications" icon="🔔" label="通知設定" />
           {isDanka && <NavItem href="/app/mypage/danka-info" icon="📋" label="檀家情報" />}

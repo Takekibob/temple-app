@@ -77,12 +77,17 @@ export default function SequencesPage() {
                 トリガー: {TRIGGER_LABELS[seq.trigger] ?? seq.trigger}
               </p>
               <p className="text-xs text-stone-400 mb-4">配信待ち: {seq._count.queues}件</p>
-              <button
-                onClick={() => handleToggle(seq.id, seq.isActive)}
-                className="text-xs text-amber-700 hover:text-amber-900"
-              >
-                {seq.isActive ? "無効にする" : "有効にする"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => handleToggle(seq.id, seq.isActive)}
+                  className="text-xs text-stone-500 hover:text-stone-700"
+                >
+                  {seq.isActive ? "無効にする" : "有効にする"}
+                </button>
+                <Link href={`/admin/line/sequences/${seq.id}`} className="text-xs text-amber-700 hover:text-amber-900 font-medium">
+                  編集 →
+                </Link>
+              </div>
             </div>
           ))}
         </div>

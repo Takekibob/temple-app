@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAdminOrStaff } from "@/lib/auth";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authUser = await requireAdminOrStaff();
+  const { id } = await params;
+
+  const seq = await prisma.lineStepSequence.findUnique({ where: { id } });
+  if (!seq || seq.templeId !== authUser.templeId) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+  return NextResponse.json(seq);
+}
 
 export async function PATCH(
   request: NextRequest,
