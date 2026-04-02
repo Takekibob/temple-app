@@ -25,10 +25,10 @@ export default async function DonationThanksPage({
           確認メールをお送りしています。ご寄付は大切に活用させていただきます。
         </p>
         <Link
-          href={`/donate/${templeId}`}
+          href="/app/mypage"
           className="text-amber-700 text-sm hover:text-amber-900"
         >
-          寄付ページに戻る
+          マイページに戻る
         </Link>
       </div>
     </div>
