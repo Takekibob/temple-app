@@ -16,12 +16,19 @@ export default async function DonationsPage() {
   if (!authUser) redirect("/");
   if (!authUser.member) redirect("/app");
 
-  const donations = await prisma.donation.findMany({
-    where: { memberId: authUser.member.id },
-    orderBy: { donatedAt: "desc" },
-  });
+  const [donations, temple] = await Promise.all([
+    prisma.donation.findMany({
+      where: { memberId: authUser.member.id },
+      orderBy: { donatedAt: "desc" },
+    }),
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId },
+      select: { stripeConnectOnboarded: true },
+    }),
+  ]);
 
   const total = donations.reduce((sum, d) => sum + d.amount, 0);
+  const donationEnabled = temple?.stripeConnectOnboarded ?? false;
 
   return (
     <div className="p-4 pb-24">
@@ -32,12 +39,18 @@ export default async function DonationsPage() {
         </p>
       </div>
 
-      <Link
-        href="/app/donations/new"
-        className="block w-full bg-amber-700 text-white text-center py-3 rounded-xl text-sm font-medium mb-6 hover:bg-amber-800"
-      >
-        オンラインで寄付する
-      </Link>
+      {donationEnabled ? (
+        <Link
+          href="/app/donations/new"
+          className="block w-full bg-amber-700 text-white text-center py-3 rounded-xl text-sm font-medium mb-6 hover:bg-amber-800"
+        >
+          オンラインで寄付する
+        </Link>
+      ) : (
+        <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500 mb-6 text-center">
+          現在、オンライン寄付はご利用いただけません
+        </div>
+      )}
 
       {donations.length === 0 ? (
         <p className="text-center text-stone-400 py-12">寄付履歴がありません</p>

@@ -12,6 +12,13 @@ type BillingStatus = {
   hasSubscription: boolean;
 };
 
+type ConnectStatus = {
+  connected: boolean;
+  onboarded: boolean;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+};
+
 const STATUS_LABELS: Record<BillingStatus["planStatus"], { label: string; color: string }> = {
   TRIAL:     { label: "トライアル中",   color: "text-blue-700 bg-blue-50 border-blue-200" },
   ACTIVE:    { label: "スタンダード",   color: "text-green-700 bg-green-50 border-green-200" },
@@ -26,12 +33,19 @@ export default function BillingClient() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
 
   const successMsg = searchParams.get("success") === "1"
     ? "サブスクリプションの登録が完了しました。"
     : null;
   const cancelledMsg = searchParams.get("cancelled") === "1"
     ? "お支払いがキャンセルされました。"
+    : null;
+  const connectReturnMsg = searchParams.get("connect") === "return"
+    ? "Stripe Connect の設定が完了しました。反映まで数分かかる場合があります。"
+    : searchParams.get("connect") === "refresh"
+    ? "設定が中断されました。再度お試しください。"
     : null;
 
   useEffect(() => {
@@ -45,6 +59,11 @@ export default function BillingClient() {
         setError("状況の取得に失敗しました");
         setLoading(false);
       });
+
+    fetch("/api/stripe-connect/status")
+      .then((r) => r.json())
+      .then((data) => setConnectStatus(data))
+      .catch(() => {});
   }, []);
 
   async function handleSubscribe() {
@@ -57,6 +76,21 @@ export default function BillingClient() {
     } else {
       setError(data.error ?? "エラーが発生しました");
       setActionLoading(false);
+    }
+  }
+
+  async function handleConnectOnboard() {
+    setConnectLoading(true);
+    const res = await fetch("/api/stripe-connect/onboard", { method: "POST" });
+    const data = await res.json();
+    if (data.alreadyOnboarded) {
+      setConnectStatus((prev) => prev ? { ...prev, onboarded: true } : { connected: true, onboarded: true });
+      setConnectLoading(false);
+    } else if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError(data.error ?? "エラーが発生しました");
+      setConnectLoading(false);
     }
   }
 
@@ -103,6 +137,15 @@ export default function BillingClient() {
       {cancelledMsg && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
           {cancelledMsg}
+        </div>
+      )}
+      {connectReturnMsg && (
+        <div className={`p-4 rounded-xl text-sm border ${
+          searchParams.get("connect") === "return"
+            ? "bg-green-50 border-green-200 text-green-700"
+            : "bg-amber-50 border-amber-200 text-amber-700"
+        }`}>
+          {connectReturnMsg}
         </div>
       )}
       {error && (
@@ -245,6 +288,55 @@ export default function BillingClient() {
       <p className="text-xs text-stone-400 text-center">
         決済はStripeにて安全に処理されます。解約はStripeポータルからいつでも可能です。
       </p>
+
+      {/* Stripe Connect セクション */}
+      <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
+        <div>
+          <p className="font-semibold text-stone-800 mb-1">寄付受け取り設定（Stripe Connect）</p>
+          <p className="text-xs text-stone-500">
+            設定すると檀家さんがオンラインでお寺に直接寄付できるようになります。寄付金はお寺のStripe口座に直接入金されます。
+          </p>
+        </div>
+
+        {connectStatus?.onboarded ? (
+          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <span className="text-green-600 text-lg">✅</span>
+            <div>
+              <p className="text-sm font-medium text-green-800">設定完了</p>
+              <p className="text-xs text-green-600">
+                カード決済: {connectStatus.chargesEnabled ? "有効" : "審査中"}
+                　振込: {connectStatus.payoutsEnabled ? "有効" : "審査中"}
+              </p>
+            </div>
+          </div>
+        ) : connectStatus?.connected ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <span className="text-amber-600 text-lg">⏳</span>
+              <p className="text-sm text-amber-800">Stripe の審査・設定が未完了です。続きを行ってください。</p>
+            </div>
+            <button
+              onClick={handleConnectOnboard}
+              disabled={connectLoading}
+              className="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+            >
+              {connectLoading ? "リダイレクト中…" : "Stripe Connect の設定を続ける"}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleConnectOnboard}
+            disabled={connectLoading}
+            className="w-full bg-stone-800 hover:bg-stone-900 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+          >
+            {connectLoading ? "リダイレクト中…" : "Stripe Connect を設定する（寄付受け取りを有効化）"}
+          </button>
+        )}
+
+        <p className="text-xs text-stone-400">
+          Stripe によって本人確認（KYC）と銀行口座の登録が必要です。審査完了後に寄付機能が有効になります。
+        </p>
+      </div>
     </div>
   );
 }

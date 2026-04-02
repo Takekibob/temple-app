@@ -52,6 +52,10 @@ model Temple {
   stripeCustomerId     String?    @unique
   stripeSubscriptionId String?    @unique
 
+  // Stripe Connect（各寺院への寄付受け取り）
+  stripeConnectAccountId  String?  @unique
+  stripeConnectOnboarded  Boolean  @default(false)
+
   // --- v2追加：ステージ閾値カスタマイズ ---
   thresholdGoen      Int @default(10)  // → PROSPECT遷移スコア
   thresholdProspect  Int @default(50)  // → DANKA_CANDIDATE遷移スコア

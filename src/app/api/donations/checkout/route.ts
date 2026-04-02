@@ -13,10 +13,13 @@ export async function POST(request: NextRequest) {
 
   const temple = await prisma.temple.findUnique({
     where: { id: templeId, isActive: true },
-    select: { name: true },
+    select: { name: true, stripeConnectAccountId: true, stripeConnectOnboarded: true },
   });
   if (!temple) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+  if (!temple.stripeConnectOnboarded || !temple.stripeConnectAccountId) {
+    return NextResponse.json({ error: "このお寺はオンライン寄付に対応していません" }, { status: 400 });
   }
 
   // 寄付レコードを先に作成（pending扱い）
@@ -48,6 +51,11 @@ export async function POST(request: NextRequest) {
         quantity: 1,
       },
     ],
+    payment_intent_data: {
+      transfer_data: {
+        destination: temple.stripeConnectAccountId!,
+      },
+    },
     metadata: {
       donationId: donation.id,
       templeId,
