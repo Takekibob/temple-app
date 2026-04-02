@@ -94,7 +94,15 @@ export default async function ReservationsPage() {
                   </span>
                 </div>
                 {r.status === "PENDING" && (
-                  <CancelButton id={r.id} />
+                  <div className="flex items-center gap-4 mt-3">
+                    <Link
+                      href={`/app/reservations/${r.id}/edit`}
+                      className="text-xs text-amber-700 hover:underline"
+                    >
+                      内容を変更する
+                    </Link>
+                    <CancelButton id={r.id} />
+                  </div>
                 )}
               </li>
             ))}

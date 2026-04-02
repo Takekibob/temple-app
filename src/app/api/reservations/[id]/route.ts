@@ -66,20 +66,54 @@ export async function PATCH(
 
     const body = await request.json();
 
-    // Members can only cancel
+    // Members: cancel or edit detail fields (PENDING only)
     if (!isAdmin) {
       if (body.status && body.status !== "CANCELLED") {
         return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
       }
+      if (body.status === "CANCELLED") {
+        const updated = await prisma.reservation.update({
+          where: { id },
+          data: { status: "CANCELLED" },
+        });
+        return NextResponse.json({ reservation: updated });
+      }
+      // Detail field editing (PENDING only)
+      if (reservation.status !== "PENDING") {
+        return NextResponse.json({ error: "確認待ちの予約のみ変更できます" }, { status: 400 });
+      }
+      const {
+        deceasedPersonId, notes,
+        attendees, purificationRequired, flowerOrder, flowerDetail,
+        cateringOrder, cateringCount, cateringDetail,
+      } = body;
       const updated = await prisma.reservation.update({
         where: { id },
-        data: { status: "CANCELLED" },
+        data: {
+          ...(deceasedPersonId !== undefined ? { deceasedPersonId: deceasedPersonId || null } : {}),
+          ...(notes !== undefined ? { notes: notes || null } : {}),
+          ...(attendees !== undefined ? { attendees: attendees ? Number(attendees) : null } : {}),
+          ...(purificationRequired !== undefined ? { purificationRequired } : {}),
+          ...(flowerOrder !== undefined ? {
+            flowerOrder,
+            flowerDetail: flowerOrder ? (flowerDetail || null) : null,
+          } : {}),
+          ...(cateringOrder !== undefined ? {
+            cateringOrder,
+            cateringCount: cateringOrder && cateringCount ? Number(cateringCount) : null,
+            cateringDetail: cateringOrder ? (cateringDetail || null) : null,
+          } : {}),
+        },
       });
       return NextResponse.json({ reservation: updated });
     }
 
     // Admins can update all fields
-    const { status, scheduledAt, durationMin, notes, deceasedPersonId } = body;
+    const {
+      status, scheduledAt, durationMin, notes, deceasedPersonId,
+      attendees, purificationRequired, flowerOrder, flowerDetail,
+      cateringOrder, cateringCount, cateringDetail,
+    } = body;
 
     const updated = await prisma.reservation.update({
       where: { id },
@@ -89,6 +123,17 @@ export async function PATCH(
         ...(durationMin ? { durationMin } : {}),
         ...(notes !== undefined ? { notes } : {}),
         ...(deceasedPersonId !== undefined ? { deceasedPersonId: deceasedPersonId || null } : {}),
+        ...(attendees !== undefined ? { attendees: attendees ? Number(attendees) : null } : {}),
+        ...(purificationRequired !== undefined ? { purificationRequired } : {}),
+        ...(flowerOrder !== undefined ? {
+          flowerOrder,
+          flowerDetail: flowerOrder ? (flowerDetail || null) : null,
+        } : {}),
+        ...(cateringOrder !== undefined ? {
+          cateringOrder,
+          cateringCount: cateringOrder && cateringCount ? Number(cateringCount) : null,
+          cateringDetail: cateringOrder ? (cateringDetail || null) : null,
+        } : {}),
       },
       include: {
         member: { include: { user: { select: { name: true } } } },

@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, scheduledAt, durationMin = 60, deceasedPersonId, notes } = body;
+    const {
+      type, scheduledAt, durationMin = 60, deceasedPersonId, notes,
+      attendees, purificationRequired, flowerOrder, flowerDetail,
+      cateringOrder, cateringCount, cateringDetail,
+    } = body;
 
     if (!type || !scheduledAt) {
       return NextResponse.json({ error: "種別と日時は必須です" }, { status: 400 });
@@ -113,6 +117,13 @@ export async function POST(request: NextRequest) {
         deceasedPersonId: deceasedPersonId || null,
         notes: notes || null,
         status: "PENDING",
+        attendees: attendees ? Number(attendees) : null,
+        purificationRequired: purificationRequired ?? false,
+        flowerOrder: flowerOrder ?? false,
+        flowerDetail: flowerOrder ? (flowerDetail || null) : null,
+        cateringOrder: cateringOrder ?? false,
+        cateringCount: cateringOrder && cateringCount ? Number(cateringCount) : null,
+        cateringDetail: cateringOrder ? (cateringDetail || null) : null,
       },
       include: {
         deceasedPerson: { select: { id: true, name: true } },

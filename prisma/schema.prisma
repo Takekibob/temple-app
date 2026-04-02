@@ -308,6 +308,14 @@ model Reservation {
   deceasedPersonId  String?
   status            ReservationStatus @default(PENDING)
   notes             String?
+  // 参加人数・オプション
+  attendees         Int?
+  purificationRequired Boolean        @default(false)
+  flowerOrder       Boolean           @default(false)
+  flowerDetail      String?
+  cateringOrder     Boolean           @default(false)
+  cateringCount     Int?
+  cateringDetail    String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

@@ -44,6 +44,14 @@ export default function NewReservationClient({ deceasedPersons, initialDeceasedP
   const [duration, setDuration] = useState(60);
   const [deceasedPersonId, setDeceasedPersonId] = useState(initialDeceasedPersonId ?? "");
   const [notes, setNotes] = useState("");
+  // 追加フィールド
+  const [attendees, setAttendees] = useState<string>("");
+  const [purificationRequired, setPurificationRequired] = useState(false);
+  const [flowerOrder, setFlowerOrder] = useState(false);
+  const [flowerDetail, setFlowerDetail] = useState("");
+  const [cateringOrder, setCateringOrder] = useState(false);
+  const [cateringCount, setCateringCount] = useState<string>("");
+  const [cateringDetail, setCateringDetail] = useState("");
 
   // Slot loading
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -88,6 +96,13 @@ export default function NewReservationClient({ deceasedPersons, initialDeceasedP
           durationMin: duration,
           deceasedPersonId: deceasedPersonId || null,
           notes: notes || null,
+          attendees: attendees ? Number(attendees) : null,
+          purificationRequired,
+          flowerOrder,
+          flowerDetail: flowerOrder ? (flowerDetail || null) : null,
+          cateringOrder,
+          cateringCount: cateringOrder && cateringCount ? Number(cateringCount) : null,
+          cateringDetail: cateringOrder ? (cateringDetail || null) : null,
         }),
       });
       const data = await res.json();
@@ -277,6 +292,112 @@ export default function NewReservationClient({ deceasedPersons, initialDeceasedP
               </div>
             )}
 
+            {/* 参列者数 */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                参列者数（任意）
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={attendees}
+                onChange={(e) => setAttendees(e.target.value)}
+                placeholder="例：10"
+                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            {/* お清め */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">お清め</label>
+              <div className="flex gap-3">
+                {[{ v: false, l: "なし" }, { v: true, l: "あり" }].map(({ v, l }) => (
+                  <button
+                    key={String(v)}
+                    type="button"
+                    onClick={() => setPurificationRequired(v)}
+                    className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                      purificationRequired === v
+                        ? "border-amber-500 bg-amber-50 text-amber-800 font-medium"
+                        : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* お花 */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">お花の注文</label>
+              <div className="flex gap-3 mb-2">
+                {[{ v: false, l: "しない" }, { v: true, l: "する" }].map(({ v, l }) => (
+                  <button
+                    key={String(v)}
+                    type="button"
+                    onClick={() => setFlowerOrder(v)}
+                    className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                      flowerOrder === v
+                        ? "border-amber-500 bg-amber-50 text-amber-800 font-medium"
+                        : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              {flowerOrder && (
+                <input
+                  type="text"
+                  value={flowerDetail}
+                  onChange={(e) => setFlowerDetail(e.target.value)}
+                  placeholder="種類・色・予算などをご記入ください"
+                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              )}
+            </div>
+
+            {/* 料理 */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">お料理の注文</label>
+              <div className="flex gap-3 mb-2">
+                {[{ v: false, l: "しない" }, { v: true, l: "する" }].map(({ v, l }) => (
+                  <button
+                    key={String(v)}
+                    type="button"
+                    onClick={() => setCateringOrder(v)}
+                    className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                      cateringOrder === v
+                        ? "border-amber-500 bg-amber-50 text-amber-800 font-medium"
+                        : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              {cateringOrder && (
+                <div className="space-y-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={cateringCount}
+                    onChange={(e) => setCateringCount(e.target.value)}
+                    placeholder="人数（例：10）"
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <input
+                    type="text"
+                    value={cateringDetail}
+                    onChange={(e) => setCateringDetail(e.target.value)}
+                    placeholder="料理の種類・ご要望など"
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
                 備考・要望（任意）
@@ -354,6 +475,30 @@ export default function NewReservationClient({ deceasedPersons, initialDeceasedP
                 </span>
               </div>
             )}
+            {attendees && (
+              <div className="flex justify-between">
+                <span className="text-stone-500">参列者数</span>
+                <span className="font-medium text-stone-800">{attendees}名</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-stone-500">お清め</span>
+              <span className="font-medium text-stone-800">{purificationRequired ? "あり" : "なし"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stone-500">お花</span>
+              <span className="font-medium text-stone-800">
+                {flowerOrder ? `注文する${flowerDetail ? `（${flowerDetail}）` : ""}` : "なし"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stone-500">お料理</span>
+              <span className="font-medium text-stone-800">
+                {cateringOrder
+                  ? `注文する${cateringCount ? `・${cateringCount}名前` : ""}${cateringDetail ? `（${cateringDetail}）` : ""}`
+                  : "なし"}
+              </span>
+            </div>
             {notes && (
               <div>
                 <span className="text-stone-500 block mb-1">備考</span>

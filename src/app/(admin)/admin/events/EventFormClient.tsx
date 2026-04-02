@@ -40,11 +40,36 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   // Convert eventDate from Date string to YYYY-MM-DD
   const initialDate = initialData?.eventDate
     ? new Date(initialData.eventDate).toISOString().split("T")[0]
     : "";
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploadError(null);
+    setImageUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/events/upload-image", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setImageUploadError(data.error ?? "アップロードに失敗しました");
+      } else {
+        setImageUrl(data.url);
+      }
+    } catch {
+      setImageUploadError("通信エラーが発生しました");
+    } finally {
+      setImageUploading(false);
+    }
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>, publishStatus?: string) {
     e.preventDefault();
@@ -61,7 +86,7 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
       capacity: form.get("capacity") || null,
       fee: form.get("fee"),
       visibility: form.get("visibility"),
-      imageUrl: form.get("imageUrl"),
+      imageUrl: imageUrl || null,
       status: publishStatus ?? (isEdit ? undefined : "DRAFT"),
     };
 
@@ -242,15 +267,47 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
 
         <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
           <h2 className="font-semibold text-stone-700">画像</h2>
-          <div className="space-y-1.5">
-            <Label htmlFor="imageUrl" className="text-stone-700">カバー画像URL</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              defaultValue={initialData?.imageUrl ?? ""}
-              placeholder="https://..."
-            />
+          <div className="space-y-3">
+            {imageUrl && (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt="カバー画像"
+                  className="w-full h-40 object-cover rounded-lg border border-stone-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white text-stone-600 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-stone-200"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <label className="block">
+              <span className="sr-only">画像を選択</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={imageUploading}
+                className="block w-full text-sm text-stone-500
+                  file:mr-3 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-amber-50 file:text-amber-700
+                  hover:file:bg-amber-100
+                  disabled:opacity-50"
+              />
+            </label>
+            {imageUploading && (
+              <p className="text-xs text-stone-400">アップロード中…</p>
+            )}
+            {imageUploadError && (
+              <p className="text-xs text-red-600">{imageUploadError}</p>
+            )}
+            <p className="text-xs text-stone-400">JPG・PNG・HEIC など対応。最大5MB。</p>
           </div>
         </div>
 
