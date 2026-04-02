@@ -14,5 +14,5 @@ export default async function NewDonationPage() {
 
   if (!temple) redirect("/app");
 
-  return <DonationFormClient temple={temple} />;
+  return <DonationFormClient temple={temple} userEmail={authUser.email} />;
 }

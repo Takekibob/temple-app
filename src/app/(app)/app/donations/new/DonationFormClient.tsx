@@ -7,7 +7,7 @@ type Temple = { id: string; name: string };
 
 const AMOUNTS = [1000, 3000, 5000, 10000, 30000, 50000];
 
-export default function DonationFormClient({ temple }: { temple: Temple }) {
+export default function DonationFormClient({ temple, userEmail }: { temple: Temple; userEmail: string }) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [purpose, setPurpose] = useState("GENERAL");
@@ -34,7 +34,7 @@ export default function DonationFormClient({ temple }: { temple: Temple }) {
         amount: numAmount,
         purpose,
         purposeDetail,
-        donorEmail: undefined, // ログイン済みのためサーバー側で取得
+        donorEmail: userEmail,
       }),
     });
 
