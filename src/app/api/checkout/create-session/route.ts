@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "参加人数は1〜6名で指定してください" }, { status: 400 });
     }
 
+    // マルチテンプル対応: templeId フィルタなし
     const event = await prisma.event.findFirst({
-      where: { id: eventId, templeId: authUser.templeId, status: "PUBLISHED" },
+      where: { id: eventId, status: "PUBLISHED" },
     });
     if (!event) {
       return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
@@ -28,8 +29,13 @@ export async function POST(request: NextRequest) {
     if (event.fee === 0) {
       return NextResponse.json({ error: "無料イベントにはこのAPIを使用できません" }, { status: 400 });
     }
-    if (event.visibility === "DANKA_ONLY" && authUser.member.type !== "DANKA") {
-      return NextResponse.json({ error: "このイベントは檀家会員のみ申込できます" }, { status: 403 });
+    // DANKA_ONLY は自寺院の檀家のみ
+    if (event.visibility === "DANKA_ONLY") {
+      const isMyTempleDanka =
+        authUser.member.type === "DANKA" && authUser.member.templeId === event.templeId;
+      if (!isMyTempleDanka) {
+        return NextResponse.json({ error: "このイベントは所属寺院の檀家会員のみ申込できます" }, { status: 403 });
+      }
     }
 
     // 既存申込チェック（キャンセル済みは再申込可）
