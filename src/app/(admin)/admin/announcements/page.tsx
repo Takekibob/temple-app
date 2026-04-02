@@ -21,7 +21,7 @@ export default async function AdminAnnouncementsPage() {
   if (authUser.role === "MEMBER") redirect("/app");
 
   const announcements = await prisma.announcement.findMany({
-    where: { templeId: authUser.templeId },
+    where: { templeId: authUser.templeId, memberId: null },
     orderBy: { createdAt: "desc" },
   });
 
