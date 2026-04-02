@@ -90,12 +90,12 @@ export default async function RevenuePage() {
           </div>
           <p className="text-sm text-stone-500">寄付記録の一覧・追加・お礼メール送信</p>
         </Link>
-        <Link href="/admin/revenue/plans" className="bg-white rounded-xl border border-stone-200 p-5 hover:border-amber-400 transition-colors">
+        <Link href="/admin/plans" className="bg-white rounded-xl border border-stone-200 p-5 hover:border-amber-400 transition-colors">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">📋</span>
+            <span className="text-2xl">🎫</span>
             <h2 className="font-semibold text-stone-800">会員プラン</h2>
           </div>
-          <p className="text-sm text-stone-500">サブスクリプションプランの作成・管理</p>
+          <p className="text-sm text-stone-500">月払い・年払いプランの有効化と金額設定</p>
         </Link>
         <Link href="/admin/revenue/subscriptions" className="bg-white rounded-xl border border-stone-200 p-5 hover:border-amber-400 transition-colors">
           <div className="flex items-center gap-3 mb-2">
