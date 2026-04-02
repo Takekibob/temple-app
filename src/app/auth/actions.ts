@@ -49,7 +49,10 @@ export async function loginWithEmail(formData: FormData) {
     }
     // 最終ログイン日時を更新・スタッフ管理者は管理画面へ
     await prisma.user.update({ where: { email: authUser.email! }, data: { lastLoginAt: new Date() } });
-    if (["ADMIN", "SUPER_ADMIN", "STAFF"].includes(dbUser.role)) {
+    if (dbUser.role === "SUPER_ADMIN") {
+      redirect("/superadmin");
+    }
+    if (["ADMIN", "STAFF"].includes(dbUser.role)) {
       redirect("/admin");
     }
   }
