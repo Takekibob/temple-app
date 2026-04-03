@@ -6,7 +6,7 @@ import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 import {
   CalendarDays, Users, UserCheck, Calendar,
   Coins, Clock, AlertTriangle, ChevronRight,
-  Plus, Bell,
+  Plus, Bell, Heart,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -28,6 +28,7 @@ export default async function AdminDashboardPage() {
     todayReservations,
     dankaCount,
     goenCount,
+    followerCount,
     monthlyEventSignups,
     recentReservations,
     recentMembers,
@@ -46,6 +47,7 @@ export default async function AdminDashboardPage() {
     }),
     prisma.member.count({ where: { templeId: authUser.templeId, type: "DANKA" } }),
     prisma.member.count({ where: { templeId: authUser.templeId, type: "GOEN" } }),
+    prisma.memberFavoriteTemple.count({ where: { templeId: authUser.templeId } }),
     prisma.eventParticipation.count({
       where: {
         event: { templeId: authUser.templeId },
@@ -180,7 +182,7 @@ export default async function AdminDashboardPage() {
             className="flex items-center gap-1.5 text-xs font-semibold bg-amber-700 text-white px-3 py-2 rounded-xl hover:bg-amber-800 transition-colors shadow-sm"
           >
             <Plus size={13} />
-            予約を追加
+            法要を予約
           </Link>
           <Link
             href="/admin/events/new"
@@ -194,18 +196,18 @@ export default async function AdminDashboardPage() {
             className="flex items-center gap-1.5 text-xs font-semibold bg-white text-stone-700 border border-stone-200 px-3 py-2 rounded-xl hover:bg-stone-50 transition-colors shadow-sm"
           >
             <Bell size={13} />
-            お知らせ
+            お知らせ作成
           </Link>
         </div>
       </div>
 
       {/* KPI カード */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <KpiCard
           icon={CalendarDays}
           iconBg="bg-amber-50"
           iconColor="text-amber-700"
-          label="本日の予約"
+          label="本日の法要予約"
           value={todayReservations}
           unit="件"
           href="/admin/reservations"
@@ -231,6 +233,15 @@ export default async function AdminDashboardPage() {
           href="/admin/members?type=GOEN"
         />
         <KpiCard
+          icon={Heart}
+          iconBg="bg-rose-50"
+          iconColor="text-rose-500"
+          label="フォロワー"
+          value={followerCount}
+          unit="名"
+          href="/admin/members"
+        />
+        <KpiCard
           icon={Calendar}
           iconBg="bg-sky-50"
           iconColor="text-sky-600"
@@ -244,7 +255,7 @@ export default async function AdminDashboardPage() {
       {/* 本日の予約 & 公開中のイベント */}
       <div className="grid lg:grid-cols-2 gap-4">
         <DashCard
-          title="本日の予約"
+          title="本日の法要予約"
           icon={CalendarDays}
           iconColor="text-amber-700"
           moreHref="/admin/reservations"

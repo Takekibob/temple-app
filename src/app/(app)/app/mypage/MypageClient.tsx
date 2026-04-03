@@ -99,7 +99,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
             <NavItem href={`/app/temples/${templeId}`} icon={MapPin} label="所属寺院について" iconColor="text-stone-600 bg-stone-100" />
           )}
           {!isDanka && (
-            <NavItem href="/app/temples?tab=following" icon={MapPin} label="お気に入りのお寺" iconColor="text-stone-600 bg-stone-100" />
+            <NavItem href="/app/temples?tab=following" icon={MapPin} label="フォロー中のお寺" iconColor="text-stone-600 bg-stone-100" />
           )}
           <NavItem href="/app/donations/new" icon={Gift} label="寄付する" iconColor="text-purple-600 bg-purple-50" />
           <NavItem href="/app/subscriptions" icon={Ticket} label="会員プラン" iconColor="text-emerald-700 bg-emerald-50" />

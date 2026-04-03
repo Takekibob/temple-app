@@ -336,7 +336,7 @@ export default async function AppEventsPage({
               <Heart size={20} className="text-rose-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-stone-800">お気に入りのお寺をフォローしよう</p>
+              <p className="text-sm font-bold text-stone-800">お寺をフォローしよう</p>
               <p className="text-xs text-stone-500 mt-0.5">
                 フォローするとそのお寺のイベントがここに表示されます
               </p>
@@ -347,10 +347,10 @@ export default async function AppEventsPage({
           </Link>
         )}
 
-        {/* ご縁さん: お気に入り寺院 */}
+        {/* フォロー中のお寺のイベント */}
         {!isDanka && favoriteEvents.length > 0 && (
           <section>
-            <SectionLabel>お気に入りのお寺</SectionLabel>
+            <SectionLabel>フォロー中のお寺のイベント</SectionLabel>
             <div className="space-y-3">
               {favoriteEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}

@@ -9,8 +9,8 @@ export default async function AdminReportsPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-800">会計レポート</h1>
-        <p className="text-sm text-stone-500 mt-0.5">お布施収入の集計・推移</p>
+        <h1 className="text-2xl font-bold text-stone-800">お布施会計</h1>
+        <p className="text-sm text-stone-500 mt-0.5">お布施収入の集計・推移（月次/年次）</p>
       </div>
       <ReportsClient />
     </div>

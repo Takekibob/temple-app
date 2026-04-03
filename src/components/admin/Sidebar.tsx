@@ -21,6 +21,7 @@ interface NavItem {
   excludePrefix?: string;
   activePrefix?: string;
   badgeKey?: "changeRequests";
+  premiumOnly?: boolean; // TRIAL / ACTIVE が必要な機能
 }
 
 interface NavSection {
@@ -52,33 +53,33 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "イベント・行事",
     items: [
-      { icon: Calendar, label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
-      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events" },
+      { icon: Calendar, label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics", premiumOnly: true },
+      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events", premiumOnly: true },
     ],
   },
   {
     title: "お知らせ・発信",
     items: [
       { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
-      { icon: PenLine, label: "ブログ", href: "/admin/blog" },
-      { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
+      { icon: PenLine, label: "ブログ", href: "/admin/blog", premiumOnly: true },
+      { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true, premiumOnly: true },
     ],
   },
   {
     title: "お金の管理",
     items: [
-      { icon: Coins, label: "お布施", href: "/admin/ofuse" },
-      { icon: Landmark, label: "護持会費", href: "/admin/gojikai" },
-      { icon: BarChart3, label: "収支レポート", href: "/admin/reports" },
-      { icon: BadgeJapaneseYen, label: "収益管理", href: "/admin/revenue", adminOnly: true },
+      { icon: Coins, label: "お布施", href: "/admin/ofuse", premiumOnly: true },
+      { icon: Landmark, label: "護持会費", href: "/admin/gojikai", premiumOnly: true },
+      { icon: BarChart3, label: "お布施会計", href: "/admin/reports", premiumOnly: true },
+      { icon: BadgeJapaneseYen, label: "収益ダッシュボード", href: "/admin/revenue", adminOnly: true, premiumOnly: true },
     ],
   },
   {
     title: "設定",
     items: [
       { icon: Settings, label: "お寺の設定", href: "/admin/settings", adminOnly: true },
-      { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
-      { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true },
+      { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true, premiumOnly: true },
+      { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true, premiumOnly: true },
       { icon: CreditCard, label: "お支払い", href: "/admin/billing", adminOnly: true },
     ],
   },
@@ -211,6 +212,11 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
                         {item.badgeKey === "changeRequests" && pendingChangeRequests > 0 && (
                           <span className="bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">
                             {pendingChangeRequests > 9 ? "9+" : pendingChangeRequests}
+                          </span>
+                        )}
+                        {item.premiumOnly && planStatus !== "TRIAL" && planStatus !== "ACTIVE" && planStatus !== "PAST_DUE" && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full leading-none">
+                            PRO
                           </span>
                         )}
                       </Link>

@@ -205,7 +205,7 @@ export default function NearbyTemplesClient({
           </div>
           <p className="text-sm font-medium text-stone-600 mb-1">フォロー中のお寺がありません</p>
           <p className="text-xs text-stone-400 leading-relaxed">
-            「すべて」タブからお気に入りのお寺を<br />フォローしましょう
+            「すべて」タブからお寺を<br />フォローしましょう
           </p>
         </div>
       )}

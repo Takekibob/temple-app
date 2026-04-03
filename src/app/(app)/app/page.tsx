@@ -6,9 +6,9 @@ import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import GoenCtaBanner from "@/components/app/GoenCtaBanner";
 import {
-  CalendarDays, BookOpen, Heart, Gift,
+  CalendarDays, CalendarRange, BookOpen, Heart, Gift,
   Newspaper, MapPin, ChevronRight, Clock, Lock, Bell,
-  Compass, History,
+  Compass, Coins, Stamp,
 } from "lucide-react";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
@@ -29,21 +29,21 @@ type QuickItem = {
 
 // 同じ役割のアイテムはアイコン・色を統一
 const DANKA_QUICK: QuickItem[] = [
-  { icon: BookOpen,     label: "イベント",    href: "/app/events",           color: "bg-sky-50 text-sky-600" },
-  { icon: MapPin,       label: "法要予約",    href: "/app/reservations",     color: "bg-amber-50 text-amber-700" },
-  { icon: History,      label: "参拝履歴",    href: "/app/temples/history",  color: "bg-teal-50 text-teal-600" },
-  { icon: Heart,        label: "参加予定",    href: "/app/events/my",        color: "bg-rose-50 text-rose-600" },
-  { icon: CalendarDays, label: "カレンダー",  href: "/app/calendar",         color: "bg-violet-50 text-violet-600" },
-  { icon: Newspaper,    label: "ブログ",      href: "/app/blog",             color: "bg-amber-50 text-amber-700" },
+  { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
+  { icon: CalendarDays,  label: "法要予約",   href: "/app/reservations",    color: "bg-amber-50 text-amber-700" },
+  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
+  { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
+  { icon: Coins,         label: "お布施",     href: "/app/ofuse",           color: "bg-yellow-50 text-yellow-700" },
+  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
 ];
 
 const GOEN_QUICK: QuickItem[] = [
-  { icon: BookOpen,     label: "イベント",    href: "/app/events",           color: "bg-sky-50 text-sky-600" },
-  { icon: Newspaper,    label: "ブログ",      href: "/app/blog",             color: "bg-amber-50 text-amber-700" },
-  { icon: History,      label: "参拝履歴",    href: "/app/temples/history",  color: "bg-teal-50 text-teal-600" },
-  { icon: Heart,        label: "参加予定",    href: "/app/events/my",        color: "bg-rose-50 text-rose-600" },
-  { icon: Compass,      label: "お寺を探す",  href: "/app/temples",          color: "bg-sky-50 text-sky-600" },
-  { icon: Gift,         label: "寄付",        href: "/app/donations",        color: "bg-purple-50 text-purple-600" },
+  { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
+  { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
+  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
+  { icon: Compass,       label: "お寺を探す", href: "/app/temples",         color: "bg-sky-50 text-sky-600" },
+  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
+  { icon: Gift,          label: "寄付",       href: "/app/donations/new",   color: "bg-purple-50 text-purple-600" },
 ];
 
 export default async function AppHomePage() {
@@ -492,6 +492,50 @@ export default async function AppHomePage() {
               ))}
             </div>
           </section>
+        )}
+
+        {/* GOEN: フォロー中お寺のイベントがなければ全体から表示 */}
+        {isGoen && goenEvents.length === 0 && featuredEvents.length > 0 && (
+          <section>
+            <SectionHeader title="今後のイベント" moreHref="/app/events" moreLabel="すべて" />
+            <div className="space-y-2">
+              {featuredEvents.map((e) => (
+                <Link key={e.id} href={`/app/events/${e.id}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-teal-200 hover:shadow-md transition-all">
+                  <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
+                    <BookOpen size={16} className="text-teal-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-teal-700 font-medium">{getCategoryLabel(e.category)}</p>
+                    <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                      {e.startTime && ` ${e.startTime}`}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                    <span className="text-xs font-bold text-amber-700">
+                      {e.fee === 0 ? "無料" : `¥${e.fee.toLocaleString()}`}
+                    </span>
+                    <ChevronRight size={14} className="text-stone-300" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* GOEN: 法要について */}
+        {isGoen && (
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <p className="text-xs font-bold text-amber-800 mb-1.5 flex items-center gap-1.5">
+              <CalendarDays size={13} />
+              法要・命日管理について
+            </p>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              年忌法要・月命日などの法要予約・過去帳管理は、檀家としてご登録された方のみご利用いただけます。詳しくはお寺にお問い合わせください。
+            </p>
+          </div>
         )}
 
         {/* 次回の行事（檀家のみ） */}

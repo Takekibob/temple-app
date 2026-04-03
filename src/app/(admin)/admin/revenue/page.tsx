@@ -56,9 +56,9 @@ export default async function RevenuePage() {
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-0.5">
           <BadgeJapaneseYen size={18} className="text-amber-700" />
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">収益管理</h1>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">収益ダッシュボード</h1>
         </div>
-        <p className="text-sm text-stone-400">寄付・サブスク・イベント収益の統合管理</p>
+        <p className="text-sm text-stone-400">寄付・会員プラン・イベント収益の統合サマリー</p>
       </div>
 
       {/* 今月合計ハイライト */}

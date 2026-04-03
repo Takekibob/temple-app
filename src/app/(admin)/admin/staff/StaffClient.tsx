@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { UserCog, Shield, User, Plus, X, Mail, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { UserCog, Shield, User, Plus, X, Mail, ArrowRightLeft } from "lucide-react";
 
 interface StaffUser {
   id: string;
@@ -25,8 +26,16 @@ const ROLE_STYLES: Record<string, string> = {
 };
 
 export default function StaffClient({ initialStaff, currentUserId }: Props) {
+  const router = useRouter();
   const [staff, setStaff] = useState<StaffUser[]>(initialStaff);
   const [filterRole, setFilterRole] = useState<string | null>(null);
+
+  // Transfer (引き継ぎ)
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transferToId, setTransferToId] = useState("");
+  const [transferLoading, startTransfer] = useTransition();
+  const [transferError, setTransferError] = useState("");
+  const currentIsAdmin = staff.find((s) => s.id === currentUserId)?.role === "ADMIN";
 
   // Invite modal
   const [showInvite, setShowInvite] = useState(false);
@@ -65,6 +74,25 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
         const updated: StaffUser = await res.json();
         setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
         setEditId(null);
+      }
+    });
+  }
+
+  function handleTransfer() {
+    if (!transferToId) { setTransferError("引き継ぎ先を選んでください"); return; }
+    setTransferError("");
+    startTransfer(async () => {
+      const res = await fetch("/api/staff/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transferToId }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setShowTransfer(false);
+        router.refresh();
+      } else {
+        setTransferError(json.error ?? "引き継ぎに失敗しました");
       }
     });
   }
@@ -110,12 +138,23 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
           </div>
           <p className="text-sm text-stone-400">有効 {staff.filter((s) => s.isActive).length} 名</p>
         </div>
-        <button
-          onClick={() => { setInviteDone(false); setInviteEmail(""); setInviteName(""); setInviteError(""); setShowInvite(true); }}
-          className="flex items-center gap-1.5 px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 transition-colors shadow-sm"
-        >
-          <Plus size={14} />スタッフを招待
-        </button>
+        <div className="flex items-center gap-2">
+          {currentIsAdmin && staff.filter((s) => s.isActive && s.id !== currentUserId).length > 0 && (
+            <button
+              onClick={() => { setTransferToId(""); setTransferError(""); setShowTransfer(true); }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-200 transition-colors"
+            >
+              <ArrowRightLeft size={13} />
+              代替わり
+            </button>
+          )}
+          <button
+            onClick={() => { setInviteDone(false); setInviteEmail(""); setInviteName(""); setInviteError(""); setShowInvite(true); }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 transition-colors shadow-sm"
+          >
+            <Plus size={14} />スタッフを招待
+          </button>
+        </div>
       </div>
 
       {/* 権限説明 */}
@@ -322,6 +361,73 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
               <button onClick={() => setEditId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-xl">キャンセル</button>
               <button onClick={handleEditSave} disabled={editLoading} className="px-5 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 disabled:opacity-50">
                 {editLoading ? "保存中…" : "変更する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 代替わり・引き継ぎモーダル ───────────────────── */}
+      {showTransfer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-stone-800">代替わり・引き継ぎ</h2>
+                <p className="text-xs text-stone-400 mt-0.5">管理者権限を別のスタッフへ移します</p>
+              </div>
+              <button onClick={() => setShowTransfer(false)} className="text-stone-400 hover:text-stone-600">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p className="text-xs text-amber-800 font-semibold mb-1">引き継ぎ後の変化</p>
+                <p className="text-xs text-amber-700">・選んだ方が「住職 / 管理者」になります</p>
+                <p className="text-xs text-amber-700">・あなたは「スタッフ」に変わります</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-2">引き継ぎ先を選択</label>
+                <div className="space-y-2">
+                  {staff.filter((s) => s.isActive && s.id !== currentUserId).map((s) => (
+                    <label
+                      key={s.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                        transferToId === s.id ? "border-amber-400 bg-amber-50" : "border-stone-200 hover:bg-stone-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={s.id}
+                        checked={transferToId === s.id}
+                        onChange={() => setTransferToId(s.id)}
+                        className="accent-amber-600"
+                      />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                        s.role === "ADMIN" ? "bg-amber-700" : "bg-teal-600"
+                      }`}>
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-800">{s.name}</p>
+                        <p className="text-xs text-stone-400">{ROLE_LABELS[s.role] ?? s.role}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {transferError && <p className="text-sm text-red-500">{transferError}</p>}
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex justify-end gap-2">
+              <button onClick={() => setShowTransfer(false)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-xl">
+                キャンセル
+              </button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferLoading || !transferToId}
+                className="px-5 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 disabled:opacity-50"
+              >
+                {transferLoading ? "引き継ぎ中…" : "引き継ぐ"}
               </button>
             </div>
           </div>

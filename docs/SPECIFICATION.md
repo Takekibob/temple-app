@@ -4,7 +4,7 @@
 > 実装と仕様書に差分がある場合は**実装を正**とします。
 
 **作成日:** 2026-03-28
-**最終更新:** 2026-03-30（Phase A: 操作ログ / Phase B: パイプライン・スコアリング / Phase C: Stage/Type整合性）
+**最終更新:** 2026-04-04（TempleVisit・avatarUrl追加 / スコアリング・パイプライン廃止 / フォロー機能統一 / 代替わり機能追加 / プラン機能ゲート整備）
 **コードベースバージョン:** `work/harada` ブランチ
 
 ---
@@ -48,9 +48,10 @@
 
 | 特徴 | 内容 |
 |---|---|
-| **会員二分類** | 「檀家（DANKA）」と「ご縁さん（GOEN）」を分離し、それぞれに適した体験を提供 |
-| **エンゲージメントスコア** | ご縁さんの関与度を数値化し、檀家への転換候補を自動抽出 |
-| **マルチテンプル対応** | 複数寺院が同一プラットフォームに登録でき、ご縁さんは全寺院を横断的に閲覧できる |
+| **並列な関わり方** | 「フォロー」「会員加入」「檀家」は上下関係ではなく並列。ファネル型CRMではない |
+| **会員二分類** | 「檀家（DANKA）」と「ご縁さん（GOEN）」をアクセス制御で分離。それぞれに適した体験を提供 |
+| **マルチテンプル対応** | 複数寺院が同一プラットフォームに登録でき、会員は全寺院を横断的に閲覧・フォローできる |
+| **参拝記録** | いつ・どこで・何を書いたかを記録する参拝メモ機能 |
 | **多チャネル通知** | Web Push・LINE・メール（Resend）を統合した通知基盤 |
 | **LINE連携** | 6桁コードで簡単紐付け。月命日・法要リマインダーをLINEで受け取れる |
 | **SUPER_ADMIN管理** | SaaS運営者がプラン・寺院・請求を一元管理できる管理画面 |
@@ -199,7 +200,7 @@ Prismaクライアントは `src/generated/prisma/client` に出力。
 
 ```
 Temple ──< User (role: ADMIN/STAFF)
-Temple ──< Member (type: DANKA/GOEN, stage: GOEN/PROSPECT/DANKA_CANDIDATE/DANKA)
+Temple ──< Member (type: DANKA/GOEN)
 Temple ──< Event
 Temple ──< Reservation
 Temple ──< Ofuse
@@ -208,17 +209,16 @@ Temple ──< AnnualEvent
 Temple ──< GojikaiRule
 Temple ──< PushSubscription
 Temple ──< ActivityLog
-Temple ──< ScoringRule
+Temple ──< TempleVisit
 
 Member ──< DeceasedPerson
 Member ──< Reservation
 Member ──< EventParticipation
 Member ──< Ofuse
 Member ──< GojikaiPayment
-Member ──< MemberActivity
 Member ──< MemberFavoriteTemple (N:M with Temple)
-Member ──< StageTransition
-Member ──< ScoringEvent
+Member ──< TempleVisit
+Member ──< MemberNote
 
 Event ──< EventParticipation
 User  ──< ActivityLog
@@ -265,30 +265,22 @@ User  ──< ActivityLog
 | `name` | String | 表示名 |
 | `email` | String | ユニーク |
 | `authProvider` | AuthProvider | EMAIL / GOOGLE / APPLE / LINE |
-| `pushToken` | String? | FCMトークン（将来用） |
+| `avatarUrl` | String? | プロフィール画像URL（Supabase Storage `avatars` バケット） |
 | `pushEnabled` | Boolean | プッシュ通知有効フラグ |
 | `isActive` | Boolean | アカウント有効フラグ |
 | `lastLoginAt` | DateTime? | 最終ログイン日時 |
+| `displayMode` | DisplayMode | 表示設定（STANDARD/LARGE） |
+| `fontSize` | FontSize | フォントサイズ（SMALL/MEDIUM/LARGE） |
+| `highContrast` | Boolean | ハイコントラストモード |
 
 #### Member（会員）
 | カラム | 型 | 説明 |
 |---|---|---|
 | `id` | UUID | PK |
-| `templeId` | String? | NULLable（ご縁さんは寺院未所属の場合あり） |
+| `templeId` | String? | 所属寺院（GOEN・未所属の場合はNULL） |
 | `userId` | String | User.id（1:1） |
-| `type` | MemberType | DANKA / GOEN（アクセス制御・機能ゲート） |
-| `stage` | MemberStage | GOEN / PROSPECT / DANKA_CANDIDATE / DANKA（CRMステージ） |
-| `stageChangedAt` | DateTime? | ステージ変更日時 |
-| `stageChangedBy` | String? | 変更者userId / "AUTO" / "MIGRATE" |
+| `type` | MemberType | DANKA / GOEN（アクセス制御・機能ゲートのみ。スコア・ステージ概念なし） |
 | `familyName` | String | 家名（例: 山田） |
-| `engagementScore` | Int | 現在のエンゲージメントスコア（減衰あり） |
-| `lifetimeScore` | Int | 累計スコア（ステージ判定に使用） |
-| `totalEventsAttended` | Int | 累計参加イベント数 |
-| `totalDonations` | Int | 累計寄付額 |
-| `totalPayments` | Int | 累計支払い件数 |
-| `firstContactAt` | DateTime? | 初回接触日時 |
-| `lastActivityAt` | DateTime? | 最終アクティビティ日時 |
-| `promotedAt` | DateTime? | ご縁さん→檀家の転換日時 |
 | `referralSource` | ReferralSource? | SNS / WEB / EVENT / INTRODUCTION / WALK_IN / OTHER |
 | `interestTags` | Json? | 興味タグ（例: `["zazen","shakyo"]`） |
 | `lineUserId` | String? | LINE連携後のユーザーID |
@@ -314,37 +306,25 @@ User  ──< ActivityLog
 | `ipAddress` | String? | 操作元IPアドレス |
 | `createdAt` | DateTime | 記録日時 |
 
-#### ScoringRule（スコアリングルール）
+#### TempleVisit（参拝記録）
 | カラム | 型 | 説明 |
 |---|---|---|
 | `id` | UUID | PK |
+| `memberId` | String | 会員ID |
+| `templeId` | String | 参拝した寺院ID（所属外でも可） |
+| `memo` | String | 参拝メモ（デフォルト: ""） |
+| `visitedAt` | DateTime | 参拝日時 |
+
+インデックス: `[memberId, visitedAt(sort: Desc)]`
+
+#### MemberNote（対応メモ）
+| カラム | 型 | 説明 |
+|---|---|---|
+| `id` | UUID | PK |
+| `memberId` | String | 対象会員ID |
 | `templeId` | String | 寺院ID |
-| `activityType` | String | ActivityType値 |
-| `score` | Int | 付与ポイント数 |
-| `isActive` | Boolean | 有効フラグ |
-
-ユニーク制約: `[templeId, activityType]`
-
-#### ScoringEvent（スコア付与履歴）
-| カラム | 型 | 説明 |
-|---|---|---|
-| `id` | UUID | PK |
-| `memberId` | String | 会員ID |
-| `activityType` | String | 対象アクティビティ種別 |
-| `score` | Int | 付与スコア |
-| `sourceId` | String? | 関連レコードID |
-| `note` | String? | 備考 |
-| `createdAt` | DateTime | 記録日時 |
-
-#### StageTransition（ステージ遷移履歴）
-| カラム | 型 | 説明 |
-|---|---|---|
-| `id` | UUID | PK |
-| `memberId` | String | 会員ID |
-| `fromStage` | MemberStage? | 遷移前ステージ |
-| `toStage` | MemberStage | 遷移後ステージ |
-| `triggeredBy` | String? | userId / "AUTO" / "MIGRATE" |
-| `reason` | String? | 遷移理由 |
+| `userId` | String | 記録したスタッフID |
+| `content` | String | メモ内容 |
 | `createdAt` | DateTime | 記録日時 |
 
 #### Event（イベント）
@@ -398,8 +378,7 @@ User  ──< ActivityLog
 |---|---|
 | `Role` | SUPER_ADMIN, ADMIN, STAFF, MEMBER |
 | `PlanStatus` | TRIAL, ACTIVE, PAST_DUE, CANCELLED, SUSPENDED |
-| `MemberType` | DANKA, GOEN（アクセス制御・機能ゲート） |
-| `MemberStage` | GOEN, PROSPECT, DANKA_CANDIDATE, DANKA（CRMステージ） |
+| `MemberType` | DANKA, GOEN（アクセス制御・機能ゲートのみ。スコア・ステージ概念なし） |
 | `EventCategory` | ZAZEN, SHAKYO, YOGA, MINDFULNESS, LECTURE, SEASONAL, OTHER |
 | `EventVisibility` | PUBLIC, MEMBERS_ONLY（廃止予定、PUBLICと同等）, DANKA_ONLY |
 | `EventStatus` | DRAFT, PUBLISHED, CLOSED, COMPLETED, CANCELLED |
@@ -408,9 +387,10 @@ User  ──< ActivityLog
 | `ReservationStatus` | PENDING, CONFIRMED, COMPLETED, CANCELLED |
 | `OfuseType` | HOUYO, GOJIKAI, KIFU, EVENT_FEE, OTHER |
 | `PaymentMethod` | CASH, TRANSFER, ONLINE |
-| `ActivityType` | LOGIN, NEWS_VIEW, EVENT_APPLY, EVENT_ATTEND, EVENT_FEEDBACK, KUYO_APPLY, CONTACT, CONSECUTIVE_MONTH |
 | `AnnouncementTarget` | ALL, DANKA, GOEN |
 | `ReferralSource` | SNS, WEB, EVENT, INTRODUCTION, WALK_IN, OTHER |
+| `DisplayMode` | STANDARD, LARGE |
+| `FontSize` | SMALL, MEDIUM, LARGE |
 
 ---
 
@@ -519,42 +499,45 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 
 | パス | 説明 |
 |---|---|
-| `/admin` | ダッシュボード（KPI + 会員登録グラフ + イベント申込グラフ） |
-| `/admin/members` | 会員一覧（type/stage/searchフィルター・CSV出力） |
-| `/admin/members/[id]` | 会員詳細（ステージ変更・スコア履歴・遷移履歴・対応履歴） |
+| `/admin` | ダッシュボード（KPI5項目＋会員登録グラフ＋イベント申込グラフ＋本日の法要予約） |
+| `/admin/members` | 会員一覧（type/searchフィルター・CSV出力） |
+| `/admin/members/[id]` | 会員詳細（対応メモ・法要履歴・サブスクリプション・変更申請） |
 | `/admin/members/import` | 会員CSVインポート |
-| `/admin/pipeline` | CRMパイプライン（ステージ別カンバン＋直近の遷移履歴） |
-| `/admin/conversion` | 転換管理（スコア70+のご縁さん一覧） |
+| `/admin/change-requests` | 情報変更申請一覧（バッジ通知付き） |
+| `/admin/change-requests/[id]` | 申請詳細・承認/却下 |
 | `/admin/deceased` | 過去帳一覧（月命日・年忌フィルター） |
 | `/admin/deceased/new` | 故人登録 |
 | `/admin/deceased/[id]/edit` | 故人編集 |
-| `/admin/events` | イベント一覧（ステータス別タブ） |
-| `/admin/events/new` | イベント作成 |
+| `/admin/events` | イベント一覧（ステータス別タブ、**プレミアム機能**） |
+| `/admin/events/new` | イベント作成（会員限定オプションはプラン契約必須） |
 | `/admin/events/[id]/edit` | イベント編集 |
 | `/admin/events/[id]/participants` | 参加者管理（ステータス変更・返金・**一斉メール**） |
-| `/admin/events/[id]/analytics` | イベント個別分析 |
-| `/admin/events/analytics` | イベント横断分析 |
-| `/admin/reservations` | 予約一覧（カレンダー/リスト） |
+| `/admin/annual-events` | 年中行事管理（**プレミアム機能**） |
+| `/admin/reservations` | 法要予約一覧（カレンダー/リスト） |
 | `/admin/reservations/[id]` | 予約詳細 |
 | `/admin/announcements` | お知らせ一覧 |
 | `/admin/announcements/new` | お知らせ作成（Push/LINE通知付き） |
 | `/admin/announcements/[id]/edit` | お知らせ編集 |
-| `/admin/annual-events` | 年中行事管理 |
-| `/admin/gojikai` | 護持会費管理（年度別・**催促メール一斉送信**） |
-| `/admin/ofuse` | お布施管理（**PDF領収書発行**） |
+| `/admin/blog` | ブログ一覧（**プレミアム機能**） |
+| `/admin/blog/new` | ブログ作成（会員限定オプションはプラン契約必須） |
+| `/admin/blog/[id]/edit` | ブログ編集 |
+| `/admin/line` | LINE配信管理（**プレミアム機能・ADMINのみ**） |
+| `/admin/gojikai` | 護持会費管理（年度別・**催促メール一斉送信**、**プレミアム機能**） |
+| `/admin/ofuse` | お布施管理（**PDF領収書発行**、**プレミアム機能**） |
 | `/admin/ofuse/new` | お布施記録 |
-| `/admin/reports` | 会計レポート（月次/年次） |
-| `/admin/billing` | 課金管理（Stripeポータルへ） |
-| `/admin/staff` | スタッフ管理 |
-| `/admin/settings` | 寺院設定（予約設定・通知設定・ロゴ） |
-| `/admin/settings/scoring` | スコアリングルール設定（アクティビティ別ポイントをお寺ごとにカスタマイズ） |
-| `/admin/logs` | 操作ログ（action/targetTypeフィルタ・ページネーション、adminOnly） |
+| `/admin/reports` | 収支レポート（月次/年次、**プレミアム機能**） |
+| `/admin/revenue` | 収益管理（**プレミアム機能・ADMINのみ**） |
+| `/admin/billing` | お支払い（Stripeポータルへ・ADMINのみ） |
+| `/admin/staff` | スタッフ管理（**代替わり機能付き**・ADMINのみ） |
+| `/admin/plans` | 会員プラン設定（ADMINのみ） |
+| `/admin/settings` | お寺の設定（予約設定・通知設定・ロゴ・ADMINのみ） |
+| `/admin/logs` | 操作ログ（action/targetTypeフィルタ・ページネーション） |
 
 ### 6.5 会員ページ（`/app/`）
 
 | パス | 説明 |
 |---|---|
-| `/app` | ホーム（今後のイベント・お知らせ） |
+| `/app` | ホーム（今後のイベント・お知らせ・フォロー中のお寺の情報） |
 | `/app/events` | イベント一覧（PUBLIC＋DANKA_ONLY） |
 | `/app/events/my` | 申込済みイベント |
 | `/app/events/[id]` | イベント詳細 |
@@ -562,14 +545,23 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 | `/app/events/[id]/apply/success` | 申込完了 |
 | `/app/events/[id]/feedback` | フィードバック送信 |
 | `/app/calendar` | 月別カレンダー（イベント＋予約＋年中行事） |
-| `/app/reservations` | 予約一覧 |
+| `/app/reservations` | 法要予約一覧 |
 | `/app/reservations/new` | 法要予約（檀家限定） |
 | `/app/news` | お知らせ一覧 |
 | `/app/news/[id]` | お知らせ詳細 |
+| `/app/blog` | ブログ一覧 |
+| `/app/blog/[id]` | ブログ詳細（いいね機能付き） |
 | `/app/deceased` | 故人一覧（月命日・年忌） |
 | `/app/ofuse` | お布施履歴 |
-| `/app/temples/[id]` | 他寺院詳細（マルチテンプル） |
-| `/app/mypage` | プロフィール・通知設定・LINE連携 |
+| `/app/temples` | 寺院一覧（すべて/フォロー中タブ、検索付き） |
+| `/app/temples/[id]` | 寺院詳細（フォローボタン・イベント・会員プラン） |
+| `/app/temples/[id]/visit` | 参拝記録フォーム |
+| `/app/temples/history` | 参拝履歴（いつ・どこで・何を書いたかの記録） |
+| `/app/temples/visit` | 参拝記録する寺院を選択（検索付き） |
+| `/app/mypage` | マイページ（通知設定・LINE連携・各種ナビ） |
+| `/app/mypage/profile` | プロフィール編集（名前・アバター画像） |
+| `/app/subscriptions` | 加入中の会員プラン一覧 |
+| `/app/donations/new` | 寄付フォーム |
 
 ---
 
@@ -601,10 +593,10 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 | GET/POST | `/api/members` | 会員一覧/作成 | ADMIN/STAFF |
 | GET/PATCH/DELETE | `/api/members/[id]` | 会員詳細/更新/無効化 | ADMIN/STAFF |
 | POST | `/api/members/import` | CSV一括インポート | ADMIN |
-| POST | `/api/members/[id]/promote` | GOEN→DANKA転換（typeとstageを同時更新） | ADMIN |
-| POST | `/api/members/stage` | ステージ手動変更（typeとの整合性も維持） | ADMIN/STAFF |
 | GET | `/api/members/[id]/deceased` | 会員の故人一覧 | ADMIN/STAFF |
 | POST | `/api/members/[id]/line-settings` | LINE通知設定更新 | ADMIN/STAFF |
+| GET/POST | `/api/members/[id]/notes` | 対応メモ一覧/追加 | ADMIN/STAFF |
+| DELETE | `/api/members/[id]/notes/[nid]` | 対応メモ削除 | ADMIN/STAFF |
 
 ### 7.4 故人管理
 
@@ -665,16 +657,12 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 | GET/PATCH | `/api/gojikai/[id]` | 詳細/ステータス更新 | ADMIN/STAFF |
 | POST | `/api/gojikai/notify` | **未納者への催促メール一斉送信** | ADMIN |
 
-### 7.10 転換・エンゲージメント・スコアリング
+### 7.10 操作ログ・機能利用ログ
 
 | メソッド | パス | 説明 | 権限 |
 |---|---|---|---|
-| GET | `/api/conversion/candidates` | 転換候補（スコア70+）一覧 | ADMIN/STAFF |
-| GET | `/api/conversion/stats` | 転換統計 | ADMIN/STAFF |
-| POST | `/api/activities` | アクティビティログ記録 | 認証済み |
-| GET | `/api/scoring-rules` | スコアリングルール取得（未設定分はデフォルト補完） | ADMIN |
-| PUT | `/api/scoring-rules` | スコアリングルール一括更新 | ADMIN |
 | GET | `/api/logs` | 操作ログ一覧（page/action/targetTypeフィルタ） | ADMIN/STAFF |
+| POST | `/api/feature-logs` | 機能利用ログ記録（fire-and-forget） | 認証済み |
 
 ### 7.11 エクスポート
 
@@ -701,15 +689,20 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 | GET/POST | `/api/staff` | スタッフ一覧/作成 | ADMIN |
 | PATCH/DELETE | `/api/staff/[id]` | スタッフ更新/無効化 | ADMIN |
 | POST | `/api/staff/invite` | スタッフ招待メール送信 | ADMIN |
+| POST | `/api/staff/transfer` | **代替わり**（管理者権限の別スタッフへの引き継ぎ） | ADMIN |
+| GET | `/api/me` | ユーザープロフィール取得 | 認証済み |
+| PATCH | `/api/me` | ユーザー名更新 | 認証済み |
+| POST | `/api/me/avatar` | **プロフィール画像アップロード**（Supabase Storage `avatars`バケット） | 認証済み |
 
-### 7.14 マルチテンプル・お気に入り
+### 7.14 マルチテンプル・フォロー・参拝記録
 
 | メソッド | パス | 説明 | 権限 |
 |---|---|---|---|
 | GET | `/api/temples` | 全アクティブ寺院一覧 | 公開 |
 | GET/PATCH | `/api/temples/[id]` | 寺院詳細/更新 | GET:公開, PATCH:ADMIN |
-| GET/POST | `/api/favorites/temples` | お気に入り寺院取得/追加 | 認証済み |
-| DELETE | `/api/favorites/temples/[id]` | お気に入り解除 | 認証済み |
+| GET/POST | `/api/favorites/temples` | フォロー中寺院取得/フォロー追加 | 認証済み |
+| DELETE | `/api/favorites/temples/[id]` | フォロー解除 | 認証済み |
+| GET/POST | `/api/temple-visits` | 参拝記録一覧/新規記録 | 認証済み |
 
 ### 7.15 決済
 
@@ -735,7 +728,6 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 
 | メソッド | パス | 実行タイミング | 内容 |
 |---|---|---|---|
-| POST | `/api/cron/engagement` | 毎日 17:00 UTC（02:00 JST） | エンゲージメントスコア再計算 |
 | POST | `/api/cron/reminders` | 毎日 09:00/18:00 JST | リマインダー通知（Push＋LINE＋**メール**）送信 |
 | GET | `/api/cron/trial-expiry` | 毎日 09:00 JST | トライアル期限メール送信・**期限切れ時にSUSPENDED自動遷移** |
 
@@ -743,38 +735,21 @@ Next.js 16のProxyファイル（旧`middleware.ts`相当）で以下を処理:
 
 ## 8. 主要機能の仕様詳細
 
-### 8.1 エンゲージメントスコア
+### 8.1 会員のアクセス制御（type）
 
-会員（ご縁さん）のプラットフォームへの関与度を0〜100で数値化する。
+> **⚠️ 廃止済み機能についての注記:**
+> エンゲージメントスコア・CRMパイプライン・ステージ管理（`MemberStage`, `engagementScore`, `lifetimeScore`, `ScoringRule`, `ScoringEvent`, `StageTransition`）は設計思想の変更により**完全廃止**されています。コードに追加しないこと。
 
-**計算式:**
-```
-score = min(100, Σ(activity.score × e^(-0.05 × days_ago)))
-```
-直近の行動ほど高いウェイト。90日以上前の行動は自然減衰。
+会員のアクセス権は `Member.type` の2値のみで制御します。
 
-**アクティビティポイント（デフォルト値 / `src/lib/scoring.ts`）:**
+| type | 利用できる機能 |
+|---|---|
+| `GOEN`（ご縁さん） | イベント参加・ブログ閲覧・お知らせ・参拝記録・フォロー・会員プラン加入 |
+| `DANKA`（檀家） | GOENの全機能 + 法要予約・過去帳・護持会費・お布施・命日通知 |
 
-| アクティビティ | スコア | 備考 |
-|---|---|---|
-| LOGIN | 1 | |
-| NEWS_VIEW | 1 | |
-| EVENT_APPLY | 5 | |
-| EVENT_ATTEND | 10 | |
-| EVENT_FEEDBACK | 3 | |
-| KUYO_APPLY | 20 | |
-| CONTACT | 5 | |
-| CONSECUTIVE_MONTH | 5 | |
-
-各ポイントは `/admin/settings/scoring` でお寺ごとにカスタマイズ可能（`ScoringRule` テーブル）。
-
-**エンゲージメントスコア（`engagementScore`）:** 減衰あり、0〜100にクランプ。直近の行動ほど高ウェイト。
-**ライフタイムスコア（`lifetimeScore`）:** 累計スコア。ステージ自動遷移の判定に使用。
-
-**スコア判定（engagementScore）:**
-- 70以上 → 転換候補（DANKA昇格提案）
-- 40〜69 → アクティブ
-- 0〜39 → 要育成
+- type変更は管理者（ADMIN）が会員詳細画面から手動で実施する
+- 自動昇格・スコアリング・ステージ管理は存在しない
+- DANKA/GOENは上下関係ではなく**並列な関わり方**（CLAUDE.md参照）
 
 ### 8.2 イベント可視性制御
 
@@ -867,29 +842,21 @@ score = min(100, Σ(activity.score × e^(-0.05 × days_ago)))
 
 データはServer Componentで集計し、シリアライズしてクライアントに渡す。
 
-### 8.10 CRMパイプライン（ステージ管理）
+### 8.10 参拝記録（TempleVisit）
 
-会員のエンゲージメント進度を4段階のステージで管理する。
+会員が参拝したお寺・日時・メモを記録する機能。
 
-**ステージ定義（`MemberStage`）:**
+**フロー:**
+1. 会員が `/app/temples/visit` で参拝したお寺を検索・選択
+2. `/app/temples/[id]/visit` でメモを入力して送信
+3. `POST /api/temple-visits` でDBに保存
+4. `/app/temples/history` で時系列の参拝記録を一覧表示
 
-| ステージ | 意味 | 自動昇格条件（lifetimeScore） |
-|---|---|---|
-| `GOEN` | 初期状態 | 10pt以上 → PROSPECT |
-| `PROSPECT` | 見込み | 50pt以上 → DANKA_CANDIDATE |
-| `DANKA_CANDIDATE` | 檀家候補 | 手動昇格のみ |
-| `DANKA` | 檀家 | 手動昇格のみ |
-
-**type との整合性（Phase C）:**
-- `Member.type`（DANKA/GOEN）: アクセス制御ゲート。予約・過去帳・護持会費等の機能可否を決定。
-- `Member.stage`: CRM進捗ステージ。パイプライン管理・スコアリングに使用。
-- `stage=DANKA` に変更したとき → `type=DANKA` も自動同期（双方向）。
-- `promote` API で `type=DANKA` に昇格したとき → `stage=DANKA` も自動同期。
-- 遷移はすべて `StageTransition` テーブルに記録される。
-
-**初回データ移行:**
-既存 DANKA メンバーは `stage=GOEN`（default）のまま作成される。
-`POST /api/superadmin/migrate/sync-stages` を一度実行して同期すること（冪等）。
+**仕様:**
+- 所属寺院・フォロー中・その他の寺院すべてを選択可能（所属寺院も含む）
+- memo フィールドは空文字許容（デフォルト: ""）
+- DANKA・GOEN両方が利用可能
+- 管理者側への参拝記録の公開機能はなし（会員個人の記録のみ）
 
 ### 8.11 操作ログ（ActivityLog）
 
@@ -914,7 +881,9 @@ score = min(100, Σ(activity.score × e^(-0.05 × days_ago)))
 
 - 寺院ごとに完全にデータが分離（`templeId` でテナント分離）
 - `/api/temples` で全寺院を公開取得
-- `MemberFavoriteTemple` でご縁さんが複数寺院をフォロー可能
+- `MemberFavoriteTemple` でDANKA・GOENどちらも複数寺院をフォロー可能（所属外の寺院も含む）
+- 寺院詳細ページ（`/app/temples/[id]`）に`FollowButton`を配置。所属寺院には表示しない
+- 寺院イベント・ブログは会員プランのサブスクリプションで閲覧可能範囲が変わる
 - SUPER_ADMINが寺院・管理者アカウントをプロビジョニング
 
 ---
@@ -994,16 +963,6 @@ score = min(100, Σ(activity.score × e^(-0.05 × days_ago)))
 3. **メール**（Resend経由）
 
 ### 10.2 Cronジョブ詳細
-
-#### エンゲージメントスコア再計算（`/api/cron/engagement`）
-
-```
-対象: 全寺院の全会員
-処理:
-  1. 直近90日のMemberActivityを取得
-  2. score = Σ(activity.score × e^(-0.05 × days)) をクランプ(0, 100)
-  3. Member.engagementScore を更新
-```
 
 #### リマインダー通知（`/api/cron/reminders`）
 
@@ -1086,7 +1045,6 @@ Vercel Cronを使用（`vercel.json` または Vercel Dashboard）:
 毎日 09:00 JST → GET  /api/cron/trial-expiry       (Authorization: Bearer CRON_SECRET)
 毎日 09:00 JST → POST /api/cron/reminders?type=morning
 毎日 18:00 JST → POST /api/cron/reminders?type=evening
-毎日 17:00 UTC → POST /api/cron/engagement
 ```
 
 ### 12.4 初期セットアップ手順（新環境）
@@ -1150,4 +1108,4 @@ Vercel Cronを使用（`vercel.json` または Vercel Dashboard）:
 
 ---
 
-*最終更新: 2026-03-30 — Phase A（操作ログ）/ Phase B（パイプライン・スコアリング）/ Phase C（Stage/Type整合性）を反映*
+*最終更新: 2026-04-04 — スコアリング・パイプライン廃止 / TempleVisit・avatarUrl追加 / フォロー統一 / 代替わり機能 / SPEC全体リフレッシュ*

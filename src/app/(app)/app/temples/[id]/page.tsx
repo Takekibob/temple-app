@@ -7,6 +7,7 @@ import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
 import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift, Stamp } from "lucide-react";
+import FollowButton from "./FollowButton";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -60,6 +61,12 @@ export default async function TempleProfilePage({
   const isMyTemple = authUser.member?.templeId === id;
 
   const followerCount = await prisma.memberFavoriteTemple.count({ where: { templeId: id } });
+
+  const isFollowing = memberId
+    ? !!(await prisma.memberFavoriteTemple.findUnique({
+        where: { memberId_templeId: { memberId, templeId: id } },
+      }))
+    : false;
 
   const [templePlans, subscribedPlanIds] = await Promise.all([
     prisma.membershipPlan.findMany({
@@ -274,6 +281,9 @@ export default async function TempleProfilePage({
               <Gift size={16} />
               {temple.name}に寄付する
             </Link>
+          )}
+          {memberId && !isMyTemple && (
+            <FollowButton templeId={id} initialFollowing={isFollowing} />
           )}
           {isMyTemple && (
             <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-200">
