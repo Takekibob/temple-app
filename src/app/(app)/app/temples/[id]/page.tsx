@@ -7,7 +7,7 @@ import FavoriteButton from "./FavoriteButton";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Mail, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -33,7 +33,6 @@ export default async function TempleProfilePage({
       denomination: true,
       address: true,
       phone: true,
-      email: true,
       description: true,
       logoUrl: true,
       coverImageUrl: true,
@@ -144,14 +143,7 @@ export default async function TempleProfilePage({
                 </a>
               </div>
             )}
-            {temple.email && (
-              <div className="flex items-center gap-3 py-2.5">
-                <Mail size={14} className="text-stone-400 shrink-0" />
-                <a href={`mailto:${temple.email}`} className="text-sm text-amber-700 hover:underline truncate">
-                  {temple.email}
-                </a>
-              </div>
-            )}
+
             {temple.websiteUrl && (
               <div className="flex items-center gap-3 py-2.5">
                 <Globe size={14} className="text-stone-400 shrink-0" />
