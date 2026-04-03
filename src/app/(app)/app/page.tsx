@@ -163,9 +163,7 @@ export default async function AppHomePage() {
     select: { id: true, title: true, publishedAt: true },
   });
 
-  const displayName = authUser.member?.familyName
-    ? `${authUser.member.familyName}家`
-    : authUser.name;
+  const displayName = authUser.name;
 
   const quickItems: QuickItem[] = isDanka
     ? DANKA_QUICK
