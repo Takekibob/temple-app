@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
 import SubscribeButton from "./SubscribeButton";
+import { Check, Minus, Ticket } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -24,7 +25,6 @@ export default async function SubscriptionsPage() {
 
   const isAdminOrStaff = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
-  // テンプレートキーに対応するプランのみ取得
   const [templatePlans, mySubscriptions] = await Promise.all([
     prisma.membershipPlan.findMany({
       where: {
@@ -43,77 +43,96 @@ export default async function SubscriptionsPage() {
   const planByKey = Object.fromEntries(templatePlans.map((p) => [p.templateKey!, p]));
 
   return (
-    <div className="p-4 pb-24">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-stone-800">会員プラン</h1>
-        <p className="text-sm text-stone-500 mt-0.5">サブスクリプションプランの確認・加入</p>
+    <div className="max-w-lg mx-auto pb-28">
+      {/* ヘッダー */}
+      <div className="px-5 pt-6 pb-4">
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">会員プラン</h1>
+        <p className="text-xs text-stone-400 mt-0.5">サブスクリプションプランの確認・加入</p>
       </div>
 
-      {isAdminOrStaff && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 mb-6 text-center">
-          管理者・スタッフはこの機能を利用できません
-        </div>
-      )}
-
-      {/* プラン比較表 */}
-      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
-        <div className="grid grid-cols-3 text-center text-xs font-semibold border-b border-stone-100">
-          <div className="py-3 text-stone-500">機能</div>
-          <div className="py-3 text-stone-600 bg-stone-50 border-x border-stone-100">無料会員</div>
-          <div className="py-3 text-amber-800 bg-amber-50">会員プラン</div>
-        </div>
-        {COMPARISON_ROWS.map((row, i) => (
-          <div key={i} className="grid grid-cols-3 text-center border-b border-stone-50 last:border-0">
-            <div className="py-3 px-2 text-xs text-stone-600 text-left">{row.label}</div>
-            <div className="py-3 bg-stone-50 border-x border-stone-100 flex items-center justify-center">
-              {row.free ? <span className="text-teal-600 text-sm font-bold">✓</span> : <span className="text-stone-300 text-sm">—</span>}
-            </div>
-            <div className="py-3 bg-amber-50 flex items-center justify-center">
-              {row.paid ? <span className="text-teal-600 text-sm font-bold">✓</span> : <span className="text-stone-300 text-sm">—</span>}
-            </div>
+      <div className="px-4 space-y-5">
+        {isAdminOrStaff && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 text-center">
+            管理者・スタッフはこの機能を利用できません
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* 固定2プランのみ表示 */}
-      <div className="space-y-3">
-        {PLAN_TEMPLATES.map((template) => {
-          const plan = planByKey[template.key];
-          if (!plan) return null;
-
-          const isSubscribed = activePlanIds.has(plan.id);
-
-          return (
-            <div
-              key={template.key}
-              className={`bg-white rounded-xl border p-4 ${isSubscribed ? "border-amber-400" : "border-stone-200"}`}
-            >
-              <div className="flex items-start justify-between mb-1">
-                <h3 className="font-semibold text-stone-800">{plan.name}</h3>
-                {isSubscribed && (
-                  <span className="text-xs text-amber-700 font-medium">加入中</span>
-                )}
+        {/* プラン比較表 */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-3 text-center border-b border-stone-100">
+            <div className="py-3 text-xs font-bold text-stone-400 px-2">機能</div>
+            <div className="py-3 text-xs font-bold text-stone-500 bg-stone-50 border-x border-stone-100">無料会員</div>
+            <div className="py-3 text-xs font-bold text-amber-800 bg-amber-50">会員プラン</div>
+          </div>
+          {COMPARISON_ROWS.map((row, i) => (
+            <div key={i} className="grid grid-cols-3 border-b border-stone-50 last:border-0">
+              <div className="py-3.5 px-3 text-xs text-stone-600 flex items-center">{row.label}</div>
+              <div className="py-3.5 bg-stone-50 border-x border-stone-100 flex items-center justify-center">
+                {row.free
+                  ? <Check size={14} className="text-teal-600 stroke-2" />
+                  : <Minus size={14} className="text-stone-300" />}
               </div>
-              {plan.description && (
-                <p className="text-xs text-stone-500 mb-3">{plan.description}</p>
-              )}
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-stone-800">
-                  ¥{plan.price.toLocaleString()}
-                  <span className="text-xs font-normal text-stone-500 ml-1">
-                    / {INTERVAL_LABELS[plan.interval] ?? plan.interval}
-                  </span>
-                </p>
-                {!isSubscribed && <SubscribeButton planId={plan.id} isAdmin={isAdminOrStaff} />}
+              <div className="py-3.5 bg-amber-50 flex items-center justify-center">
+                {row.paid
+                  ? <Check size={14} className="text-teal-600 stroke-2" />
+                  : <Minus size={14} className="text-stone-300" />}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {templatePlans.length === 0 && (
-        <p className="text-center text-stone-400 py-12">現在ご利用いただけるプランがありません</p>
-      )}
+        {/* プランカード */}
+        {templatePlans.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-12 text-center">
+            <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Ticket size={22} className="text-stone-400" />
+            </div>
+            <p className="text-stone-400 text-sm">現在ご利用いただけるプランがありません</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {PLAN_TEMPLATES.map((template) => {
+              const plan = planByKey[template.key];
+              if (!plan) return null;
+              const isSubscribed = activePlanIds.has(plan.id);
+
+              return (
+                <div
+                  key={template.key}
+                  className={`bg-white rounded-2xl border shadow-sm p-5 ${
+                    isSubscribed ? "border-amber-300" : "border-stone-100"
+                  }`}
+                >
+                  {isSubscribed && (
+                    <div className="flex items-center justify-end mb-2">
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Check size={10} strokeWidth={3} />
+                        加入中
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mb-1">
+                    <Ticket size={15} className="text-emerald-600" />
+                    <h3 className="font-bold text-stone-800">{plan.name}</h3>
+                  </div>
+                  {plan.description && (
+                    <p className="text-xs text-stone-500 mb-4 ml-5">{plan.description}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-2xl font-bold text-stone-800">
+                      ¥{plan.price.toLocaleString()}
+                      <span className="text-xs font-normal text-stone-400 ml-1">
+                        / {INTERVAL_LABELS[plan.interval] ?? plan.interval}
+                      </span>
+                    </p>
+                    {!isSubscribed && <SubscribeButton planId={plan.id} isAdmin={isAdminOrStaff} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

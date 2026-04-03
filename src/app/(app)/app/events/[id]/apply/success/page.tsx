@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
+import { CheckCircle2, AlertTriangle, Smartphone } from "lucide-react";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,7 +16,6 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
   const { id: eventId } = await params;
   const { session_id: sessionId } = await searchParams;
 
-  // Stripe セッションを確認（セッションIDがない場合はイベント詳細へ）
   if (!sessionId) {
     redirect(`/app/events/${eventId}`);
   }
@@ -25,9 +25,8 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    sessionStatus = session.payment_status; // "paid" | "unpaid" | "no_payment_required"
+    sessionStatus = session.payment_status;
 
-    // セッションのメタデータからイベント名を取得
     if (session.line_items) {
       const items = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
       eventTitle = items.data[0]?.description ?? null;
@@ -43,7 +42,9 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
       <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8 max-w-sm w-full text-center">
         {isPaid ? (
           <>
-            <div className="text-5xl mb-4">✅</div>
+            <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={28} className="text-teal-600" />
+            </div>
             <h1 className="text-xl font-bold text-stone-800 mb-2">
               お申込みが完了しました
             </h1>
@@ -54,29 +55,25 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
               <p className="text-xs text-stone-400 mb-6">{eventTitle}</p>
             )}
 
-            {/* iOS PWA向け案内 */}
-            <div className="bg-stone-50 rounded-xl p-4 mb-6 text-left text-sm text-stone-600 space-y-2">
-              <p className="font-medium text-stone-700">アプリに戻るには:</p>
-              <div className="flex items-center gap-2">
-                <span>1️⃣</span>
-                <span>このブラウザを閉じる</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>2️⃣</span>
-                <span>ホーム画面の「てらログ」をタップ</span>
-              </div>
+            <div className="bg-stone-50 rounded-xl p-4 mb-6 text-left space-y-2">
+              <p className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+                <Smartphone size={13} />
+                アプリに戻るには
+              </p>
+              <p className="text-xs text-stone-500">1. このブラウザを閉じる</p>
+              <p className="text-xs text-stone-500">2. ホーム画面の「てらログ」をタップ</p>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               <Link
                 href="/app/events/my"
-                className="block w-full py-2.5 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg transition-colors"
+                className="block w-full py-3 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold rounded-xl transition-colors text-center"
               >
                 申込済みイベントを確認
               </Link>
               <Link
                 href="/app/events"
-                className="block w-full py-2.5 px-4 border border-stone-200 text-stone-600 text-sm rounded-lg hover:bg-stone-50 transition-colors"
+                className="block w-full py-3 px-4 border border-stone-200 text-stone-600 text-sm rounded-xl hover:bg-stone-50 transition-colors text-center"
               >
                 イベント一覧に戻る
               </Link>
@@ -84,7 +81,9 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
           </>
         ) : (
           <>
-            <div className="text-5xl mb-4">⚠️</div>
+            <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={28} className="text-amber-600" />
+            </div>
             <h1 className="text-xl font-bold text-stone-800 mb-2">
               決済が確認できませんでした
             </h1>
@@ -93,7 +92,7 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
             </p>
             <Link
               href={`/app/events/${eventId}/apply`}
-              className="block w-full py-2.5 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg transition-colors"
+              className="block w-full py-3 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold rounded-xl transition-colors text-center"
             >
               申込ページに戻る
             </Link>

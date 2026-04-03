@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, Star, CheckCircle2 } from "lucide-react";
 
 interface Props {
   eventId: string;
@@ -23,9 +24,7 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
   const [done, setDone] = useState(!!existing);
 
   const dateStr = new Date(eventDate).toLocaleDateString("ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    year: "numeric", month: "long", day: "numeric",
   });
 
   function handleSubmit() {
@@ -50,27 +49,33 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-start justify-center pt-12 px-4">
-      <div className="w-full max-w-md">
+    <div className="max-w-lg mx-auto pb-28">
+      <div className="px-5 pt-6 pb-4">
         <button
           onClick={() => router.back()}
-          className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block"
+          className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-3"
         >
-          ← 戻る
+          <ChevronLeft size={16} />
+          戻る
         </button>
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">感想を送る</h1>
+      </div>
 
-        <div className="bg-white rounded-2xl border border-stone-200 p-6">
-          <h1 className="text-lg font-bold text-stone-800 mb-1">イベントの感想を教えてください</h1>
-          <p className="text-sm text-stone-500 mb-5">{eventTitle} — {dateStr}</p>
+      <div className="px-4">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p className="text-sm font-semibold text-stone-700 mb-0.5">{eventTitle}</p>
+          <p className="text-xs text-stone-400 mb-5">{dateStr}</p>
 
           {done ? (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">🙏</div>
-              <p className="font-semibold text-stone-800 mb-1">フィードバックを送信しました</p>
+              <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={28} className="text-teal-600" />
+              </div>
+              <p className="font-bold text-stone-800 mb-1">フィードバックを送信しました</p>
               <p className="text-sm text-stone-500 mb-6">ご参加ありがとうございました。</p>
               <button
                 onClick={() => router.push("/app/events")}
-                className="px-5 py-2 bg-amber-700 text-white rounded-lg text-sm hover:bg-amber-800"
+                className="px-6 py-2.5 bg-amber-700 text-white rounded-xl text-sm font-semibold hover:bg-amber-800 transition-colors"
               >
                 イベント一覧へ
               </button>
@@ -78,31 +83,37 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
           ) : (
             <>
               {errorMsg && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
                   {errorMsg}
                 </div>
               )}
 
               {/* 星評価 */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-stone-700 mb-3">評価</label>
-                <div className="flex gap-2 justify-center">
+                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-4">評価</p>
+                <div className="flex gap-3 justify-center">
                   {STARS.map((s) => (
                     <button
                       key={s}
                       onMouseEnter={() => setHover(s)}
                       onMouseLeave={() => setHover(0)}
                       onClick={() => setScore(s)}
-                      className="text-3xl transition-transform hover:scale-110"
+                      className="transition-transform hover:scale-110 active:scale-95"
                     >
-                      <span className={(hover || score) >= s ? "text-amber-400" : "text-stone-200"}>
-                        ★
-                      </span>
+                      <Star
+                        size={36}
+                        strokeWidth={1.5}
+                        className={
+                          (hover || score) >= s
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-stone-200"
+                        }
+                      />
                     </button>
                   ))}
                 </div>
                 {(hover > 0 || score > 0) && (
-                  <p className="text-center text-sm text-stone-500 mt-2">
+                  <p className="text-center text-sm text-stone-500 mt-2 font-medium">
                     {STAR_LABELS[(hover || score) - 1]}
                   </p>
                 )}
@@ -110,22 +121,22 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
 
               {/* コメント */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                  コメント <span className="text-stone-400 font-normal">（任意）</span>
+                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">
+                  コメント <span className="text-stone-300 normal-case font-normal tracking-normal">（任意）</span>
                 </label>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={4}
                   placeholder="ご感想をお聞かせください..."
-                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                  className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none text-stone-700 placeholder-stone-300"
                 />
               </div>
 
               <button
                 onClick={handleSubmit}
                 disabled={isPending || score === 0}
-                className="w-full py-3 bg-amber-700 text-white rounded-lg font-medium hover:bg-amber-800 disabled:opacity-40 transition-colors"
+                className="w-full py-3.5 bg-amber-700 text-white rounded-xl font-semibold text-sm hover:bg-amber-800 disabled:opacity-40 transition-colors shadow-sm"
               >
                 {isPending ? "送信中…" : "送信する"}
               </button>

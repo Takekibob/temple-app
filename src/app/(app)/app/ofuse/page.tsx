@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+import { Coins, Receipt } from "lucide-react";
 
 const TYPE_LABELS: Record<string, string> = {
   HOUYO: "法要",
@@ -29,7 +30,6 @@ export default async function UserOfusePage({
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
-  // 檀家のみアクセス可
   if (!authUser.member || authUser.member.type !== "DANKA") {
     redirect("/app");
   }
@@ -53,64 +53,78 @@ export default async function UserOfusePage({
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="pb-4">
+    <div className="max-w-lg mx-auto pb-28">
       {/* ヘッダー */}
-      <div className="bg-white border-b border-stone-100 px-4 pt-12 pb-4">
-        <h1 className="text-xl font-bold text-stone-800">お布施履歴</h1>
-        <p className="text-sm text-stone-500 mt-0.5">
-          {selectedYear}年 合計 ¥{totalAmount.toLocaleString()}
-        </p>
+      <div className="px-5 pt-6 pb-4">
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お布施履歴</h1>
       </div>
 
-      {/* 年度フィルター */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex gap-1 bg-white border border-stone-200 rounded-lg p-1 overflow-x-auto">
-          {years.map((y) => (
-            <Link
-              key={y}
-              href={`/app/ofuse?year=${y}`}
-              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors ${
-                selectedYear === y
-                  ? "bg-amber-700 text-white font-medium"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              {y}年
-            </Link>
-          ))}
+      {/* 年度合計カード */}
+      <div className="px-4 mb-4">
+        <div className="bg-gradient-to-br from-amber-700 to-amber-800 rounded-2xl p-5 text-white shadow-md">
+          <p className="text-xs font-semibold text-amber-200 uppercase tracking-widest mb-1">{selectedYear}年 合計</p>
+          <p className="text-3xl font-bold">¥{totalAmount.toLocaleString()}</p>
         </div>
       </div>
 
+      {/* 年度フィルター */}
+      <div className="flex gap-2 overflow-x-auto px-4 pb-4 scrollbar-hide">
+        {years.map((y) => (
+          <Link
+            key={y}
+            href={`/app/ofuse?year=${y}`}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              selectedYear === y
+                ? "bg-amber-700 text-white shadow-sm"
+                : "bg-white text-stone-500 border border-stone-200 hover:border-amber-300"
+            }`}
+          >
+            {y}年
+          </Link>
+        ))}
+      </div>
+
       {/* リスト */}
-      <div className="px-4 pt-2 space-y-2">
+      <div className="px-4 space-y-2.5">
         {ofuseList.length === 0 ? (
-          <div className="bg-white rounded-xl border border-stone-200 p-10 text-center text-stone-400 text-sm">
-            {selectedYear}年の記録はありません
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-10 text-center">
+            <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Coins size={22} className="text-stone-400" />
+            </div>
+            <p className="text-stone-400 text-sm">{selectedYear}年の記録はありません</p>
           </div>
         ) : (
           ofuseList.map((o) => (
             <div
               key={o.id}
-              className="bg-white rounded-xl border border-stone-200 px-4 py-3 flex items-center justify-between"
+              className="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3.5 flex items-center justify-between"
             >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-0.5 bg-amber-50 text-amber-800 rounded-full font-medium">
-                    {TYPE_LABELS[o.type] ?? o.type}
-                  </span>
-                  <span className="text-xs text-stone-400">
-                    {PAYMENT_LABELS[o.paymentMethod] ?? o.paymentMethod}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                  <Coins size={16} className="text-amber-600" />
                 </div>
-                <p className="text-xs text-stone-400 mt-1">
-                  {o.paidAt.toLocaleDateString("ja-JP")}
-                  {o.notes && <span className="ml-2">{o.notes}</span>}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                      {TYPE_LABELS[o.type] ?? o.type}
+                    </span>
+                    <span className="text-xs text-stone-400">
+                      {PAYMENT_LABELS[o.paymentMethod] ?? o.paymentMethod}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-400">
+                    {o.paidAt.toLocaleDateString("ja-JP")}
+                    {o.notes && <span className="ml-2 text-stone-500">{o.notes}</span>}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0 ml-3">
                 <p className="font-bold text-stone-800">¥{o.amount.toLocaleString()}</p>
                 {o.receiptIssued && (
-                  <p className="text-xs text-stone-400">領収書発行済</p>
+                  <p className="text-[10px] text-stone-400 flex items-center gap-0.5 justify-end mt-0.5">
+                    <Receipt size={10} />
+                    領収書発行済
+                  </p>
                 )}
               </div>
             </div>

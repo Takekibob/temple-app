@@ -5,12 +5,13 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import FavoriteButton from "./FavoriteButton";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
-import { getCategoryLabel } from "@/lib/eventCategories";
+import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
+import { MapPin, Phone, Mail, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
-  YEARLY:  "年額",
+  YEARLY: "年額",
   ONE_TIME: "一回払い",
 };
 
@@ -56,7 +57,6 @@ export default async function TempleProfilePage({
     take: 10,
   });
 
-  // ログイン会員のお気に入り状態・所属状態を確認
   const memberId = authUser.member?.id;
   const isMyTemple = authUser.member?.templeId === id;
   let isFavorite = false;
@@ -68,7 +68,6 @@ export default async function TempleProfilePage({
     isFavorite = !!fav;
   }
 
-  // このお寺の有効プラン＆加入状況
   const [templePlans, subscribedPlanIds] = await Promise.all([
     prisma.membershipPlan.findMany({
       where: { templeId: id, isActive: true, templateKey: { in: PLAN_TEMPLATES.map((t) => t.key) } },
@@ -82,82 +81,97 @@ export default async function TempleProfilePage({
   ]);
 
   return (
-    <div className="max-w-lg mx-auto pb-8">
+    <div className="max-w-lg mx-auto pb-28">
       {/* カバー画像 */}
       {temple.coverImageUrl ? (
-        <div className="relative h-48 bg-stone-200 overflow-hidden">
+        <div className="relative h-52 bg-stone-200 overflow-hidden">
           <Image src={temple.coverImageUrl} alt={temple.name} fill className="object-cover" />
+          <div className="absolute top-4 left-4">
+            <Link
+              href="/app/events"
+              className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+            >
+              <ChevronLeft size={18} className="text-stone-700" />
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="h-32 bg-gradient-to-b from-amber-100 to-stone-50" />
+        <div className="h-28 bg-gradient-to-b from-amber-50 to-stone-50 relative px-4 flex items-center">
+          <Link
+            href="/app/events"
+            className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
+          >
+            <ChevronLeft size={16} />
+            イベント一覧
+          </Link>
+        </div>
       )}
 
-      <div className="p-4">
-        <Link href="/app/events" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
-          ← イベント一覧
-        </Link>
-
+      <div className="px-4 pt-4 space-y-4">
         {/* 寺院基本情報 */}
-        <div className="flex items-start gap-4 mb-4">
-          {temple.logoUrl ? (
-            <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-stone-200 flex-shrink-0">
-              <Image src={temple.logoUrl} alt={temple.name} fill className="object-cover" />
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+          <div className="flex items-start gap-4 mb-4">
+            {temple.logoUrl ? (
+              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0 shadow-sm">
+                <Image src={temple.logoUrl} alt={temple.name} fill className="object-cover" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl flex-shrink-0">
+                🏯
+              </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-stone-800">{temple.name}</h1>
+              {temple.denomination && (
+                <p className="text-sm text-amber-700 font-medium mt-0.5">{temple.denomination}</p>
+              )}
             </div>
-          ) : (
-            <div className="w-16 h-16 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-3xl flex-shrink-0">
-              🏯
-            </div>
-          )}
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-stone-800">{temple.name}</h1>
-            {temple.denomination && (
-              <p className="text-sm text-amber-700 font-medium">{temple.denomination}</p>
+          </div>
+
+          {/* 連絡先 */}
+          <div className="divide-y divide-stone-50">
+            {temple.address && (
+              <div className="flex items-start gap-3 py-2.5">
+                <MapPin size={14} className="text-stone-400 shrink-0 mt-0.5" />
+                <span className="text-sm text-stone-600">{temple.address}</span>
+              </div>
+            )}
+            {temple.phone && (
+              <div className="flex items-center gap-3 py-2.5">
+                <Phone size={14} className="text-stone-400 shrink-0" />
+                <a href={`tel:${temple.phone}`} className="text-sm text-amber-700 hover:underline">
+                  {temple.phone}
+                </a>
+              </div>
+            )}
+            {temple.email && (
+              <div className="flex items-center gap-3 py-2.5">
+                <Mail size={14} className="text-stone-400 shrink-0" />
+                <a href={`mailto:${temple.email}`} className="text-sm text-amber-700 hover:underline truncate">
+                  {temple.email}
+                </a>
+              </div>
+            )}
+            {temple.templePage?.isPublished && temple.templePage.slug && (
+              <div className="flex items-center gap-3 py-2.5">
+                <Globe size={14} className="text-stone-400 shrink-0" />
+                <Link
+                  href={`/temples/p/${temple.templePage.slug}`}
+                  target="_blank"
+                  className="text-sm text-amber-700 hover:underline flex items-center gap-1"
+                >
+                  公式ページを見る
+                  <ExternalLink size={12} />
+                </Link>
+              </div>
             )}
           </div>
         </div>
 
-        {/* 連絡先 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-4 space-y-2 text-sm mb-4">
-          {temple.address && (
-            <div className="flex gap-2 items-start">
-              <span className="text-stone-400">📍</span>
-              <span className="text-stone-700">{temple.address}</span>
-            </div>
-          )}
-          {temple.phone && (
-            <div className="flex gap-2 items-center">
-              <span className="text-stone-400">📞</span>
-              <a href={`tel:${temple.phone}`} className="text-amber-700 hover:underline">
-                {temple.phone}
-              </a>
-            </div>
-          )}
-          {temple.email && (
-            <div className="flex gap-2 items-center">
-              <span className="text-stone-400">✉️</span>
-              <a href={`mailto:${temple.email}`} className="text-amber-700 hover:underline text-xs">
-                {temple.email}
-              </a>
-            </div>
-          )}
-          {temple.templePage?.isPublished && temple.templePage.slug && (
-            <div className="flex gap-2 items-center pt-1 border-t border-stone-100">
-              <span className="text-stone-400">🌐</span>
-              <Link
-                href={`/temples/p/${temple.templePage.slug}`}
-                target="_blank"
-                className="text-amber-700 hover:underline text-xs"
-              >
-                公式ページを見る
-              </Link>
-            </div>
-          )}
-        </div>
-
         {/* 説明文 */}
         {temple.description && (
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold text-stone-700 mb-2">お寺について</h2>
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+            <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">お寺について</h2>
             <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
               {temple.description}
             </p>
@@ -165,26 +179,34 @@ export default async function TempleProfilePage({
         )}
 
         {/* 開催予定イベント */}
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-stone-700 mb-3">開催予定のイベント</h2>
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div className="px-4 pt-4 pb-3 border-b border-stone-50 flex items-center gap-2">
+            <CalendarDays size={14} className="text-amber-600" />
+            <h2 className="text-sm font-bold text-stone-700">開催予定のイベント</h2>
+          </div>
           {events.length === 0 ? (
-            <p className="text-sm text-stone-400">開催予定のイベントはありません</p>
+            <p className="text-sm text-stone-400 text-center py-6">開催予定のイベントはありません</p>
           ) : (
-            <div className="space-y-2">
+            <div className="divide-y divide-stone-50">
               {events.map((event) => (
                 <Link key={event.id} href={`/app/events/${event.id}`}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-stone-200 hover:border-amber-200 transition-colors">
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors">
                   <div>
-                    <p className="text-sm font-medium text-stone-800">{event.title}</p>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      {getCategoryLabel(event.category)} ·{" "}
+                    <p className="text-xs text-stone-400 mb-0.5">
+                      {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+                    </p>
+                    <p className="text-sm font-semibold text-stone-800">{event.title}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">
                       {event.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}{" "}
                       {event.startTime}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-amber-700 ml-2 flex-shrink-0">
-                    {event.fee === 0 ? "無料" : `¥${event.fee.toLocaleString()}`}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span className="text-xs font-bold text-amber-700">
+                      {event.fee === 0 ? "無料" : `¥${event.fee.toLocaleString()}`}
+                    </span>
+                    <ChevronRight size={14} className="text-stone-300" />
+                  </div>
                 </Link>
               ))}
             </div>
@@ -193,58 +215,61 @@ export default async function TempleProfilePage({
 
         {/* 会員プラン */}
         {templePlans.length > 0 && (
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold text-stone-700 mb-3">会員プラン</h2>
-            <div className="space-y-3">
-              {templePlans.map((plan) => {
-                const isSubscribed = subscribedPlanIds.includes(plan.id);
-                return (
-                  <div
-                    key={plan.id}
-                    className={`bg-white rounded-xl border p-4 ${isSubscribed ? "border-amber-300" : "border-stone-200"}`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <p className="font-medium text-stone-800">{plan.name}</p>
-                      {isSubscribed && (
-                        <span className="text-xs text-amber-700 font-medium">加入中</span>
-                      )}
-                    </div>
-                    {plan.description && (
-                      <p className="text-xs text-stone-500 mb-2">{plan.description}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="font-bold text-stone-800">
-                        ¥{plan.price.toLocaleString()}
-                        <span className="text-xs font-normal text-stone-500 ml-1">
-                          / {INTERVAL_LABELS[plan.interval]}
-                        </span>
-                      </p>
-                      {!isSubscribed && memberId && (
-                        <SubscribeButton planId={plan.id} />
-                      )}
-                      {!isSubscribed && !memberId && (
-                        <Link
-                          href="/auth/login"
-                          className="text-xs text-amber-700 hover:underline"
-                        >
-                          ログインして加入する →
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 px-1">
+              <Ticket size={14} className="text-emerald-600" />
+              <h2 className="text-sm font-bold text-stone-700">会員プラン</h2>
             </div>
+            {templePlans.map((plan) => {
+              const isSubscribed = subscribedPlanIds.includes(plan.id);
+              return (
+                <div
+                  key={plan.id}
+                  className={`bg-white rounded-2xl border shadow-sm p-4 ${
+                    isSubscribed ? "border-emerald-300" : "border-stone-100"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <p className="font-bold text-stone-800">{plan.name}</p>
+                    {isSubscribed && (
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        加入中
+                      </span>
+                    )}
+                  </div>
+                  {plan.description && (
+                    <p className="text-xs text-stone-500 mb-3">{plan.description}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="font-bold text-stone-800">
+                      ¥{plan.price.toLocaleString()}
+                      <span className="text-xs font-normal text-stone-400 ml-1">
+                        / {INTERVAL_LABELS[plan.interval]}
+                      </span>
+                    </p>
+                    {!isSubscribed && memberId && (
+                      <SubscribeButton planId={plan.id} />
+                    )}
+                    {!isSubscribed && !memberId && (
+                      <Link href="/auth/login" className="text-xs text-amber-700 font-semibold hover:underline">
+                        ログインして加入する →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* お気に入りボタン（ご縁さん向け） */}
+        {/* お気に入りボタン */}
         {memberId && !isMyTemple && (
           <FavoriteButton templeId={id} initialFavorite={isFavorite} />
         )}
         {isMyTemple && (
-          <div className="flex items-center justify-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-            <span className="text-amber-700 text-sm font-medium">🏠 あなたの所属寺院です</span>
+          <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+            <Home size={16} className="text-amber-700" />
+            <span className="text-amber-800 text-sm font-semibold">あなたの所属寺院です</span>
           </div>
         )}
       </div>
