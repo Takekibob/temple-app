@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
-import { MapPin, ChevronLeft, ChevronRight, PenLine, BookOpen, Stamp } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, PenLine, BookOpen, Stamp, ScrollText } from "lucide-react";
 
 export default async function TempleHistoryPage() {
   const authUser = await getAuthUser();
@@ -14,7 +14,7 @@ export default async function TempleHistoryPage() {
   const now = new Date();
   const memberId = authUser.member.id;
 
-  const [followedTemples, pastParticipations] = await Promise.all([
+  const [followedTemples, pastParticipations, templeVisits] = await Promise.all([
     // フォロー中のお寺（ご縁を結んだお寺）
     prisma.memberFavoriteTemple.findMany({
       where: { memberId },
@@ -49,9 +49,20 @@ export default async function TempleHistoryPage() {
       },
       orderBy: { event: { eventDate: "desc" } },
     }),
+    // 参拝記録
+    prisma.templeVisit.findMany({
+      where: { memberId },
+      select: {
+        id: true,
+        memo: true,
+        visitedAt: true,
+        temple: { select: { id: true, name: true, denomination: true } },
+      },
+      orderBy: { visitedAt: "desc" },
+    }),
   ]);
 
-  const isEmpty = followedTemples.length === 0 && pastParticipations.length === 0;
+  const isEmpty = followedTemples.length === 0 && pastParticipations.length === 0 && templeVisits.length === 0;
 
   return (
     <div className="max-w-lg mx-auto pb-28">
@@ -78,6 +89,43 @@ export default async function TempleHistoryPage() {
               お寺を探す →
             </Link>
           </div>
+        )}
+
+        {/* 参拝記録ジャーナル */}
+        {templeVisits.length > 0 && (
+          <section>
+            <SectionLabel>参拝メモ</SectionLabel>
+            <div className="space-y-2.5">
+              {templeVisits.map((v) => (
+                <div key={v.id} className="bg-white border border-stone-100 rounded-2xl shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <Link
+                        href={`/app/temples/${v.temple.id}`}
+                        className="text-sm font-bold text-stone-800 hover:text-amber-700 transition-colors"
+                      >
+                        {v.temple.name}
+                      </Link>
+                      {v.temple.denomination && (
+                        <p className="text-xs text-amber-700 font-medium mt-0.5">{v.temple.denomination}</p>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-stone-400 shrink-0 mt-0.5">
+                      {v.visitedAt.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                  {v.memo ? (
+                    <div className="flex gap-2 mt-1">
+                      <ScrollText size={12} className="text-stone-300 shrink-0 mt-0.5" />
+                      <p className="text-xs text-stone-500 leading-relaxed whitespace-pre-wrap">{v.memo}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-stone-300 italic">メモなし</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* ご縁を結んだお寺 */}

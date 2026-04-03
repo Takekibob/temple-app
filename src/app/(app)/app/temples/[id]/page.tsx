@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift, Stamp } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -257,6 +257,15 @@ export default async function TempleProfilePage({
 
         {/* アクションボタン */}
         <div className="space-y-3">
+          {memberId && (
+            <Link
+              href={`/app/temples/${id}/visit`}
+              className="flex items-center justify-center gap-2 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-3.5 rounded-2xl shadow-sm transition-colors"
+            >
+              <Stamp size={16} />
+              参拝を記録する
+            </Link>
+          )}
           {temple.stripeConnectOnboarded && memberId && (
             <Link
               href={`/app/donations/new?templeId=${id}`}

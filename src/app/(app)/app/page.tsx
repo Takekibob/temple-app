@@ -27,13 +27,13 @@ type QuickItem = {
   color: string;
 };
 
-// 共通: イベント[1]・参拝履歴[3]・参加予定[4]
+// 同じ役割のアイテムはアイコン・色を統一
 const DANKA_QUICK: QuickItem[] = [
   { icon: BookOpen,     label: "イベント",    href: "/app/events",           color: "bg-sky-50 text-sky-600" },
   { icon: MapPin,       label: "法要予約",    href: "/app/reservations",     color: "bg-amber-50 text-amber-700" },
   { icon: History,      label: "参拝履歴",    href: "/app/temples/history",  color: "bg-teal-50 text-teal-600" },
   { icon: Heart,        label: "参加予定",    href: "/app/events/my",        color: "bg-rose-50 text-rose-600" },
-  { icon: CalendarDays, label: "カレンダー",  href: "/app/calendar",         color: "bg-sky-50 text-sky-500" },
+  { icon: CalendarDays, label: "カレンダー",  href: "/app/calendar",         color: "bg-violet-50 text-violet-600" },
   { icon: Newspaper,    label: "ブログ",      href: "/app/blog",             color: "bg-amber-50 text-amber-700" },
 ];
 
@@ -42,7 +42,7 @@ const GOEN_QUICK: QuickItem[] = [
   { icon: Newspaper,    label: "ブログ",      href: "/app/blog",             color: "bg-amber-50 text-amber-700" },
   { icon: History,      label: "参拝履歴",    href: "/app/temples/history",  color: "bg-teal-50 text-teal-600" },
   { icon: Heart,        label: "参加予定",    href: "/app/events/my",        color: "bg-rose-50 text-rose-600" },
-  { icon: Compass,      label: "お寺を探す",  href: "/app/temples",          color: "bg-teal-50 text-teal-600" },
+  { icon: Compass,      label: "お寺を探す",  href: "/app/temples",          color: "bg-sky-50 text-sky-600" },
   { icon: Gift,         label: "寄付",        href: "/app/donations",        color: "bg-purple-50 text-purple-600" },
 ];
 

@@ -88,6 +88,7 @@ model Temple {
   analyticsSnapshots AnalyticsSnapshot[]
   memberNotes        MemberNote[]
   memberChangeRequests MemberChangeRequest[]
+  templeVisits         TempleVisit[]
 
   @@map("temples")
 }
@@ -214,6 +215,7 @@ model Member {
   announcementReads AnnouncementRead[]
   changeRequests   MemberChangeRequest[]
   blogLikes        BlogLike[]
+  templeVisits     TempleVisit[]
 
   @@map("members")
 }
@@ -1123,4 +1125,20 @@ enum ChangeRequestStatus {
   REJECTED
 
   @@map("change_request_status")
+}
+
+// ==========================================
+// 参拝記録（ジャーナリング）
+// ==========================================
+model TempleVisit {
+  id        String   @id @default(uuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  templeId  String
+  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  memo      String   @default("")
+  visitedAt DateTime @default(now())
+
+  @@index([memberId, visitedAt(sort: Desc)])
+  @@map("temple_visits")
 }
