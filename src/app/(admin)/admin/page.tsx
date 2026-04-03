@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
+import {
+  CalendarDays, Users, UserCheck, Calendar, ArrowUpRight,
+  Coins, Clock, AlertTriangle, Star, ChevronRight,
+  Plus, TrendingUp, BarChart3, Megaphone, FileText, Zap,
+} from "lucide-react";
 
 export default async function AdminDashboardPage() {
   const authUser = await getAuthUser();
@@ -21,7 +26,6 @@ export default async function AdminDashboardPage() {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const currentFiscalYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
 
-  // KPI queries in parallel
   const [
     todayReservations,
     dankaCount,
@@ -38,7 +42,6 @@ export default async function AdminDashboardPage() {
     churnRisk,
     scoreUpMembers,
   ] = await Promise.all([
-    // 本日の予約数
     prisma.reservation.count({
       where: {
         templeId: authUser.templeId,
@@ -46,15 +49,8 @@ export default async function AdminDashboardPage() {
         status: { in: ["PENDING", "CONFIRMED"] },
       },
     }),
-    // 檀家数
-    prisma.member.count({
-      where: { templeId: authUser.templeId, type: "DANKA" },
-    }),
-    // ご縁さん数
-    prisma.member.count({
-      where: { templeId: authUser.templeId, type: "GOEN" },
-    }),
-    // 今月のイベント申込数（APPLIED + CONFIRMED）
+    prisma.member.count({ where: { templeId: authUser.templeId, type: "DANKA" } }),
+    prisma.member.count({ where: { templeId: authUser.templeId, type: "GOEN" } }),
     prisma.eventParticipation.count({
       where: {
         event: { templeId: authUser.templeId },
@@ -62,11 +58,9 @@ export default async function AdminDashboardPage() {
         createdAt: { gte: firstOfMonth },
       },
     }),
-    // 転換候補数（ご縁さんでスコア70以上）
     prisma.member.count({
       where: { templeId: authUser.templeId, type: "GOEN", engagementScore: { gte: 70 } },
     }),
-    // 本日の予約一覧
     prisma.reservation.findMany({
       where: {
         templeId: authUser.templeId,
@@ -76,12 +70,10 @@ export default async function AdminDashboardPage() {
       include: { member: { include: { user: { select: { name: true } } } } },
       orderBy: { scheduledAt: "asc" },
     }),
-    // グラフ用: 過去6ヶ月の会員登録
     prisma.member.findMany({
       where: { templeId: authUser.templeId, createdAt: { gte: sixMonthsAgo } },
       select: { createdAt: true, type: true },
     }),
-    // グラフ用: 過去6ヶ月のイベント申込
     prisma.eventParticipation.findMany({
       where: {
         event: { templeId: authUser.templeId },
@@ -90,7 +82,6 @@ export default async function AdminDashboardPage() {
       },
       select: { createdAt: true },
     }),
-    // 今後のイベント
     prisma.event.findMany({
       where: {
         templeId: authUser.templeId,
@@ -107,7 +98,6 @@ export default async function AdminDashboardPage() {
       orderBy: { eventDate: "asc" },
       take: 5,
     }),
-    // 今後2週間のフォロー予定（未完了）
     prisma.memberNote.findMany({
       where: {
         templeId: authUser.templeId,
@@ -115,18 +105,12 @@ export default async function AdminDashboardPage() {
         isResolved: false,
         followupDate: { gte: todayStart, lte: twoWeeksLater },
       },
-      include: {
-        member: { include: { user: { select: { name: true } } } },
-      },
+      include: { member: { include: { user: { select: { name: true } } } } },
       orderBy: { followupDate: "asc" },
       take: 10,
     }),
-    // 最近の対応履歴（全スタッフ）
     prisma.memberNote.findMany({
-      where: {
-        templeId: authUser.templeId,
-        noteType: "INTERACTION",
-      },
+      where: { templeId: authUser.templeId, noteType: "INTERACTION" },
       include: {
         member: { include: { user: { select: { name: true } } } },
         author: { select: { name: true } },
@@ -134,7 +118,6 @@ export default async function AdminDashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
-    // 今年度の未納（檀家のみ）
     prisma.gojikaiPayment.findMany({
       where: {
         member: { templeId: authUser.templeId, type: "DANKA" },
@@ -145,7 +128,6 @@ export default async function AdminDashboardPage() {
       orderBy: { member: { user: { name: "asc" } } },
       take: 8,
     }),
-    // 離脱予兆（1年以上未接触）
     prisma.member.findMany({
       where: {
         templeId: authUser.templeId,
@@ -159,7 +141,6 @@ export default async function AdminDashboardPage() {
       orderBy: [{ lastContactAt: "asc" }],
       take: 5,
     }),
-    // スコアアップ通知（先月以降にスコアが上がったご縁さん）
     prisma.member.findMany({
       where: {
         templeId: authUser.templeId,
@@ -173,7 +154,6 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  // グラフデータを月別に集計（過去6ヶ月）
   const monthKeys = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -212,149 +192,173 @@ export default async function AdminDashboardPage() {
     OTHER: "その他",
   };
 
-  const RESERVATION_STATUS_LABELS: Record<string, string> = {
-    PENDING: "確認待ち",
-    CONFIRMED: "確定",
-  };
+  const todayStr = now.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
 
   return (
-    <div className="p-6 max-w-5xl">
-      <h1 className="text-2xl font-bold text-stone-800 mb-6">ダッシュボード</h1>
-
-      {/* KPI カード */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-stone-200 p-4">
-          <p className="text-xs text-stone-500 mb-1">本日の予約</p>
-          <p className="text-3xl font-bold text-stone-800">{todayReservations}</p>
-          <p className="text-xs text-stone-400 mt-1">件</p>
-        </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4">
-          <p className="text-xs text-stone-500 mb-1">檀家</p>
-          <p className="text-3xl font-bold text-amber-700">{dankaCount}</p>
-          <p className="text-xs text-stone-400 mt-1">名（アクティブ）</p>
-        </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4">
-          <p className="text-xs text-stone-500 mb-1">ご縁さん</p>
-          <p className="text-3xl font-bold text-teal-700">{goenCount}</p>
-          <p className="text-xs text-stone-400 mt-1">名（アクティブ）</p>
-        </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4">
-          <p className="text-xs text-stone-500 mb-1">今月の申込</p>
-          <p className="text-3xl font-bold text-stone-800">{monthlyEventSignups}</p>
-          <p className="text-xs text-stone-400 mt-1">件（イベント）</p>
-        </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4">
-          <p className="text-xs text-stone-500 mb-1">転換候補</p>
-          <p className="text-3xl font-bold text-rose-600">{conversionCandidates}</p>
-          <p className="text-xs text-stone-400 mt-1">名（スコア70+）</p>
-        </div>
+    <div className="p-6 max-w-5xl space-y-6">
+      {/* ヘッダー */}
+      <div>
+        <p className="text-xs text-stone-400 font-medium mb-0.5">{todayStr}</p>
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">ダッシュボード</h1>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* 本日の予約 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">本日の予約</h2>
-            <Link href="/admin/reservations" className="text-xs text-amber-700 hover:underline">
-              すべて見る →
-            </Link>
-          </div>
+      {/* KPI カード */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <KpiCard
+          icon={CalendarDays}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-700"
+          label="本日の予約"
+          value={todayReservations}
+          unit="件"
+          href="/admin/reservations"
+        />
+        <KpiCard
+          icon={UserCheck}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-700"
+          label="檀家"
+          value={dankaCount}
+          unit="名"
+          valueColor="text-amber-700"
+          href="/admin/members?type=DANKA"
+        />
+        <KpiCard
+          icon={Users}
+          iconBg="bg-teal-50"
+          iconColor="text-teal-700"
+          label="ご縁さん"
+          value={goenCount}
+          unit="名"
+          valueColor="text-teal-700"
+          href="/admin/members?type=GOEN"
+        />
+        <KpiCard
+          icon={Calendar}
+          iconBg="bg-sky-50"
+          iconColor="text-sky-600"
+          label="今月の申込"
+          value={monthlyEventSignups}
+          unit="件"
+          href="/admin/events"
+        />
+        <KpiCard
+          icon={ArrowUpRight}
+          iconBg="bg-rose-50"
+          iconColor="text-rose-600"
+          label="転換候補"
+          value={conversionCandidates}
+          unit="名"
+          valueColor="text-rose-600"
+          href="/admin/conversion"
+        />
+      </div>
+
+      {/* 本日の予約 & 公開中のイベント */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <DashCard
+          title="本日の予約"
+          icon={CalendarDays}
+          iconColor="text-amber-700"
+          moreHref="/admin/reservations"
+          moreLabel="すべて見る"
+        >
           {recentReservations.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">本日の予約はありません</p>
+            <EmptyState text="本日の予約はありません" />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {recentReservations.map((r) => (
-                <li key={r.id} className="py-3">
-                  <Link href={`/admin/reservations/${r.id}`} className="flex items-center justify-between hover:opacity-70 transition-opacity">
+                <li key={r.id}>
+                  <Link href={`/admin/reservations/${r.id}`}
+                    className="flex items-center justify-between py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
                     <div>
-                      <p className="text-sm font-medium text-stone-800">
-                        {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })} — {r.member.user.name}
+                      <p className="text-sm font-semibold text-stone-800">
+                        {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
+                        <span className="ml-2 font-normal text-stone-600">{r.member.user.name}</span>
                       </p>
                       <p className="text-xs text-stone-400 mt-0.5">
                         {RESERVATION_TYPE_LABELS[r.type] ?? r.type}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       r.status === "CONFIRMED"
                         ? "bg-teal-100 text-teal-700"
                         : "bg-amber-100 text-amber-700"
                     }`}>
-                      {RESERVATION_STATUS_LABELS[r.status] ?? r.status}
+                      {r.status === "CONFIRMED" ? "確定" : "確認待ち"}
                     </span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
 
-        {/* 公開中のイベント */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">公開中のイベント</h2>
-            <Link href="/admin/events" className="text-xs text-amber-700 hover:underline">
-              すべて見る →
-            </Link>
-          </div>
+        <DashCard
+          title="公開中のイベント"
+          icon={Calendar}
+          iconColor="text-sky-600"
+          moreHref="/admin/events"
+          moreLabel="すべて見る"
+        >
           {upcomingEvents.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">公開中のイベントはありません</p>
+            <EmptyState text="公開中のイベントはありません" />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {upcomingEvents.map((e) => (
-                <li key={e.id} className="py-3">
-                  <Link href={`/admin/events/${e.id}/participants`} className="flex items-center justify-between hover:opacity-70 transition-opacity">
+                <li key={e.id}>
+                  <Link href={`/admin/events/${e.id}/participants`}
+                    className="flex items-center justify-between py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-stone-800 truncate">{e.title}</p>
+                      <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
                       <p className="text-xs text-stone-400 mt-0.5">
                         {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
                         {" "}{e.startTime}
                       </p>
                     </div>
                     <div className="text-right ml-3 shrink-0">
-                      <p className="text-sm font-semibold text-stone-800">
+                      <span className="text-sm font-bold text-stone-800">
                         {e._count.participations}
                         {e.capacity ? `/${e.capacity}` : ""}
-                        <span className="text-xs font-normal text-stone-400">名</span>
-                      </p>
+                      </span>
+                      <span className="text-xs text-stone-400 ml-0.5">名</span>
                     </div>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
       </div>
 
       {/* グラフ */}
       <DashboardCharts data={chartData} />
 
-      {/* フォロー予定・対応履歴 */}
-      <div className="grid lg:grid-cols-2 gap-6 mt-6">
-        {/* 今後2週間のフォロー予定 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">⏰ フォロー予定（2週間以内）</h2>
-            <Link href="/admin/members" className="text-xs text-amber-700 hover:underline">
-              会員一覧 →
-            </Link>
-          </div>
+      {/* フォロー予定 & 対応履歴 */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <DashCard
+          title="フォロー予定（2週間以内）"
+          icon={Clock}
+          iconColor="text-teal-600"
+          moreHref="/admin/members"
+          moreLabel="会員一覧"
+        >
           {upcomingFollowups.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">予定はありません</p>
+            <EmptyState text="予定はありません" />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {upcomingFollowups.map((note) => (
-                <li key={note.id} className="py-3">
-                  <Link href={`/admin/members/${note.memberId}`} className="flex items-start gap-3 hover:opacity-70 transition-opacity">
+                <li key={note.id}>
+                  <Link href={`/admin/members/${note.memberId}`}
+                    className="flex items-start gap-3 py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-stone-800">
-                        {note.member.user.name}
-                      </p>
+                      <p className="text-sm font-semibold text-stone-800">{note.member.user.name}</p>
                       {note.title && (
                         <p className="text-xs text-stone-600 mt-0.5 truncate">{note.title}</p>
                       )}
                       <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{note.content}</p>
                     </div>
-                    <span className="text-xs font-medium text-teal-700 shrink-0">
+                    <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full shrink-0">
                       {note.followupDate
                         ? new Date(note.followupDate).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })
                         : ""}
@@ -364,25 +368,25 @@ export default async function AdminDashboardPage() {
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
 
-        {/* 最近の対応履歴 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">📋 最近の対応履歴</h2>
-            <Link href="/admin/members" className="text-xs text-amber-700 hover:underline">
-              会員一覧 →
-            </Link>
-          </div>
+        <DashCard
+          title="最近の対応履歴"
+          icon={FileText}
+          iconColor="text-stone-500"
+          moreHref="/admin/members"
+          moreLabel="会員一覧"
+        >
           {recentInteractions.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">対応履歴がありません</p>
+            <EmptyState text="対応履歴がありません" />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {recentInteractions.map((note) => (
-                <li key={note.id} className="py-3">
-                  <Link href={`/admin/members/${note.memberId}`} className="flex items-start gap-3 hover:opacity-70 transition-opacity">
+                <li key={note.id}>
+                  <Link href={`/admin/members/${note.memberId}`}
+                    className="flex items-start gap-3 py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-stone-800">
+                      <p className="text-sm font-semibold text-stone-800">
                         {note.member.user.name}
                         <span className="ml-2 text-xs font-normal text-stone-400">{note.author.name}</span>
                       </p>
@@ -399,132 +403,193 @@ export default async function AdminDashboardPage() {
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
       </div>
 
-      {/* 未納アラート・離脱予兆・スコアアップ通知 */}
-      <div className="grid lg:grid-cols-3 gap-6 mt-6">
-        {/* 未納アラート */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">
-              💴 護持会費 未納
-              {unpaidGojikai.length > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
-                  {unpaidGojikai.length}
-                </span>
-              )}
-            </h2>
-            <Link href="/admin/gojikai" className="text-xs text-amber-700 hover:underline">
-              管理 →
-            </Link>
-          </div>
+      {/* 未納アラート・離脱予兆・スコアアップ */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        <DashCard
+          title="護持会費 未納"
+          icon={Coins}
+          iconColor="text-red-500"
+          moreHref="/admin/gojikai"
+          moreLabel="管理"
+          badge={unpaidGojikai.length > 0 ? { count: unpaidGojikai.length, color: "red" } : undefined}
+        >
           {unpaidGojikai.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">未納なし ✅</p>
+            <EmptyState text="未納なし" icon="✓" ok />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {unpaidGojikai.map((p) => (
-                <li key={p.id} className="py-2.5">
-                  <Link href={`/admin/members/${p.memberId}`} className="flex items-center justify-between hover:opacity-70">
-                    <p className="text-sm text-stone-800">{p.member.user.name}</p>
-                    <span className="text-xs font-medium text-red-600">¥{p.amount.toLocaleString()}</span>
+                <li key={p.id}>
+                  <Link href={`/admin/members/${p.memberId}`}
+                    className="flex items-center justify-between py-2.5 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
+                    <p className="text-sm text-stone-800 font-medium">{p.member.user.name}</p>
+                    <span className="text-xs font-bold text-red-600">¥{p.amount.toLocaleString()}</span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
 
-        {/* 離脱予兆 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">
-              ⚠️ 離脱予兆
-              {churnRisk.length > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
-                  {churnRisk.length}
-                </span>
-              )}
-            </h2>
-            <Link href="/admin/churn" className="text-xs text-amber-700 hover:underline">
-              詳細 →
-            </Link>
-          </div>
+        <DashCard
+          title="離脱予兆"
+          icon={AlertTriangle}
+          iconColor="text-orange-500"
+          moreHref="/admin/churn"
+          moreLabel="詳細"
+          badge={churnRisk.length > 0 ? { count: churnRisk.length, color: "orange" } : undefined}
+        >
           {churnRisk.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">問題なし ✅</p>
+            <EmptyState text="問題なし" icon="✓" ok />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {churnRisk.map((m) => {
                 const lastDate = m.lastContactAt ?? m.createdAt;
                 const monthsAgo = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
                 return (
-                  <li key={m.id} className="py-2.5">
-                    <Link href={`/admin/members/${m.id}`} className="flex items-center justify-between hover:opacity-70">
-                      <p className="text-sm text-stone-800">{m.user.name}</p>
-                      <span className="text-xs font-medium text-orange-600">{monthsAgo}ヶ月前</span>
+                  <li key={m.id}>
+                    <Link href={`/admin/members/${m.id}`}
+                      className="flex items-center justify-between py-2.5 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
+                      <p className="text-sm text-stone-800 font-medium">{m.user.name}</p>
+                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{monthsAgo}ヶ月前</span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
           )}
-        </div>
+        </DashCard>
 
-        {/* スコアアップ通知 */}
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-800">⭐ スコアアップ</h2>
-            <Link href="/admin/conversion" className="text-xs text-amber-700 hover:underline">
-              転換管理 →
-            </Link>
-          </div>
+        <DashCard
+          title="スコアアップ"
+          icon={Star}
+          iconColor="text-amber-500"
+          moreHref="/admin/conversion"
+          moreLabel="転換管理"
+        >
           {scoreUpMembers.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-4">今月の変動なし</p>
+            <EmptyState text="今月の変動なし" />
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-stone-50">
               {scoreUpMembers.map((m) => (
-                <li key={m.id} className="py-2.5">
-                  <Link href={`/admin/members/${m.id}`} className="flex items-center justify-between hover:opacity-70">
-                    <p className="text-sm text-stone-800">{m.user.name}</p>
-                    <span className="text-xs font-semibold text-teal-600">{m.engagementScore}pt</span>
+                <li key={m.id}>
+                  <Link href={`/admin/members/${m.id}`}
+                    className="flex items-center justify-between py-2.5 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
+                    <p className="text-sm text-stone-800 font-medium">{m.user.name}</p>
+                    <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{m.engagementScore}pt</span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </DashCard>
       </div>
 
       {/* クイックアクション */}
-      <div className="mt-6 bg-stone-100 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-stone-600 mb-3">クイックアクション</h2>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/members" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            会員一覧
-          </Link>
-          <Link href="/admin/reservations" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            予約管理
-          </Link>
-          <Link href="/admin/events/new" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            イベント作成
-          </Link>
-          <Link href="/admin/announcements/new" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            お知らせ作成
-          </Link>
-          <Link href="/admin/conversion" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            転換管理
-          </Link>
-          <Link href="/admin/events/analytics" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            イベント分析
-          </Link>
-          <Link href="/admin/analytics/features" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            機能利用ログ
-          </Link>
-          <Link href="/admin/churn" className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
-            離脱予兆
-          </Link>
+      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap size={14} className="text-amber-600" />
+          <h2 className="text-sm font-bold text-stone-700">クイックアクション</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { icon: CalendarDays, label: "予約管理", href: "/admin/reservations", color: "text-amber-700 bg-amber-50" },
+            { icon: Users, label: "会員一覧", href: "/admin/members", color: "text-teal-700 bg-teal-50" },
+            { icon: Plus, label: "イベント作成", href: "/admin/events/new", color: "text-sky-700 bg-sky-50" },
+            { icon: Megaphone, label: "お知らせ作成", href: "/admin/announcements/new", color: "text-purple-700 bg-purple-50" },
+            { icon: ArrowUpRight, label: "転換管理", href: "/admin/conversion", color: "text-rose-700 bg-rose-50" },
+            { icon: TrendingUp, label: "イベント分析", href: "/admin/events/analytics", color: "text-indigo-700 bg-indigo-50" },
+            { icon: BarChart3, label: "機能利用ログ", href: "/admin/analytics/features", color: "text-stone-700 bg-stone-100" },
+            { icon: AlertTriangle, label: "離脱予兆", href: "/admin/churn", color: "text-orange-700 bg-orange-50" },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link key={action.href} href={action.href}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-stone-100 hover:border-amber-200 hover:shadow-sm transition-all bg-stone-50/50">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${action.color}`}>
+                  <Icon size={14} strokeWidth={1.8} />
+                </div>
+                <span className="text-xs font-medium text-stone-700">{action.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
+  );
+}
+
+// ── 共通コンポーネント ────────────────────────────────────────────
+
+function KpiCard({
+  icon: Icon, iconBg, iconColor, label, value, unit, valueColor = "text-stone-800", href,
+}: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  value: number;
+  unit: string;
+  valueColor?: string;
+  href: string;
+}) {
+  return (
+    <Link href={href}
+      className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 hover:shadow-md hover:border-amber-200 transition-all">
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
+        <Icon size={16} strokeWidth={1.8} className={iconColor} />
+      </div>
+      <p className="text-xs text-stone-500 font-medium mb-1">{label}</p>
+      <div className="flex items-baseline gap-1">
+        <span className={`text-2xl font-bold ${valueColor}`}>{value.toLocaleString()}</span>
+        <span className="text-xs text-stone-400">{unit}</span>
+      </div>
+    </Link>
+  );
+}
+
+function DashCard({
+  title, icon: Icon, iconColor, moreHref, moreLabel, badge, children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  iconColor: string;
+  moreHref: string;
+  moreLabel: string;
+  badge?: { count: number; color: "red" | "orange" };
+  children: React.ReactNode;
+}) {
+  const badgeColors = {
+    red: "bg-red-100 text-red-700",
+    orange: "bg-orange-100 text-orange-700",
+  };
+  return (
+    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Icon size={14} strokeWidth={1.8} className={iconColor} />
+          <h2 className="font-semibold text-stone-800 text-sm">{title}</h2>
+          {badge && (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeColors[badge.color]}`}>
+              {badge.count}
+            </span>
+          )}
+        </div>
+        <Link href={moreHref} className="text-xs text-amber-700 hover:text-amber-900 font-medium flex items-center gap-0.5">
+          {moreLabel}<ChevronRight size={12} />
+        </Link>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ text, icon, ok }: { text: string; icon?: string; ok?: boolean }) {
+  return (
+    <p className={`text-sm text-center py-5 ${ok ? "text-teal-600 font-medium" : "text-stone-400"}`}>
+      {icon && <span className="mr-1">{icon}</span>}{text}
+    </p>
   );
 }

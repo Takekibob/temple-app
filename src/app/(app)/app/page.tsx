@@ -341,32 +341,60 @@ export default async function AppHomePage() {
           </section>
         )}
 
-        {/* 注目イベント */}
+        {/* 次回の行事 */}
         {featuredEvents.length > 0 && (
           <section>
-            <SectionHeader
-              title={isGoen ? "おすすめイベント" : "今後のイベント"}
-              moreHref="/app/events" moreLabel="すべて"
-            />
-            <div className="space-y-2">
-              {featuredEvents.map((e) => (
-                <Link key={e.id} href={`/app/events/${e.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
-                  <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
-                    <BookOpen size={16} className="text-teal-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(e.category)}</p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                      {" "}{e.startTime}
-                    </p>
-                  </div>
-                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
-                </Link>
-              ))}
-            </div>
+            <SectionHeader title="次回の行事" moreHref="/app/events" moreLabel="すべて" />
+            {/* ヒーローカード：直近1件 */}
+            <Link href={`/app/events/${featuredEvents[0].id}`}
+              className="block bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-teal-200 text-xs font-medium mb-1">
+                    {featuredEvents[0].eventDate.toLocaleDateString("ja-JP", {
+                      year: "numeric", month: "long", day: "numeric", weekday: "short",
+                    })}
+                  </p>
+                  <p className="text-xl font-bold leading-snug">{featuredEvents[0].title}</p>
+                  {featuredEvents[0].startTime && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <Clock size={12} className="text-teal-200" />
+                      <p className="text-teal-100 text-xs">{featuredEvents[0].startTime}〜</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                    {getCategoryLabel(featuredEvents[0].category)}
+                  </span>
+                  <span className="text-teal-100 text-xs font-bold">
+                    {featuredEvents[0].fee === 0 ? "無料" : `¥${featuredEvents[0].fee.toLocaleString()}`}
+                  </span>
+                </div>
+              </div>
+            </Link>
+            {/* 残りのイベント */}
+            {featuredEvents.length > 1 && (
+              <div className="space-y-2 mt-2">
+                {featuredEvents.slice(1).map((e) => (
+                  <Link key={e.id} href={`/app/events/${e.id}`}
+                    className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-teal-200 hover:shadow-md transition-all">
+                    <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
+                      <BookOpen size={16} className="text-teal-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-teal-700 font-medium">{getCategoryLabel(e.category)}</p>
+                      <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">
+                        {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                        {" "}{e.startTime}
+                      </p>
+                    </div>
+                    <ChevronRight size={16} className="text-stone-300 shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

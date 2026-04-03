@@ -227,6 +227,7 @@ model Member {
   lineStepQueues   LineStepQueue[]
   memberNotes      MemberNote[]
   announcements    Announcement[]
+  announcementReads AnnouncementRead[]
   changeRequests   MemberChangeRequest[]
 
   @@map("members")
@@ -559,8 +560,23 @@ model Announcement {
 
   temple  Temple  @relation(fields: [templeId], references: [id])
   member  Member? @relation(fields: [memberId], references: [id])
+  reads   AnnouncementRead[]
 
   @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String   @id @default(uuid())
+  memberId       String
+  announcementId String
+  readAt         DateTime @default(now())
+  isDeleted      Boolean  @default(false)
+
+  member       Member       @relation(fields: [memberId], references: [id])
+  announcement Announcement @relation(fields: [announcementId], references: [id])
+
+  @@unique([memberId, announcementId])
+  @@map("announcement_reads")
 }
 
 enum AnnouncementTarget {

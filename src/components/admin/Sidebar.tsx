@@ -4,9 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { logout } from "@/app/auth/actions";
+import {
+  LayoutDashboard, CalendarDays, Users, BookOpen, FilePen,
+  Coins, Landmark, BarChart3, Calendar, TrendingUp, Bell,
+  PenLine, CalendarRange, MessageCircle, ArrowUpRight,
+  BadgeJapaneseYen, LineChart, ScanLine, Package,
+  Settings, Target, UserCog, Ticket, CreditCard, ClipboardList,
+  ChevronRight, Eye, LogOut, Menu, X,
+} from "lucide-react";
 
 interface NavItem {
-  icon: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   label: string;
   href: string;
   adminOnly?: boolean;
@@ -30,65 +38,65 @@ interface SidebarProps {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    items: [{ icon: "📊", label: "ダッシュボード", href: "/admin" }],
+    items: [{ icon: LayoutDashboard, label: "ダッシュボード", href: "/admin" }],
   },
   {
     title: "檀家管理",
     items: [
-      { icon: "📅", label: "法要予約", href: "/admin/reservations" },
-      { icon: "👥", label: "会員一覧", href: "/admin/members" },
-      { icon: "📖", label: "過去帳", href: "/admin/deceased" },
-      { icon: "✏️", label: "情報変更申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
+      { icon: CalendarDays, label: "法要予約", href: "/admin/reservations" },
+      { icon: Users, label: "会員一覧", href: "/admin/members" },
+      { icon: BookOpen, label: "過去帳", href: "/admin/deceased" },
+      { icon: FilePen, label: "情報変更申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
     ],
   },
   {
     title: "会計管理",
     items: [
-      { icon: "💴", label: "お布施", href: "/admin/ofuse" },
-      { icon: "🏦", label: "護持会費", href: "/admin/gojikai" },
-      { icon: "📋", label: "レポート", href: "/admin/reports" },
+      { icon: Coins, label: "お布施", href: "/admin/ofuse" },
+      { icon: Landmark, label: "護持会費", href: "/admin/gojikai" },
+      { icon: BarChart3, label: "レポート", href: "/admin/reports" },
     ],
   },
   {
     title: "イベント管理",
     items: [
-      { icon: "🎋", label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
-      { icon: "🔬", label: "イベント分析", href: "/admin/events/analytics", adminOnly: true },
+      { icon: Calendar, label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
+      { icon: TrendingUp, label: "イベント分析", href: "/admin/events/analytics", adminOnly: true },
     ],
   },
   {
     title: "配信管理",
     items: [
-      { icon: "📢", label: "お知らせ", href: "/admin/announcements" },
-      { icon: "📝", label: "ブログ", href: "/admin/blog" },
-      { icon: "📅", label: "年間行事", href: "/admin/annual-events" },
-      { icon: "💚", label: "LINE配信", href: "/admin/line", adminOnly: true },
+      { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
+      { icon: PenLine, label: "ブログ", href: "/admin/blog" },
+      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events" },
+      { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },
   {
     title: "CRM・収益",
     items: [
-      { icon: "📈", label: "パイプライン", href: "/admin/pipeline" },
-      { icon: "💰", label: "収益管理", href: "/admin/revenue", adminOnly: true },
-      { icon: "📉", label: "経営分析", href: "/admin/analytics/retention", adminOnly: true },
+      { icon: ArrowUpRight, label: "パイプライン", href: "/admin/pipeline" },
+      { icon: BadgeJapaneseYen, label: "収益管理", href: "/admin/revenue", adminOnly: true },
+      { icon: LineChart, label: "経営分析", href: "/admin/analytics/retention", adminOnly: true },
     ],
   },
   {
     title: "ブランディング",
     items: [
-      { icon: "📷", label: "OCR取り込み", href: "/admin/ocr", adminOnly: true },
-      { icon: "📦", label: "導入サポート", href: "/admin/onboarding-pack", adminOnly: true },
+      { icon: ScanLine, label: "OCR取り込み", href: "/admin/ocr", adminOnly: true },
+      { icon: Package, label: "導入サポート", href: "/admin/onboarding-pack", adminOnly: true },
     ],
   },
   {
     title: "システム",
     items: [
-      { icon: "⚙️", label: "設定", href: "/admin/settings", adminOnly: true, excludePrefix: "/admin/settings/scoring" },
-      { icon: "🎯", label: "スコアリング設定", href: "/admin/settings/scoring", adminOnly: true },
-      { icon: "👤", label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
-      { icon: "🎫", label: "会員プラン", href: "/admin/plans", adminOnly: true },
-      { icon: "💳", label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
-      { icon: "🔍", label: "操作ログ", href: "/admin/logs", adminOnly: true },
+      { icon: Settings, label: "設定", href: "/admin/settings", adminOnly: true, excludePrefix: "/admin/settings/scoring" },
+      { icon: Target, label: "スコアリング設定", href: "/admin/settings/scoring", adminOnly: true },
+      { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
+      { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true },
+      { icon: CreditCard, label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
+      { icon: ClipboardList, label: "操作ログ", href: "/admin/logs", adminOnly: true },
     ],
   },
 ];
@@ -109,7 +117,6 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
     return pathname.startsWith(matchPath);
   };
 
-  // 現在のパスを含むセクションのインデックスを返す
   const getActiveSection = () =>
     visibleSections.findIndex(
       (section) => section.title && section.items.some((item) => isActive(item))
@@ -119,7 +126,6 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
     () => new Set(getActiveSection() !== -1 ? [getActiveSection()] : [])
   );
 
-  // パス変更時にアクティブセクションを自動展開
   useEffect(() => {
     const activeIdx = getActiveSection();
     if (activeIdx !== -1) {
@@ -140,33 +146,42 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
   const content = (
     <div className="flex flex-col h-full">
       {/* ロゴ */}
-      <div className="px-4 py-5 border-b border-stone-200">
-        <p className="text-xs text-stone-400 font-medium">てらログ 管理</p>
-        <p className="text-sm font-bold text-stone-800 mt-0.5 truncate">{templeName}</p>
+      <div className="px-4 py-4 border-b border-stone-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {templeName.charAt(0)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-stone-400 font-medium leading-none mb-0.5">てらログ 管理</p>
+            <p className="text-sm font-bold text-stone-800 truncate leading-tight">{templeName}</p>
+          </div>
+        </div>
       </div>
 
       {/* ナビゲーション */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {visibleSections.map((section, si) => {
           if (!section.title) {
-            // ダッシュボード：常に表示
             return (
               <div key={si} className="mb-1">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors ${
-                      isActive(item)
-                        ? "bg-amber-50 text-amber-800 font-medium"
-                        : "text-stone-600 hover:bg-stone-100"
-                    }`}
-                  >
-                    <span className="text-base">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ))}
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${
+                        isActive(item)
+                          ? "bg-amber-700 text-white font-semibold shadow-sm"
+                          : "text-stone-600 hover:bg-stone-100 hover:text-stone-800"
+                      }`}
+                    >
+                      <Icon size={16} strokeWidth={1.8} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             );
           }
@@ -176,47 +191,48 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
 
           return (
             <div key={si} className="mb-0.5">
-              {/* セクションヘッダー（折りたたみトグル） */}
               <button
                 type="button"
                 onClick={() => toggleSection(si)}
-                className={`w-full flex items-center justify-between px-2 py-2 rounded-lg text-left transition-colors ${
-                  hasActive
-                    ? "text-amber-800 bg-amber-50/60"
-                    : "text-stone-500 hover:bg-stone-100"
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-colors ${
+                  hasActive ? "text-amber-800" : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
                 }`}
               >
-                <span className={`text-[11px] font-semibold uppercase tracking-wider ${hasActive ? "text-amber-700" : "text-stone-400"}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${hasActive ? "text-amber-700" : "text-stone-400"}`}>
                   {section.title}
                 </span>
-                <span className={`text-xs transition-transform duration-200 ${isOpen ? "rotate-90" : ""} ${hasActive ? "text-amber-600" : "text-stone-300"}`}>
-                  ›
-                </span>
+                <ChevronRight
+                  size={13}
+                  className={`transition-transform duration-200 ${isOpen ? "rotate-90" : ""} ${hasActive ? "text-amber-500" : "text-stone-300"}`}
+                />
               </button>
 
-              {/* セクション内アイテム */}
               {isOpen && (
-                <div className="ml-1 border-l-2 border-stone-100 pl-2 mb-1">
-                  {section.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors ${
-                        isActive(item)
-                          ? "bg-amber-50 text-amber-800 font-medium"
-                          : "text-stone-600 hover:bg-stone-100"
-                      }`}
-                    >
-                      <span className="text-base">{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
-                      {item.badgeKey === "changeRequests" && pendingChangeRequests > 0 && (
-                        <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                          {pendingChangeRequests > 9 ? "9+" : pendingChangeRequests}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
+                <div className="ml-2 border-l-2 border-stone-100 pl-2 mb-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all ${
+                          active
+                            ? "bg-amber-50 text-amber-800 font-semibold"
+                            : "text-stone-600 hover:bg-stone-100 hover:text-stone-800"
+                        }`}
+                      >
+                        <Icon size={14} strokeWidth={1.8} className={active ? "text-amber-700" : "text-stone-400"} />
+                        <span className="flex-1 text-[13px]">{item.label}</span>
+                        {item.badgeKey === "changeRequests" && pendingChangeRequests > 0 && (
+                          <span className="bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">
+                            {pendingChangeRequests > 9 ? "9+" : pendingChangeRequests}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -230,7 +246,7 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
           <Link
             href="/admin/billing"
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border w-full ${
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border w-full ${
               planStatus === "TRIAL"
                 ? "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100"
                 : planStatus === "PAST_DUE"
@@ -238,7 +254,7 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
                 : "text-red-700 bg-red-50 border-red-200 hover:bg-red-100"
             }`}
           >
-            <span>💳</span>
+            <CreditCard size={12} />
             <span>
               {planStatus === "TRIAL" && "トライアル中"}
               {planStatus === "PAST_DUE" && "支払い遅延"}
@@ -250,20 +266,22 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
       )}
 
       {/* ユーザー情報 */}
-      <div className="px-4 py-4 border-t border-stone-200">
-        <p className="text-xs text-stone-500 truncate">{userName}</p>
-        <div className="flex items-center gap-3 mt-1.5">
+      <div className="px-3 py-3 border-t border-stone-100">
+        <p className="text-xs text-stone-500 font-medium truncate px-1 mb-2">{userName}</p>
+        <div className="flex items-center gap-1">
           <Link
             href="/app"
-            className="text-xs text-amber-700 hover:text-amber-900 font-medium"
+            className="flex-1 flex items-center justify-center gap-1 text-xs text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg py-1.5 transition-colors font-medium"
           >
-            👁 利用者画面を見る
+            <Eye size={12} />
+            利用者画面
           </Link>
-          <span className="text-stone-200">|</span>
+          <div className="w-px h-4 bg-stone-100" />
           <button
             onClick={async () => { await logout(); }}
-            className="text-xs text-stone-400 hover:text-stone-600"
+            className="flex-1 flex items-center justify-center gap-1 text-xs text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg py-1.5 transition-colors"
           >
+            <LogOut size={12} />
             ログアウト
           </button>
         </div>
@@ -275,24 +293,27 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
     <>
       {/* モバイル: ハンバーガーボタン */}
       <button
-        className="lg:hidden fixed top-3 left-3 z-50 bg-white border border-stone-200 rounded-lg p-2 shadow-sm"
+        className="lg:hidden fixed top-3 left-3 z-50 bg-white border border-stone-200 rounded-xl p-2 shadow-sm"
         onClick={() => setMobileOpen((v) => !v)}
         aria-label="メニュー"
       >
-        <span className="text-stone-600 text-lg">{mobileOpen ? "✕" : "☰"}</span>
+        {mobileOpen
+          ? <X size={18} className="text-stone-600" />
+          : <Menu size={18} className="text-stone-600" />
+        }
       </button>
 
       {/* モバイル: オーバーレイ */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/30"
+          className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* モバイル: ドロワー */}
       <div
-        className={`lg:hidden fixed top-0 left-0 z-40 h-full w-60 bg-white border-r border-stone-200 transform transition-transform ${
+        className={`lg:hidden fixed top-0 left-0 z-40 h-full w-60 bg-white border-r border-stone-100 transform transition-transform shadow-xl ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -300,7 +321,7 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
       </div>
 
       {/* デスクトップ: 固定サイドバー */}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-white border-r border-stone-200 h-screen sticky top-0">
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-white border-r border-stone-100 h-screen sticky top-0">
         {content}
       </aside>
     </>
