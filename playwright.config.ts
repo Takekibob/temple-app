@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as dotenvConfig } from "dotenv";
+
+// .env.test を読み込む（存在する場合のみ）
+dotenvConfig({ path: ".env.test" });
 
 /**
  * E2E テスト設定

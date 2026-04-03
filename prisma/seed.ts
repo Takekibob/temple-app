@@ -28,6 +28,12 @@ const PILOT_ADMIN_EMAIL = process.env.PILOT_ADMIN_EMAIL ?? "admin@enshoji-pilot.
 const PILOT_DANKA_EMAIL = process.env.PILOT_DANKA_EMAIL ?? "yamada@enshoji-pilot.example";
 const PILOT_GOEN_EMAIL = process.env.PILOT_GOEN_EMAIL ?? "suzuki@enshoji-pilot.example";
 
+// ============================================================
+// 第2デモ寺院（マルチテンプル検証用）
+// ============================================================
+const DEMO2_ADMIN_EMAIL = process.env.DEMO2_ADMIN_EMAIL ?? "admin@houn-demo.example";
+const DEMO2_DANKA_EMAIL = process.env.DEMO2_DANKA_EMAIL ?? "sato@houn-demo.example";
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
@@ -270,12 +276,96 @@ async function main() {
   }
   console.log(`  ✅ Annual events: ${annualEvents.length} records`);
 
+  // ----------------------------------------------------------
+  // 8. 第2デモ寺院（法雲寺）— マルチテンプル検証用
+  // ----------------------------------------------------------
+  const temple2 = await prisma.temple.upsert({
+    where: { id: "demo-temple-002" },
+    update: {},
+    create: {
+      id: "demo-temple-002",
+      name: "法雲寺",
+      denomination: "臨済宗",
+      address: "京都府京都市上京区寺町通広小路上る北之辺町395",
+      phone: "075-000-0000",
+      email: "info@houn-demo.example",
+    },
+  });
+  console.log(`  ✅ Temple 2: ${temple2.name} (${temple2.id})`);
+
+  const admin2 = await prisma.user.upsert({
+    where: { email: DEMO2_ADMIN_EMAIL },
+    update: { role: Role.ADMIN },
+    create: {
+      id: "demo2-admin-user-001",
+      templeId: temple2.id,
+      role: Role.ADMIN,
+      name: "佐藤 住職",
+      email: DEMO2_ADMIN_EMAIL,
+    },
+  });
+  console.log(`  ✅ Temple 2 admin: ${admin2.name} <${admin2.email}>`);
+
+  const danka2 = await prisma.user.upsert({
+    where: { email: DEMO2_DANKA_EMAIL },
+    update: {},
+    create: {
+      id: "demo2-danka-user-001",
+      templeId: temple2.id,
+      role: Role.MEMBER,
+      name: "佐藤 次郎",
+      email: DEMO2_DANKA_EMAIL,
+      phone: "090-0003-0003",
+    },
+  });
+
+  await prisma.member.upsert({
+    where: { userId: danka2.id },
+    update: {},
+    create: {
+      id: "demo2-danka-member-001",
+      templeId: temple2.id,
+      userId: danka2.id,
+      type: MemberType.DANKA,
+      familyName: "佐藤家",
+      address: "京都府京都市上京区1-2-3",
+      phone: "090-0003-0003",
+      email: DEMO2_DANKA_EMAIL,
+      engagementScore: 30,
+    },
+  });
+  console.log(`  ✅ Temple 2 danka: ${danka2.name} <${danka2.email}>`);
+
+  // 法雲寺のサンプルイベント
+  await prisma.event.upsert({
+    where: { id: "demo2-event-zazen-001" },
+    update: {},
+    create: {
+      id: "demo2-event-zazen-001",
+      templeId: temple2.id,
+      title: "朝の坐禅会",
+      description: "早朝の静かな時間に坐禅を行います。初心者歓迎です。",
+      category: "ZAZEN",
+      eventDate: new Date("2026-04-26T00:00:00Z"),
+      startTime: "06:00",
+      endTime: "07:30",
+      location: "禅堂",
+      capacity: 10,
+      fee: 500,
+      visibility: EventVisibility.PUBLIC,
+      status: EventStatus.PUBLISHED,
+    },
+  });
+  console.log(`  ✅ Temple 2 event: 朝の坐禅会`);
+
   console.log("\n✨ Seed complete!");
   console.log("\n📋 次のステップ:");
   console.log("  1. Supabase Auth で以下のアカウントを作成してください:");
-  console.log(`     管理者:  ${PILOT_ADMIN_EMAIL}`);
-  console.log(`     檀家:    ${PILOT_DANKA_EMAIL}`);
-  console.log(`     ご縁さん: ${PILOT_GOEN_EMAIL}`);
+  console.log(`     [円照寺] 管理者:  ${PILOT_ADMIN_EMAIL}`);
+  console.log(`     [円照寺] 檀家:    ${PILOT_DANKA_EMAIL}`);
+  console.log(`     [円照寺] ご縁さん: ${PILOT_GOEN_EMAIL}`);
+  console.log(`     [法雲寺] 管理者:  ${DEMO2_ADMIN_EMAIL}`);
+  console.log(`     [法雲寺] 檀家:    ${DEMO2_DANKA_EMAIL}`);
   console.log("  2. 各アカウントのパスワードを安全に保管してください");
   console.log("  3. Supabase Auth でメール確認をスキップ（テスト環境）または確認メールを送信してください");
 }

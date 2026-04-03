@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
+import { sendPushToMany } from "@/lib/push";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -143,7 +144,7 @@ export async function PATCH(
       },
     });
 
-    // CONFIRMED になったとき: 個人宛お知らせを作成
+    // CONFIRMED になったとき: 個人宛お知らせを作成 + プッシュ通知
     if (status === "CONFIRMED" && reservation.status !== "CONFIRMED") {
       const typeLabel = RESERVATION_TYPE_LABELS[reservation.type] ?? "法要";
       const scheduledDate = new Date(updated.scheduledAt);
@@ -163,6 +164,24 @@ export async function PATCH(
           publishedAt: new Date(),
         },
       });
+
+      // プッシュ通知（失敗しても本処理には影響させない）
+      const member = await prisma.member.findUnique({
+        where: { id: reservation.memberId },
+        select: { userId: true },
+      });
+      if (member) {
+        const pushSubs = await prisma.pushSubscription.findMany({
+          where: { userId: member.userId },
+        });
+        if (pushSubs.length > 0) {
+          sendPushToMany(pushSubs, {
+            title: `${typeLabel}のご予約が確定しました`,
+            body: `${dateStr} ${timeStr}〜`,
+            url: `/app/reservations/${id}`,
+          }).catch(() => {});
+        }
+      }
     }
 
     logActivity({
