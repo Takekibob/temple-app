@@ -33,6 +33,7 @@ export default function MemberEditPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [member, setMember] = useState<MemberData | null>(null);
+  const [memberType, setMemberType] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -40,7 +41,7 @@ export default function MemberEditPage() {
   useEffect(() => {
     fetch(`/api/members/${id}`)
       .then((r) => r.json())
-      .then((d) => setMember(d.member))
+      .then((d) => { setMember(d.member); setMemberType(d.member.type); })
       .catch(() => setErrorMsg("データの取得に失敗しました"));
   }, [id]);
 
@@ -63,6 +64,11 @@ export default function MemberEditPage() {
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    const newType = form.get("type") as string;
+    if (newType === "GOEN" && member?.type === "DANKA") {
+      if (!confirm("檀家 → ご縁さんに変更すると、法要予約・過去帳・護持会費へのアクセスが失われます。続けますか？")) return;
+    }
+
     const payload = {
       name: form.get("name"),
       phone: phone || null,
@@ -70,6 +76,7 @@ export default function MemberEditPage() {
       address: form.get("address"),
       postalCode: postalCode ? normalizePostalCode(postalCode) : null,
       notes: form.get("notes"),
+      type: newType,
     };
 
     startTransition(async () => {
@@ -108,6 +115,31 @@ export default function MemberEditPage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
+        {/* 会員種別 */}
+        <div className="space-y-1.5">
+          <Label htmlFor="type" className="text-stone-700">会員種別</Label>
+          <select
+            id="type"
+            name="type"
+            value={memberType}
+            onChange={(e) => setMemberType(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+          >
+            <option value="GOEN">ご縁さん（GOEN）</option>
+            <option value="DANKA">檀家（DANKA）</option>
+          </select>
+          {memberType === "DANKA" && member.type === "GOEN" && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+              ご縁さん → 檀家に変更すると、法要予約・過去帳・護持会費が利用可能になります。
+            </p>
+          )}
+          {memberType === "GOEN" && member.type === "DANKA" && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1.5">
+              ⚠️ 檀家 → ご縁さんに変更すると、法要予約・過去帳・護持会費へのアクセスが失われます。
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-stone-700">氏名</Label>

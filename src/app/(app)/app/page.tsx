@@ -41,7 +41,7 @@ const GOEN_QUICK: QuickItem[] = [
   { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
   { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
   { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
-  { icon: Compass,       label: "お寺を探す", href: "/app/temples",         color: "bg-sky-50 text-sky-600" },
+  { icon: Compass,       label: "お寺を探す", href: "/app/temples",         color: "bg-emerald-50 text-emerald-600" },
   { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
   { icon: Gift,          label: "寄付",       href: "/app/donations/new",   color: "bg-purple-50 text-purple-600" },
 ];
