@@ -14,10 +14,6 @@
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/cron/engagement",
-      "schedule": "0 17 * * *"
-    },
-    {
       "path": "/api/cron/trial-expiry",
       "schedule": "0 0 * * *"
     },

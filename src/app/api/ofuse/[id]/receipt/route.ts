@@ -18,9 +18,11 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   ONLINE: "オンライン",
 };
 
+// フォントは public/fonts/ にバンドル済み。CDN障害の影響を受けないよう自ホスト
+const _siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 Font.register({
   family: "NotoSansJP",
-  src: "https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.ttf",
+  src: `${_siteUrl}/fonts/NotoSansJP-Regular.ttf`,
 });
 
 const styles = StyleSheet.create({
