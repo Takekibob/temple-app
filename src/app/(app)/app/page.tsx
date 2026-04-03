@@ -27,12 +27,12 @@ type QuickItem = {
 };
 
 const DANKA_QUICK: QuickItem[] = [
-  { icon: CalendarDays, label: "法要予約",  href: "/app/reservations",  color: "bg-amber-50 text-amber-700" },
-  { icon: ScrollText,  label: "過去帳",    href: "/app/deceased",       color: "bg-stone-50 text-stone-600" },
-  { icon: Coins,       label: "お布施",    href: "/app/ofuse",          color: "bg-yellow-50 text-yellow-700" },
-  { icon: BookOpen,    label: "イベント",  href: "/app/events",         color: "bg-teal-50 text-teal-700" },
-  { icon: Heart,       label: "参加予定",  href: "/app/events/my",      color: "bg-rose-50 text-rose-600" },
-  { icon: Gift,        label: "寄付",      href: "/app/donations",      color: "bg-purple-50 text-purple-600" },
+  { icon: CalendarDays, label: "法要予約",    href: "/app/reservations",  color: "bg-amber-50 text-amber-700" },
+  { icon: ScrollText,   label: "過去帳",      href: "/app/deceased",      color: "bg-stone-50 text-stone-600" },
+  { icon: MapPin,       label: "近くの寺院",  href: "/app/temples",       color: "bg-teal-50 text-teal-700" },
+  { icon: BookOpen,     label: "イベント",    href: "/app/events",        color: "bg-sky-50 text-sky-600" },
+  { icon: Heart,        label: "参加予定",    href: "/app/events/my",     color: "bg-rose-50 text-rose-600" },
+  { icon: Coins,        label: "お布施",      href: "/app/ofuse",         color: "bg-yellow-50 text-yellow-700" },
 ];
 
 const GOEN_QUICK_BASE: QuickItem[] = [
