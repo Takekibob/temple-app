@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { UserCog, Shield, User, Plus, X, Mail, ChevronRight } from "lucide-react";
 
 interface StaffUser {
   id: string;
@@ -18,7 +19,7 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: "住職 / 管理者", STAFF: "スタッフ" };
-const ROLE_COLORS: Record<string, string> = {
+const ROLE_STYLES: Record<string, string> = {
   ADMIN: "bg-amber-100 text-amber-800",
   STAFF: "bg-teal-100 text-teal-800",
 };
@@ -90,7 +91,6 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
       const json = await res.json();
       if (res.ok) {
         setInviteDone(true);
-        // Re-fetch staff list
         const listRes = await fetch("/api/staff");
         if (listRes.ok) setStaff(await listRes.json());
       } else {
@@ -100,122 +100,144 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-6 max-w-3xl">
+      {/* ヘッダー */}
+      <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">スタッフ管理</h1>
-          <p className="text-sm text-stone-500 mt-0.5">全 {staff.filter((s) => s.isActive).length} 名（有効）</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <UserCog size={18} className="text-amber-700" />
+            <h1 className="text-2xl font-bold text-stone-800 tracking-tight">スタッフ管理</h1>
+          </div>
+          <p className="text-sm text-stone-400">有効 {staff.filter((s) => s.isActive).length} 名</p>
         </div>
         <button
           onClick={() => { setInviteDone(false); setInviteEmail(""); setInviteName(""); setInviteError(""); setShowInvite(true); }}
-          className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          className="flex items-center gap-1.5 px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 transition-colors shadow-sm"
         >
-          ＋ スタッフを招待
+          <Plus size={14} />スタッフを招待
         </button>
       </div>
 
-      {/* Permission info */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-sm">
-        <p className="font-semibold text-amber-900 mb-2">権限の違い</p>
+      {/* 権限説明 */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5">
+        <p className="text-xs font-bold text-amber-900 mb-3">権限の違い</p>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div>
-            <p className="font-medium text-amber-800">🔑 住職 / 管理者（admin）</p>
-            <p className="text-amber-700 text-xs mt-0.5">すべての機能にアクセス可能</p>
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+              <Shield size={13} className="text-amber-700" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-amber-800">住職 / 管理者</p>
+              <p className="text-xs text-amber-600 mt-0.5">すべての機能にアクセス可能</p>
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-amber-800">👤 スタッフ（staff）</p>
-            <p className="text-amber-700 text-xs mt-0.5">
-              以下を除く全機能：スタッフ管理・イベント分析・檀家昇格操作・システム設定の編集
-            </p>
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 bg-teal-100 rounded-lg flex items-center justify-center shrink-0">
+              <User size={13} className="text-teal-700" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-teal-800">スタッフ</p>
+              <p className="text-xs text-teal-600 mt-0.5">スタッフ管理・システム設定の編集を除く全機能</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-4">
-        {[null, "ADMIN", "STAFF"].map((r) => (
+      {/* フィルター */}
+      <div className="flex gap-1.5 mb-4 bg-stone-100 rounded-xl p-1 w-fit">
+        {[
+          { value: null, label: "全員" },
+          { value: "ADMIN", label: "住職 / 管理者" },
+          { value: "STAFF", label: "スタッフ" },
+        ].map((r) => (
           <button
-            key={String(r)}
-            onClick={() => setFilterRole(r)}
-            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-              filterRole === r ? "bg-amber-700 text-white" : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
+            key={String(r.value)}
+            onClick={() => setFilterRole(r.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              filterRole === r.value ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-700"
             }`}
           >
-            {r === null ? "全員" : ROLE_LABELS[r]}
+            {r.label}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-stone-100 bg-stone-50">
-              <th className="text-left px-4 py-3 text-stone-500 font-medium">氏名</th>
-              <th className="text-left px-4 py-3 text-stone-500 font-medium">メールアドレス</th>
-              <th className="text-left px-4 py-3 text-stone-500 font-medium">ロール</th>
-              <th className="text-left px-4 py-3 text-stone-500 font-medium">最終ログイン</th>
-              <th className="text-left px-4 py-3 text-stone-500 font-medium">状態</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s) => (
-              <tr key={s.id} className={`border-b border-stone-50 ${!s.isActive ? "opacity-50" : ""}`}>
-                <td className="px-4 py-3 font-medium text-stone-800">
-                  {s.name}
+      {/* スタッフカード一覧 */}
+      <div className="space-y-2">
+        {filtered.map((s) => (
+          <div
+            key={s.id}
+            className={`bg-white rounded-2xl border border-stone-100 shadow-sm p-4 ${!s.isActive ? "opacity-50" : ""}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0 ${
+                s.role === "ADMIN" ? "bg-amber-700" : "bg-teal-600"
+              }`}>
+                {s.name.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <span className="text-sm font-bold text-stone-800">{s.name}</span>
                   {s.id === currentUserId && (
-                    <span className="ml-2 text-xs text-stone-400">（自分）</span>
+                    <span className="text-xs text-stone-400">（自分）</span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-stone-600">{s.email}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[s.role] ?? "bg-stone-100 text-stone-600"}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_STYLES[s.role] ?? "bg-stone-100 text-stone-600"}`}>
                     {ROLE_LABELS[s.role] ?? s.role}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-stone-500 text-xs">
-                  {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString("ja-JP", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "未ログイン"}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${s.isActive ? "bg-teal-50 text-teal-700" : "bg-stone-100 text-stone-400"}`}>
-                    {s.isActive ? "有効" : "無効"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {s.id !== currentUserId && s.isActive && (
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => openEdit(s)} className="text-amber-700 hover:text-amber-900 text-xs font-medium">
-                        ロール変更
-                      </button>
-                      <button onClick={() => setDisableId(s.id)} className="text-red-400 hover:text-red-600 text-xs">
-                        無効化
-                      </button>
-                    </div>
+                  {!s.isActive && (
+                    <span className="text-xs px-2 py-0.5 bg-stone-100 text-stone-400 rounded-full">無効</span>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-stone-400">
+                  <Mail size={10} />
+                  <span>{s.email}</span>
+                </div>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  最終ログイン: {s.lastLoginAt
+                    ? new Date(s.lastLoginAt).toLocaleString("ja-JP", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                    : "未ログイン"}
+                </p>
+              </div>
+              {s.id !== currentUserId && s.isActive && (
+                <div className="flex flex-col gap-1 shrink-0">
+                  <button
+                    onClick={() => openEdit(s)}
+                    className="text-xs text-amber-700 hover:text-amber-900 font-medium px-2 py-1 rounded-lg hover:bg-amber-50 transition-colors"
+                  >
+                    ロール変更
+                  </button>
+                  <button
+                    onClick={() => setDisableId(s.id)}
+                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    無効化
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* ── Invite Modal ─────────────────────── */}
+      {/* ── 招待モーダル ─────────────────────── */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl">
             <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-stone-800">スタッフを招待</h2>
-              <button onClick={() => setShowInvite(false)} className="text-stone-400 hover:text-stone-600 text-xl">×</button>
+              <h2 className="text-base font-bold text-stone-800">スタッフを招待</h2>
+              <button onClick={() => setShowInvite(false)} className="text-stone-400 hover:text-stone-600">
+                <X size={18} />
+              </button>
             </div>
 
             {inviteDone ? (
               <div className="px-6 py-10 text-center">
-                <p className="text-4xl mb-3">📧</p>
-                <p className="text-base font-semibold text-stone-800">招待メールを送信しました</p>
-                <p className="text-sm text-stone-500 mt-1">{inviteEmail} に招待メールを送信しました。リンクをクリックしてパスワードを設定してもらってください。</p>
-                <button onClick={() => setShowInvite(false)} className="mt-6 px-5 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800">
+                <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Mail size={24} className="text-teal-600" />
+                </div>
+                <p className="text-base font-bold text-stone-800">招待メールを送信しました</p>
+                <p className="text-sm text-stone-500 mt-1">{inviteEmail} にリンクを送信しました。クリックしてパスワードを設定してもらってください。</p>
+                <button onClick={() => setShowInvite(false)} className="mt-6 px-5 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800">
                   閉じる
                 </button>
               </div>
@@ -229,17 +251,19 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
                       placeholder="山田 太郎"
-                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1">メールアドレス <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-medium text-stone-600 mb-1">
+                      メールアドレス <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="staff@example.com"
-                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
                   <div>
@@ -254,7 +278,7 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
                         >
                           <input type="radio" value={r} checked={inviteRole === r} onChange={() => setInviteRole(r)} className="accent-amber-600" />
                           <div>
-                            <p className="text-sm font-medium text-stone-800">{ROLE_LABELS[r]}</p>
+                            <p className="text-xs font-semibold text-stone-800">{ROLE_LABELS[r]}</p>
                           </div>
                         </label>
                       ))}
@@ -263,10 +287,10 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
                   {inviteError && <p className="text-sm text-red-500">{inviteError}</p>}
                 </div>
                 <div className="px-6 py-4 border-t border-stone-100 flex justify-end gap-2">
-                  <button onClick={() => setShowInvite(false)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg">
+                  <button onClick={() => setShowInvite(false)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-xl">
                     キャンセル
                   </button>
-                  <button onClick={handleInvite} disabled={inviteLoading} className="px-5 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-50">
+                  <button onClick={handleInvite} disabled={inviteLoading} className="px-5 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 disabled:opacity-50">
                     {inviteLoading ? "送信中…" : "招待メールを送信"}
                   </button>
                 </div>
@@ -276,11 +300,11 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
         </div>
       )}
 
-      {/* ── Edit Role Modal ───────────────────── */}
+      {/* ── ロール変更モーダル ───────────────────── */}
       {editId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6">
-            <h2 className="text-base font-semibold text-stone-800 mb-4">ロールを変更</h2>
+            <h2 className="text-base font-bold text-stone-800 mb-4">ロールを変更</h2>
             <div className="grid grid-cols-2 gap-2 mb-4">
               {(["STAFF", "ADMIN"] as const).map((r) => (
                 <label
@@ -295,8 +319,8 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
               ))}
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg">キャンセル</button>
-              <button onClick={handleEditSave} disabled={editLoading} className="px-5 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800 disabled:opacity-50">
+              <button onClick={() => setEditId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-xl">キャンセル</button>
+              <button onClick={handleEditSave} disabled={editLoading} className="px-5 py-2 bg-amber-700 text-white text-sm font-semibold rounded-xl hover:bg-amber-800 disabled:opacity-50">
                 {editLoading ? "保存中…" : "変更する"}
               </button>
             </div>
@@ -304,15 +328,15 @@ export default function StaffClient({ initialStaff, currentUserId }: Props) {
         </div>
       )}
 
-      {/* ── Disable Confirm ───────────────────── */}
+      {/* ── 無効化確認 ───────────────────── */}
       {disableId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6">
-            <p className="text-base font-semibold text-stone-800 mb-2">アカウントを無効化しますか？</p>
+            <p className="text-base font-bold text-stone-800 mb-2">アカウントを無効化しますか？</p>
             <p className="text-sm text-stone-500 mb-6">データは保持されます。再度有効化するにはSupabase管理画面が必要です。</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDisableId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg">キャンセル</button>
-              <button onClick={() => handleDisable(disableId)} disabled={disableLoading} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50">
+              <button onClick={() => setDisableId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-xl">キャンセル</button>
+              <button onClick={() => handleDisable(disableId)} disabled={disableLoading} className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-xl hover:bg-red-600 disabled:opacity-50">
                 {disableLoading ? "無効化中…" : "無効化する"}
               </button>
             </div>

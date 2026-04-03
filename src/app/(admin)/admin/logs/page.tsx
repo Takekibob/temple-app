@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ACTION_LABELS, TARGET_LABELS } from "@/lib/activityLog";
 import type { LogAction, LogTargetType } from "@/lib/activityLog";
+import { ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 
-// 画面名マッピング
 const SCREEN_LABELS: Partial<Record<LogTargetType, string>> = {
   member:       "会員管理",
   event:        "イベント管理",
@@ -35,18 +35,12 @@ function describeLog(log: AnyLog): string {
   const screen = targetType ? (SCREEN_LABELS[targetType] ?? TARGET_LABELS[targetType] ?? targetType) : null;
   const name   = log.targetName ? `「${log.targetName}」` : "";
 
-  // ログイン・ログアウト
   if (action === "login")  return "管理画面にログインしました";
   if (action === "logout") return "管理画面からログアウトしました";
-
-  // エクスポート・インポート
   if (action === "export") return `${screen ?? "データ"}をCSVエクスポートしました`;
   if (action === "import") return `${screen ?? "データ"}をCSVインポートしました`;
-
-  // 機密閲覧
   if (action === "view_sensitive") return `${screen ?? ""}の機密情報を閲覧しました`;
 
-  // 追加情報の抽出
   const extras: string[] = [];
   if (d.planName)       extras.push(`プラン: ${d.planName}`);
   if (d.amount != null) extras.push(`金額: ¥${Number(d.amount).toLocaleString()}`);
@@ -62,6 +56,17 @@ function describeLog(log: AnyLog): string {
 }
 
 const PAGE_SIZE = 50;
+
+const ACTION_COLORS: Record<string, string> = {
+  create: "bg-teal-100 text-teal-800",
+  update: "bg-blue-100 text-blue-700",
+  delete: "bg-red-100 text-red-700",
+  export: "bg-amber-100 text-amber-800",
+  import: "bg-purple-100 text-purple-800",
+  login: "bg-stone-100 text-stone-600",
+  logout: "bg-stone-100 text-stone-600",
+  view_sensitive: "bg-orange-100 text-orange-800",
+};
 
 export default async function AdminLogsPage({
   searchParams,
@@ -93,17 +98,6 @@ export default async function AdminLogsPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const ACTION_COLORS: Record<string, string> = {
-    create: "bg-teal-100 text-teal-800",
-    update: "bg-blue-100 text-blue-800",
-    delete: "bg-red-100 text-red-700",
-    export: "bg-amber-100 text-amber-800",
-    import: "bg-purple-100 text-purple-800",
-    login: "bg-stone-100 text-stone-600",
-    logout: "bg-stone-100 text-stone-600",
-    view_sensitive: "bg-orange-100 text-orange-800",
-  };
-
   function buildUrl(params: Record<string, string | undefined>) {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {
@@ -113,24 +107,23 @@ export default async function AdminLogsPage({
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-800">操作ログ</h1>
-          <p className="text-sm text-stone-500 mt-0.5">
-            全 {total.toLocaleString()} 件
-          </p>
+    <div className="p-6 max-w-5xl">
+      {/* ヘッダー */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-0.5">
+          <ClipboardList size={18} className="text-amber-700" />
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">操作ログ</h1>
         </div>
+        <p className="text-sm text-stone-400">全 {total.toLocaleString()} 件</p>
       </div>
 
       {/* フィルタ */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {/* アクション */}
-        <div className="flex gap-1 flex-wrap">
+      <div className="space-y-2 mb-5">
+        <div className="flex gap-1.5 flex-wrap">
           <Link
             href={buildUrl({ targetType })}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              !action ? "bg-amber-700 text-white border-amber-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              !action ? "bg-amber-700 text-white" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
             }`}
           >
             すべての操作
@@ -139,8 +132,8 @@ export default async function AdminLogsPage({
             <Link
               key={a}
               href={buildUrl({ action: a, targetType })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                action === a ? "bg-amber-700 text-white border-amber-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                action === a ? "bg-amber-700 text-white" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
               }`}
             >
               {ACTION_LABELS[a]}
@@ -148,12 +141,11 @@ export default async function AdminLogsPage({
           ))}
         </div>
 
-        {/* 対象種別 */}
-        <div className="flex gap-1 flex-wrap border-l border-stone-200 pl-2">
+        <div className="flex gap-1.5 flex-wrap">
           <Link
             href={buildUrl({ action })}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              !targetType ? "bg-stone-700 text-white border-stone-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              !targetType ? "bg-stone-700 text-white" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
             }`}
           >
             すべての対象
@@ -162,8 +154,8 @@ export default async function AdminLogsPage({
             <Link
               key={t}
               href={buildUrl({ action, targetType: t })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                targetType === t ? "bg-stone-700 text-white border-stone-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                targetType === t ? "bg-stone-700 text-white" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
               }`}
             >
               {TARGET_LABELS[t]}
@@ -172,64 +164,43 @@ export default async function AdminLogsPage({
         </div>
       </div>
 
-      {/* ログテーブル */}
+      {/* ログリスト */}
       {logs.length === 0 ? (
-        <div className="bg-white rounded-xl border border-stone-200 p-12 text-center text-stone-400 text-sm">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-12 text-center text-stone-400 text-sm">
           ログがありません
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="text-left px-4 py-3 text-stone-500 font-medium">日時</th>
-                  <th className="text-left px-4 py-3 text-stone-500 font-medium">操作者</th>
-                  <th className="text-left px-4 py-3 text-stone-500 font-medium">操作</th>
-                  <th className="text-left px-4 py-3 text-stone-500 font-medium">対象</th>
-                  <th className="text-left px-4 py-3 text-stone-500 font-medium">詳細</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id} className="border-b border-stone-50 hover:bg-stone-50 transition-colors">
-                    <td className="px-4 py-3 text-stone-500 text-xs whitespace-nowrap">
-                      {log.createdAt.toLocaleString("ja-JP", {
-                        timeZone: "Asia/Tokyo",
-                        month: "2-digit", day: "2-digit",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-stone-700">
-                      {log.user?.name ?? <span className="text-stone-400">システム</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_COLORS[log.action] ?? "bg-stone-100 text-stone-600"}`}>
-                        {ACTION_LABELS[log.action as LogAction] ?? log.action}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-stone-700">
-                      {log.targetType && (
-                        <span className="text-xs text-stone-400 mr-1">
-                          {TARGET_LABELS[log.targetType as LogTargetType] ?? log.targetType}
-                        </span>
-                      )}
-                      {log.targetName && (
-                        <span className="font-medium">{log.targetName}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-stone-600 text-xs">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div className="divide-y divide-stone-50">
+            {logs.map((log) => (
+              <div key={log.id} className="flex items-start gap-3 px-5 py-3.5">
+                <div className="text-xs text-stone-400 shrink-0 w-24 mt-0.5">
+                  {log.createdAt.toLocaleString("ja-JP", {
+                    timeZone: "Asia/Tokyo",
+                    month: "2-digit", day: "2-digit",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </div>
+                <div className="text-xs font-medium text-stone-600 shrink-0 w-20 mt-0.5">
+                  {log.user?.name ?? <span className="text-stone-300">システム</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${ACTION_COLORS[log.action] ?? "bg-stone-100 text-stone-600"}`}>
+                      {ACTION_LABELS[log.action as LogAction] ?? log.action}
+                    </span>
+                    <span className="text-xs text-stone-600 leading-5">
                       {describeLog(log)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* ページネーション */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-stone-100 bg-stone-50">
+            <div className="flex items-center justify-between px-5 py-3.5 border-t border-stone-50 bg-stone-50/50">
               <p className="text-xs text-stone-500">
                 {(page - 1) * PAGE_SIZE + 1}〜{Math.min(page * PAGE_SIZE, total)} 件 / 全 {total} 件
               </p>
@@ -237,17 +208,17 @@ export default async function AdminLogsPage({
                 {page > 1 && (
                   <Link
                     href={buildUrl({ action, targetType, page: String(page - 1) })}
-                    className="px-3 py-1.5 text-xs border border-stone-200 rounded-lg hover:bg-stone-100"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs border border-stone-200 rounded-lg hover:bg-white transition-colors"
                   >
-                    ← 前
+                    <ChevronLeft size={12} />前
                   </Link>
                 )}
                 {page < totalPages && (
                   <Link
                     href={buildUrl({ action, targetType, page: String(page + 1) })}
-                    className="px-3 py-1.5 text-xs border border-stone-200 rounded-lg hover:bg-stone-100"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs border border-stone-200 rounded-lg hover:bg-white transition-colors"
                   >
-                    次 →
+                    次<ChevronRight size={12} />
                   </Link>
                 )}
               </div>
