@@ -9,6 +9,7 @@ interface TempleSettings {
   address: string | null;
   phone: string | null;
   email: string | null;
+  websiteUrl: string | null;
   logoUrl: string | null;
   description: string | null;
   bookingStartTime: string;
@@ -76,6 +77,7 @@ export default function SettingsClient({
     address: initialSettings.address ?? "",
     phone: initialSettings.phone ?? "",
     email: initialSettings.email ?? "",
+    websiteUrl: initialSettings.websiteUrl ?? "",
     description: initialSettings.description ?? "",
   });
   const [basicSaving, startBasic] = useTransition();
@@ -92,6 +94,7 @@ export default function SettingsClient({
           address: basic.address || null,
           phone: basic.phone || null,
           email: basic.email || null,
+          websiteUrl: basic.websiteUrl || null,
           description: basic.description || null,
         }),
       });
@@ -292,6 +295,7 @@ export default function SettingsClient({
               { key: "address", label: "住所", placeholder: "東京都〇〇区..." },
               { key: "phone", label: "電話番号", placeholder: "03-xxxx-xxxx" },
               { key: "email", label: "メールアドレス", placeholder: "info@example.com" },
+              { key: "websiteUrl", label: "公式サイトURL", placeholder: "https://example.com" },
             ].map(({ key, label, required, placeholder }) => (
               <div key={key}>
                 <label className="block text-xs font-medium text-stone-600 mb-1">

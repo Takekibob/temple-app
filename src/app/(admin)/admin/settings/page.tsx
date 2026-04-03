@@ -24,6 +24,7 @@ export default async function AdminSettingsPage() {
     address: temple.address,
     phone: temple.phone,
     email: temple.email,
+    websiteUrl: temple.websiteUrl,
     logoUrl: temple.logoUrl,
     description: temple.description,
     bookingStartTime: temple.bookingStartTime,

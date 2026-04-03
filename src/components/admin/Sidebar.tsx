@@ -76,7 +76,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "ブランディング",
     items: [
-      { icon: "🌐", label: "寺院公開LP", href: "/admin/temple-page", adminOnly: true },
       { icon: "📷", label: "OCR取り込み", href: "/admin/ocr", adminOnly: true },
       { icon: "📦", label: "導入サポート", href: "/admin/onboarding-pack", adminOnly: true },
     ],

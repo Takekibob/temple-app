@@ -31,7 +31,7 @@ export default async function AppEventDetailPage({
   const event = await prisma.event.findFirst({
     where: { id, status: "PUBLISHED" },
     include: {
-      temple: { select: { id: true, name: true, denomination: true, templePage: { select: { slug: true, isPublished: true } } } },
+      temple: { select: { id: true, name: true, denomination: true, websiteUrl: true } },
       _count: {
         select: { participations: { where: { status: { notIn: ["CANCELLED", "WAITLISTED"] } } } },
       },
@@ -133,15 +133,16 @@ export default async function AppEventDetailPage({
             {event.temple.name}
             {event.temple.denomination && `（${event.temple.denomination}）`}
           </Link>
-          {event.temple.templePage?.isPublished && event.temple.templePage.slug && (
+          {event.temple.websiteUrl && (
             <div className="mt-2">
               <Link
-                href={`/temples/p/${event.temple.templePage.slug}`}
+                href={event.temple.websiteUrl}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-amber-700 border border-stone-200 hover:border-amber-300 rounded-lg px-2.5 py-1 transition-colors"
               >
                 <Globe size={11} />
-                寺院の公式ページ
+                寺院の公式サイト
                 <ExternalLink size={10} />
               </Link>
             </div>

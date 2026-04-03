@@ -37,7 +37,7 @@ export default async function TempleProfilePage({
       description: true,
       logoUrl: true,
       coverImageUrl: true,
-      templePage: { select: { slug: true, isPublished: true } },
+      websiteUrl: true,
     },
   });
 
@@ -152,15 +152,16 @@ export default async function TempleProfilePage({
                 </a>
               </div>
             )}
-            {temple.templePage?.isPublished && temple.templePage.slug && (
+            {temple.websiteUrl && (
               <div className="flex items-center gap-3 py-2.5">
                 <Globe size={14} className="text-stone-400 shrink-0" />
                 <Link
-                  href={`/temples/p/${temple.templePage.slug}`}
+                  href={temple.websiteUrl}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-amber-700 hover:underline flex items-center gap-1"
                 >
-                  公式ページを見る
+                  公式サイトを見る
                   <ExternalLink size={12} />
                 </Link>
               </div>

@@ -25,6 +25,7 @@ model Temple {
 
   // マルチテンプル対応（追加フィールド）
   coverImageUrl String? // カバー画像URL
+  websiteUrl    String? // 公式サイトURL
   latitude      Decimal? // 緯度（将来の地図表示用）
   longitude     Decimal? // 経度（将来の地図表示用）
   isActive      Boolean  @default(true)
@@ -85,7 +86,6 @@ model Temple {
   lineStepSequences  LineStepSequence[]
   ocrRequests        OcrRequest[]
   onboardingPacks    OnboardingPack[]
-  templePage         TemplePage?
   analyticsSnapshots AnalyticsSnapshot[]
   memberNotes        MemberNote[]
   memberChangeRequests MemberChangeRequest[]
@@ -1073,39 +1073,6 @@ enum OnboardingPackStatus {
   @@map("onboarding_pack_status")
 }
 
-// ==========================================
-// 寺院公開LP
-// ==========================================
-model TemplePage {
-  id               String             @id @default(uuid())
-  templeId         String             @unique
-  temple           Temple             @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  slug             String             @unique
-  template         TemplePageTemplate @default(CLASSIC)
-
-  heroImageUrl     String?
-  galleryImageUrls String[]
-  customSections   Json               @default("[]")
-
-  seoTitle         String?
-  seoDescription   String?
-
-  isPublished      Boolean            @default(false)
-  publishedAt      DateTime?
-  updatedAt        DateTime           @updatedAt
-
-  @@map("temple_pages")
-}
-
-enum TemplePageTemplate {
-  CLASSIC
-  MODERN
-  ZEN
-  NATURE
-
-  @@map("temple_page_template")
-}
 
 // ==========================================
 // 分析スナップショット（日次集計）
