@@ -8,6 +8,7 @@ import ExportButton from "@/components/admin/ExportButton";
 import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
 import { MemberStage } from "@/generated/prisma/client";
 import { logFeature } from "@/lib/featureLog";
+import { ChevronRight, UserPlus } from "lucide-react";
 
 const PAGE_SIZE = 50;
 const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
@@ -74,13 +75,13 @@ export default async function MembersPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-5xl">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">会員管理</h1>
-          <p className="text-sm text-stone-500 mt-0.5">
-            全 {total} 件
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">会員管理</h1>
+          <p className="text-sm text-stone-400 mt-0.5">
+            {total.toLocaleString()} 名
             {stageFilter && (
               <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[stageFilter]}`}>
                 {STAGE_LABELS[stageFilter]}
@@ -90,126 +91,112 @@ export default async function MembersPage({
         </div>
         {isAdmin && (
           <div className="flex gap-2">
-            <ExportButton
-              href="/api/export/members"
-              label="CSVエクスポート"
-              filename="members.csv"
-            />
+            <ExportButton href="/api/export/members" label="CSV出力" filename="members.csv" />
             <Link
               href="/admin/members/import"
-              className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 transition-colors"
             >
-              CSVインポート
+              <UserPlus size={14} />
+              一括登録
             </Link>
           </div>
         )}
       </div>
 
       {/* フィルター */}
-      <Suspense fallback={<div className="h-10" />}>
+      <Suspense fallback={<div className="h-12" />}>
         <MemberFilters currentType={type} currentSearch={search} currentTag={tag} />
       </Suspense>
 
-      {/* テーブル */}
-      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mt-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-stone-100 bg-stone-50">
-                <th className="text-left px-4 py-3 text-stone-500 font-medium">氏名</th>
-                <th className="text-left px-4 py-3 text-stone-500 font-medium">家名</th>
-                <th className="text-left px-4 py-3 text-stone-500 font-medium">種別</th>
-                <th className="text-left px-4 py-3 text-stone-500 font-medium">ステージ</th>
-                <th className="text-left px-4 py-3 text-stone-500 font-medium">登録日</th>
-                <th className="text-right px-4 py-3 text-stone-500 font-medium">スコア</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {members.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-stone-400">
-                    会員が見つかりません
-                  </td>
-                </tr>
-              ) : (
-                members.map((member) => (
-                  <tr key={member.id} className="border-b border-stone-50 hover:bg-stone-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-stone-800">{member.user.name}</p>
-                      {member.summaryNote && (
-                        <p className="text-xs text-stone-400 mt-0.5 truncate max-w-[180px]">{member.summaryNote}</p>
-                      )}
-                      {member.priorityTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {member.priorityTags.map((t) => (
-                            <span key={t} className={`px-1.5 py-0.5 rounded text-xs font-medium ${TAG_COLORS[t] ?? "bg-stone-100 text-stone-600"}`}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-stone-600">{member.familyName}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          member.type === "DANKA"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-teal-100 text-teal-800"
-                        }`}
-                      >
-                        {member.type === "DANKA" ? "檀家" : "ご縁さん"}
+      {/* リスト */}
+      <div className="mt-4 space-y-2">
+        {members.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-14 text-center">
+            <p className="text-stone-400 text-sm">該当する会員が見つかりません</p>
+          </div>
+        ) : (
+          members.map((member) => (
+            <Link
+              key={member.id}
+              href={`/admin/members/${member.id}`}
+              className="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm px-5 py-4 hover:border-amber-200 hover:shadow-md transition-all"
+            >
+              {/* アバター */}
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white font-bold text-base shrink-0 ${
+                member.type === "DANKA"
+                  ? "bg-gradient-to-br from-amber-600 to-amber-800"
+                  : "bg-gradient-to-br from-teal-500 to-teal-700"
+              }`}>
+                {member.user.name.charAt(0)}
+              </div>
+
+              {/* 名前・家名 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-stone-800 text-sm">{member.user.name}</span>
+                  {member.familyName && (
+                    <span className="text-xs text-stone-400">{member.familyName}家</span>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                    member.type === "DANKA"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-teal-100 text-teal-800"
+                  }`}>
+                    {member.type === "DANKA" ? "檀家" : "ご縁さん"}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STAGE_COLORS[member.stage]}`}>
+                    {STAGE_LABELS[member.stage]}
+                  </span>
+                </div>
+                {member.summaryNote && (
+                  <p className="text-xs text-stone-400 mt-1 truncate">{member.summaryNote}</p>
+                )}
+                {member.priorityTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {member.priorityTags.map((t) => (
+                      <span key={t} className={`px-2 py-0.5 rounded-md text-xs font-medium ${TAG_COLORS[t] ?? "bg-stone-100 text-stone-600"}`}>
+                        {t}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[member.stage]}`}>
-                        {STAGE_LABELS[member.stage]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-stone-500">
-                      {member.joinedDate.toLocaleDateString("ja-JP")}
-                    </td>
-                    <td className="px-4 py-3 text-right text-stone-600">
-                      {member.engagementScore}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/members/${member.id}`}
-                        className="text-amber-700 hover:text-amber-900 text-xs font-medium"
-                      >
-                        詳細 →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 登録日 */}
+              <div className="text-right shrink-0 hidden sm:block">
+                <p className="text-xs text-stone-400">登録</p>
+                <p className="text-xs text-stone-600 font-medium mt-0.5">
+                  {member.joinedDate.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" })}
+                </p>
+              </div>
+
+              <ChevronRight size={16} className="text-stone-300 shrink-0" />
+            </Link>
+          ))
+        )}
       </div>
 
       {/* ページネーション */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-stone-500">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total} 件
+        <div className="flex items-center justify-between mt-5">
+          <p className="text-sm text-stone-400">
+            {(page - 1) * PAGE_SIZE + 1}〜{Math.min(page * PAGE_SIZE, total)} 件 / 全 {total} 件
           </p>
           <div className="flex gap-2">
             {page > 1 && (
               <Link
                 href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page - 1}`}
-                className="px-3 py-1.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
+                className="px-4 py-2 text-sm border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
               >
-                前へ
+                ← 前へ
               </Link>
             )}
             {page < totalPages && (
               <Link
                 href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page + 1}`}
-                className="px-3 py-1.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50"
+                className="px-4 py-2 text-sm bg-amber-700 text-white rounded-xl hover:bg-amber-800 transition-colors"
               >
-                次へ
+                次へ →
               </Link>
             )}
           </div>
