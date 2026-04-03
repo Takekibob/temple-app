@@ -3,11 +3,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import FavoriteButton from "./FavoriteButton";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -37,6 +36,7 @@ export default async function TempleProfilePage({
       logoUrl: true,
       coverImageUrl: true,
       websiteUrl: true,
+      stripeConnectOnboarded: true,
     },
   });
 
@@ -58,14 +58,6 @@ export default async function TempleProfilePage({
 
   const memberId = authUser.member?.id;
   const isMyTemple = authUser.member?.templeId === id;
-  let isFavorite = false;
-
-  if (memberId && !isMyTemple) {
-    const fav = await prisma.memberFavoriteTemple.findFirst({
-      where: { memberId, templeId: id },
-    });
-    isFavorite = !!fav;
-  }
 
   const followerCount = await prisma.memberFavoriteTemple.count({ where: { templeId: id } });
 
@@ -263,16 +255,24 @@ export default async function TempleProfilePage({
           </div>
         )}
 
-        {/* お気に入りボタン */}
-        {memberId && !isMyTemple && (
-          <FavoriteButton templeId={id} initialFavorite={isFavorite} />
-        )}
-        {isMyTemple && (
-          <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-200">
-            <Home size={16} className="text-amber-700" />
-            <span className="text-amber-800 text-sm font-semibold">あなたの所属寺院です</span>
-          </div>
-        )}
+        {/* アクションボタン */}
+        <div className="space-y-3">
+          {temple.stripeConnectOnboarded && memberId && (
+            <Link
+              href={`/app/donations/new?templeId=${id}`}
+              className="flex items-center justify-center gap-2 w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-3.5 rounded-2xl shadow-sm transition-colors"
+            >
+              <Gift size={16} />
+              {temple.name}に寄付する
+            </Link>
+          )}
+          {isMyTemple && (
+            <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+              <Home size={16} className="text-amber-700" />
+              <span className="text-amber-800 text-sm font-semibold">あなたの所属寺院です</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
