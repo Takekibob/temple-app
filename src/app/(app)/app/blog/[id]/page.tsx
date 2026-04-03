@@ -17,12 +17,33 @@ export default async function AppBlogDetailPage({
   const { id } = await params;
 
   const post = await prisma.blogPost.findFirst({
-    where: { id, templeId: authUser.templeId, status: "PUBLISHED" },
+    where: { id, status: "PUBLISHED" },
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      coverImageUrl: true,
+      isSubscriberOnly: true,
+      publishedAt: true,
+      templeId: true,
+      temple: { select: { name: true } },
+    },
   });
   if (!post) notFound();
 
+  // フォロー中 or 所属寺院のみアクセス可
+  const memberId = authUser.member.id;
+  const myTempleId = authUser.templeId;
+  const isOwnTemple = post.templeId === myTempleId;
+  if (!isOwnTemple) {
+    const fav = await prisma.memberFavoriteTemple.findFirst({
+      where: { memberId, templeId: post.templeId },
+    });
+    if (!fav) notFound();
+  }
+
   if (post.isSubscriberOnly) {
-    const ok = await hasActiveSubscription(authUser.member.id, authUser.templeId);
+    const ok = await hasActiveSubscription(memberId, post.templeId);
     if (!ok) redirect("/app/subscriptions");
   }
 
@@ -52,7 +73,7 @@ export default async function AppBlogDetailPage({
 
       <div className="px-4">
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             {post.isSubscriberOnly && (
               <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Lock size={9} />
@@ -64,6 +85,9 @@ export default async function AppBlogDetailPage({
               {post.publishedAt?.toLocaleDateString("ja-JP", {
                 year: "numeric", month: "long", day: "numeric",
               })}
+              {!isOwnTemple && (
+                <span className="ml-1">· {post.temple.name}</span>
+              )}
             </p>
           </div>
 

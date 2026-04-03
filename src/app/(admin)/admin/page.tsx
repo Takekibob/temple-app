@@ -4,8 +4,8 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 import {
-  CalendarDays, Users, UserCheck, Calendar, ArrowUpRight,
-  Coins, Clock, AlertTriangle, Star, ChevronRight,
+  CalendarDays, Users, UserCheck, Calendar,
+  Coins, Clock, AlertTriangle, ChevronRight,
   Plus, TrendingUp, BarChart3, Megaphone, FileText, Zap,
 } from "lucide-react";
 
@@ -20,7 +20,6 @@ export default async function AdminDashboardPage() {
   const todayEnd = new Date(todayStart.getTime() + 86400000);
   const twoWeeksLater = new Date(todayStart.getTime() + 14 * 86400000);
   const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -31,7 +30,6 @@ export default async function AdminDashboardPage() {
     dankaCount,
     goenCount,
     monthlyEventSignups,
-    conversionCandidates,
     recentReservations,
     recentMembers,
     recentEventSignups,
@@ -40,7 +38,6 @@ export default async function AdminDashboardPage() {
     recentInteractions,
     unpaidGojikai,
     churnRisk,
-    scoreUpMembers,
   ] = await Promise.all([
     prisma.reservation.count({
       where: {
@@ -57,9 +54,6 @@ export default async function AdminDashboardPage() {
         status: { in: ["APPLIED", "CONFIRMED", "ATTENDED"] },
         createdAt: { gte: firstOfMonth },
       },
-    }),
-    prisma.member.count({
-      where: { templeId: authUser.templeId, type: "GOEN", engagementScore: { gte: 70 } },
     }),
     prisma.reservation.findMany({
       where: {
@@ -141,17 +135,6 @@ export default async function AdminDashboardPage() {
       orderBy: [{ lastContactAt: "asc" }],
       take: 5,
     }),
-    prisma.member.findMany({
-      where: {
-        templeId: authUser.templeId,
-        type: "GOEN",
-        engagementScore: { gte: 30 },
-        updatedAt: { gte: oneMonthAgo },
-      },
-      include: { user: { select: { name: true } } },
-      orderBy: { engagementScore: "desc" },
-      take: 5,
-    }),
   ]);
 
   const monthKeys = Array.from({ length: 6 }, (_, i) => {
@@ -203,7 +186,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* KPI カード */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           icon={CalendarDays}
           iconBg="bg-amber-50"
@@ -241,16 +224,6 @@ export default async function AdminDashboardPage() {
           value={monthlyEventSignups}
           unit="件"
           href="/admin/events"
-        />
-        <KpiCard
-          icon={ArrowUpRight}
-          iconBg="bg-rose-50"
-          iconColor="text-rose-600"
-          label="転換候補"
-          value={conversionCandidates}
-          unit="名"
-          valueColor="text-rose-600"
-          href="/admin/conversion"
         />
       </div>
 
@@ -463,27 +436,22 @@ export default async function AdminDashboardPage() {
         </DashCard>
 
         <DashCard
-          title="スコアアップ"
-          icon={Star}
-          iconColor="text-amber-500"
-          moreHref="/admin/conversion"
-          moreLabel="転換管理"
+          title="経営分析"
+          icon={TrendingUp}
+          iconColor="text-indigo-500"
+          moreHref="/admin/analytics/retention"
+          moreLabel="詳細"
         >
-          {scoreUpMembers.length === 0 ? (
-            <EmptyState text="今月の変動なし" />
-          ) : (
-            <ul className="divide-y divide-stone-50">
-              {scoreUpMembers.map((m) => (
-                <li key={m.id}>
-                  <Link href={`/admin/members/${m.id}`}
-                    className="flex items-center justify-between py-2.5 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
-                    <p className="text-sm text-stone-800 font-medium">{m.user.name}</p>
-                    <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{m.engagementScore}pt</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="flex flex-col gap-2 py-2">
+            <Link href="/admin/analytics/retention"
+              className="text-sm text-stone-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-xl -mx-3 transition-colors">
+              離脱予測・維持率分析 →
+            </Link>
+            <Link href="/admin/revenue"
+              className="text-sm text-stone-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-xl -mx-3 transition-colors">
+              収益レポート →
+            </Link>
+          </div>
         </DashCard>
       </div>
 
@@ -499,7 +467,6 @@ export default async function AdminDashboardPage() {
             { icon: Users, label: "会員一覧", href: "/admin/members", color: "text-teal-700 bg-teal-50" },
             { icon: Plus, label: "イベント作成", href: "/admin/events/new", color: "text-sky-700 bg-sky-50" },
             { icon: Megaphone, label: "お知らせ作成", href: "/admin/announcements/new", color: "text-purple-700 bg-purple-50" },
-            { icon: ArrowUpRight, label: "転換管理", href: "/admin/conversion", color: "text-rose-700 bg-rose-50" },
             { icon: TrendingUp, label: "イベント分析", href: "/admin/events/analytics", color: "text-indigo-700 bg-indigo-50" },
             { icon: BarChart3, label: "機能利用ログ", href: "/admin/analytics/features", color: "text-stone-700 bg-stone-100" },
             { icon: AlertTriangle, label: "離脱予兆", href: "/admin/churn", color: "text-orange-700 bg-orange-50" },

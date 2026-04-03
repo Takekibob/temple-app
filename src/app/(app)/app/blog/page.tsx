@@ -16,11 +16,22 @@ export default async function AppBlogPage() {
     authUser.templeId
   );
 
+  // お気に入り寺院IDを取得（ご縁さん）、檀家は所属寺院 + フォロー寺院
+  const favoriteTempleIds = authUser.member
+    ? (await prisma.memberFavoriteTemple.findMany({
+        where: { memberId: authUser.member.id },
+        select: { templeId: true },
+      })).map((f) => f.templeId)
+    : [];
+
+  const myTempleId = authUser.templeId;
+  const relevantTempleIds = Array.from(new Set([myTempleId, ...favoriteTempleIds].filter(Boolean)));
+
   const posts = await prisma.blogPost.findMany({
     where: {
-      templeId: authUser.templeId,
       status: "PUBLISHED",
       publishedAt: { lte: new Date() },
+      templeId: { in: relevantTempleIds },
     },
     orderBy: { publishedAt: "desc" },
     select: {
@@ -30,8 +41,17 @@ export default async function AppBlogPage() {
       isSubscriberOnly: true,
       publishedAt: true,
       body: true,
+      templeId: true,
+      temple: { select: { name: true } },
     },
   });
+
+  const isSubscriberByTemple: Record<string, boolean> = {};
+  if (authUser.member) {
+    for (const tid of relevantTempleIds) {
+      isSubscriberByTemple[tid] = await hasActiveSubscription(authUser.member.id, tid);
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto pb-28">
@@ -42,7 +62,7 @@ export default async function AppBlogPage() {
       </div>
 
       <div className="px-4 space-y-4">
-        {!isSubscriber && posts.some((p) => p.isSubscriberOnly) && (
+        {posts.some((p) => p.isSubscriberOnly && !isSubscriberByTemple[p.templeId]) && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
             <Lock size={16} className="text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800">
@@ -64,7 +84,7 @@ export default async function AppBlogPage() {
           </div>
         ) : (
           posts.map((p) => {
-            const locked = p.isSubscriberOnly && !isSubscriber;
+            const locked = p.isSubscriberOnly && !isSubscriberByTemple[p.templeId];
             return (
               <div
                 key={p.id}
@@ -109,6 +129,9 @@ export default async function AppBlogPage() {
                     {p.publishedAt?.toLocaleDateString("ja-JP", {
                       year: "numeric", month: "long", day: "numeric",
                     })}
+                    {p.templeId !== myTempleId && (
+                      <span className="ml-1 text-stone-300">· {p.temple.name}</span>
+                    )}
                   </p>
                   <p className="font-bold text-stone-800 leading-snug">{p.title}</p>
                   {!locked && (
@@ -118,7 +141,7 @@ export default async function AppBlogPage() {
                   )}
                   {locked ? (
                     <Link
-                      href="/app/subscriptions"
+                      href={`/app/subscriptions`}
                       className="mt-3 inline-flex items-center gap-1 text-xs text-amber-700 font-semibold hover:underline"
                     >
                       <Lock size={11} />

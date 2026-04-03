@@ -51,7 +51,7 @@ export async function PATCH(
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const { name, phone, type, familyName, address, postalCode, notes, engagementScore } = body;
+    const { name, phone, type, familyName, address, postalCode, notes } = body;
 
     // バリデーション
     const phoneErr = phone !== undefined ? validatePhone(phone) : null;
@@ -69,7 +69,6 @@ export async function PATCH(
           ...(address !== undefined && { address }),
           ...(postalCode !== undefined && { postalCode: postalCode ? normalizePostalCode(postalCode) : null }),
           ...(notes !== undefined && { notes }),
-          ...(engagementScore !== undefined && { engagementScore }),
         },
       }),
       name !== undefined || phone !== undefined

@@ -169,18 +169,22 @@ export default function GojikaiClient({ payments: initialPayments, fiscalYear, r
   return (
     <div>
       {/* サマリー */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-stone-200 p-4 text-center">
-          <p className="text-2xl font-bold text-red-700">{unpaid}</p>
-          <p className="text-xs text-stone-500 mt-1">未納</p>
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 text-center">
+          <p className="text-xs text-stone-400 mb-1">全体</p>
+          <p className="text-2xl font-bold text-stone-800">{payments.length}<span className="text-sm font-normal text-stone-400 ml-0.5">件</span></p>
         </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4 text-center">
-          <p className="text-2xl font-bold text-teal-700">{paid}</p>
-          <p className="text-xs text-stone-500 mt-1">納付済</p>
+        <div className={`rounded-2xl border p-4 text-center ${unpaid > 0 ? "bg-red-50 border-red-200" : "bg-stone-50 border-stone-100"}`}>
+          <p className={`text-xs mb-1 ${unpaid > 0 ? "text-red-600" : "text-stone-400"}`}>未納</p>
+          <p className={`text-2xl font-bold ${unpaid > 0 ? "text-red-700" : "text-stone-400"}`}>{unpaid}<span className="text-sm font-normal ml-0.5">件</span></p>
         </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-4 text-center">
-          <p className="text-2xl font-bold text-stone-500">{exempt}</p>
-          <p className="text-xs text-stone-500 mt-1">免除</p>
+        <div className="bg-teal-50 rounded-2xl border border-teal-200 p-4 text-center">
+          <p className="text-xs text-teal-600 mb-1">納付済</p>
+          <p className="text-2xl font-bold text-teal-700">{paid}<span className="text-sm font-normal text-teal-500 ml-0.5">件</span></p>
+        </div>
+        <div className="bg-stone-50 rounded-2xl border border-stone-100 p-4 text-center">
+          <p className="text-xs text-stone-400 mb-1">免除</p>
+          <p className="text-2xl font-bold text-stone-500">{exempt}<span className="text-sm font-normal text-stone-400 ml-0.5">件</span></p>
         </div>
       </div>
 

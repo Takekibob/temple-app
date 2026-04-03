@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Clock } from "lucide-react";
 
 interface CurrentInfo {
   familyName: string;
@@ -105,7 +106,7 @@ export default function DankaInfoClient({ memberId, current, pendingRequest: ini
       {pending && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-amber-700 text-sm">🕐</span>
+            <Clock size={15} className="text-amber-700 shrink-0" />
             <p className="text-sm font-semibold text-amber-800">変更申請が確認待ちです</p>
           </div>
           <p className="text-xs text-amber-700">申請日：{pending.createdAt}</p>

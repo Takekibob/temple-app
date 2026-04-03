@@ -41,9 +41,6 @@ export default async function AdminGojikaiPage({
     createdAt: p.createdAt.toISOString(),
   }));
 
-  const paidCount = payments.filter((p) => p.status === "PAID").length;
-  const unpaidCount = payments.filter((p) => p.status === "UNPAID").length;
-
   return (
     <div className="p-6 max-w-4xl">
       {/* ヘッダー */}
@@ -55,24 +52,6 @@ export default async function AdminGojikaiPage({
           </div>
           <p className="text-sm text-stone-400">
             {fiscalYear}年度（{fiscalYear}/4〜{fiscalYear + 1}/3）
-          </p>
-        </div>
-      </div>
-
-      {/* サマリー */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 text-center">
-          <p className="text-xs text-stone-400 mb-1">全体</p>
-          <p className="text-2xl font-bold text-stone-800">{payments.length}<span className="text-sm font-normal text-stone-400 ml-0.5">件</span></p>
-        </div>
-        <div className="bg-teal-50 rounded-2xl border border-teal-200 p-4 text-center">
-          <p className="text-xs text-teal-600 mb-1">納付済み</p>
-          <p className="text-2xl font-bold text-teal-700">{paidCount}<span className="text-sm font-normal text-teal-500 ml-0.5">件</span></p>
-        </div>
-        <div className={`rounded-2xl border p-4 text-center ${unpaidCount > 0 ? "bg-red-50 border-red-200" : "bg-stone-50 border-stone-100"}`}>
-          <p className={`text-xs mb-1 ${unpaidCount > 0 ? "text-red-600" : "text-stone-400"}`}>未納</p>
-          <p className={`text-2xl font-bold ${unpaidCount > 0 ? "text-red-700" : "text-stone-400"}`}>
-            {unpaidCount}<span className="text-sm font-normal ml-0.5">件</span>
           </p>
         </div>
       </div>

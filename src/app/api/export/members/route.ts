@@ -43,7 +43,6 @@ export async function GET() {
       電話番号: m.phone ?? "",
       入会日: m.joinedDate.toISOString().slice(0, 10),
       最終ログイン: m.user.lastLoginAt?.toISOString().slice(0, 16) ?? "",
-      エンゲージメントスコア: m.engagementScore,
       登録日: m.createdAt.toISOString().slice(0, 10),
     }));
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Smartphone } from "lucide-react";
 
 interface Props {
   memberId: string;
@@ -137,7 +138,7 @@ export default function LineSettingsClient({
       {/* 連携状態 */}
       <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">💚</span>
+          <Smartphone size={16} className="text-[#06C755]" />
           <p className="text-sm font-semibold text-stone-700">LINE連携</p>
           {lineLinked ? (
             <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">連携済み</span>

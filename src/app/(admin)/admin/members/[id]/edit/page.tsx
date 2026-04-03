@@ -20,7 +20,6 @@ interface MemberData {
   postalCode: string;
   phone: string;
   notes: string;
-  engagementScore: number;
   user: { name: string; email: string; phone: string };
 }
 
@@ -71,7 +70,6 @@ export default function MemberEditPage() {
       address: form.get("address"),
       postalCode: postalCode ? normalizePostalCode(postalCode) : null,
       notes: form.get("notes"),
-      engagementScore: parseInt(form.get("engagementScore") as string) || 0,
     };
 
     startTransition(async () => {
@@ -157,20 +155,6 @@ export default function MemberEditPage() {
           <Label htmlFor="address" className="text-stone-700">住所</Label>
           <Input id="address" name="address" defaultValue={member.address ?? ""} placeholder="都道府県から入力" />
         </div>
-
-        {member.type === "GOEN" && (
-          <div className="space-y-1.5">
-            <Label htmlFor="engagementScore" className="text-stone-700">エンゲージメントスコア（0–100）</Label>
-            <Input
-              id="engagementScore"
-              name="engagementScore"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={member.engagementScore}
-            />
-          </div>
-        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="notes" className="text-stone-700">備考</Label>

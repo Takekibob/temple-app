@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
 
     const [
       totalMembers,
-      stageCounts,
+      typeCounts,
       newMembers,
       totalRevenue,
       lineFollowers,
     ] = await Promise.all([
       prisma.member.count({ where: { templeId, user: { isActive: true } } }),
       prisma.member.groupBy({
-        by: ["stage"],
+        by: ["type"],
         where: { templeId },
         _count: true,
       }),
@@ -59,17 +59,17 @@ export async function POST(request: NextRequest) {
       prisma.member.count({ where: { templeId, lineUserId: { not: null } } }),
     ]);
 
-    const stageMap = Object.fromEntries(stageCounts.map((s) => [s.stage, s._count]));
-    const dankaCount = stageMap["DANKA"] ?? 0;
-    const conversionRate = totalMembers > 0 ? Math.round((dankaCount / totalMembers) * 100) : 0;
+    const typeMap = Object.fromEntries(typeCounts.map((s) => [s.type, s._count]));
+    const dankaCount = typeMap["DANKA"] ?? 0;
+    const dankaRate = totalMembers > 0 ? Math.round((dankaCount / totalMembers) * 100) : 0;
 
     const metrics = {
       totalMembers,
-      stageCounts: stageMap,
+      typeCounts: typeMap,
       newMembers,
       totalRevenue: totalRevenue._sum.amount ?? 0,
       lineFollowers,
-      conversionRate,
+      dankaRate,
     };
 
     await prisma.analyticsSnapshot.upsert({

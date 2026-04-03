@@ -3,13 +3,6 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { LineChart, AlertTriangle, Users, ChevronRight } from "lucide-react";
 
-const STAGE_LABELS: Record<string, string> = {
-  GOEN: "ご縁さん",
-  PROSPECT: "見込み",
-  DANKA_CANDIDATE: "檀家候補",
-  DANKA: "檀家",
-};
-
 export default async function RetentionPage() {
   const authUser = await requireAdmin();
   const templeId = authUser.templeId;
@@ -21,19 +14,19 @@ export default async function RetentionPage() {
 
   const [totalActive, active30, active60, riskMembers] = await Promise.all([
     prisma.member.count({ where: { templeId, user: { isActive: true } } }),
-    prisma.member.count({ where: { templeId, user: { isActive: true }, lastActivityAt: { gte: thirtyDaysAgo } } }),
-    prisma.member.count({ where: { templeId, user: { isActive: true }, lastActivityAt: { gte: sixtyDaysAgo } } }),
+    prisma.member.count({ where: { templeId, user: { isActive: true }, lastContactAt: { gte: thirtyDaysAgo } } }),
+    prisma.member.count({ where: { templeId, user: { isActive: true }, lastContactAt: { gte: sixtyDaysAgo } } }),
     prisma.member.findMany({
       where: {
         templeId,
         user: { isActive: true },
         OR: [
-          { lastActivityAt: { lt: ninetyDaysAgo } },
-          { lastActivityAt: null },
+          { lastContactAt: { lt: ninetyDaysAgo } },
+          { lastContactAt: null },
         ],
       },
       include: { user: { select: { name: true } } },
-      orderBy: { lifetimeScore: "desc" },
+      orderBy: { lastContactAt: "desc" },
       take: 50,
     }),
   ]);
@@ -106,19 +99,19 @@ export default async function RetentionPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-stone-800">{m.user.name}</p>
-                    <span className="text-xs text-stone-400">{STAGE_LABELS[m.stage] ?? m.stage}</span>
-                    <span className="text-xs text-stone-300">·</span>
-                    <span className="text-xs text-stone-400">{m.lifetimeScore}pt</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${m.type === "DANKA" ? "bg-amber-100 text-amber-800" : "bg-teal-100 text-teal-800"}`}>
+                      {m.type === "DANKA" ? "檀家" : "ご縁さん"}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-2">
                   <div>
-                    {m.lastActivityAt ? (
+                    {m.lastContactAt ? (
                       <p className="text-xs text-stone-400">
-                        最終: {new Date(m.lastActivityAt).toLocaleDateString("ja-JP")}
+                        最終接触: {new Date(m.lastContactAt).toLocaleDateString("ja-JP")}
                       </p>
                     ) : (
-                      <p className="text-xs text-stone-300">活動記録なし</p>
+                      <p className="text-xs text-stone-300">接触記録なし</p>
                     )}
                   </div>
                   <ChevronRight size={14} className="text-stone-300" />

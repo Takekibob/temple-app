@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logMemberActivity } from "@/lib/memberActivities";
 import { sendWaitlistPromotedEmail } from "@/lib/email";
 
 export async function POST(
@@ -76,11 +75,6 @@ export async function POST(
             paymentAmount: event.fee > 0 ? event.fee * numGuests : 0,
           },
         });
-
-    // アクティビティログ（新規申込のみ）
-    if (!existing || existing.status === "CANCELLED") {
-      await logMemberActivity(authUser.member.id, "EVENT_APPLY", { eventId, title: event.title });
-    }
 
     return NextResponse.json({ participation, status: participationStatus }, { status: 201 });
   } catch (err) {

@@ -5,13 +5,10 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MemberFilters from "./MemberFilters";
 import ExportButton from "@/components/admin/ExportButton";
-import { STAGE_LABELS, STAGE_COLORS } from "@/lib/scoring";
-import { MemberStage } from "@/generated/prisma/client";
 import { logFeature } from "@/lib/featureLog";
 import { ChevronRight, UserPlus } from "lucide-react";
 
 const PAGE_SIZE = 50;
-const VALID_STAGES: MemberStage[] = ["GOEN", "PROSPECT", "DANKA_CANDIDATE", "DANKA"];
 
 const TAG_COLORS: Record<string, string> = {
   要フォロー: "bg-amber-100 text-amber-800",
@@ -25,7 +22,6 @@ const TAG_COLORS: Record<string, string> = {
 
 interface SearchParams {
   type?: string;
-  stage?: string;
   search?: string;
   page?: string;
   tag?: string;
@@ -40,16 +36,14 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, stage, search = "", page: pageStr = "1", tag } = await searchParams;
+  const { type, search = "", page: pageStr = "1", tag } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
 
   if (tag) void logFeature(authUser.templeId, authUser.id, "tag_filter", tag);
-  const stageFilter = VALID_STAGES.includes(stage as MemberStage) ? (stage as MemberStage) : undefined;
 
   const where = {
     templeId: authUser.templeId,
     ...(type === "DANKA" || type === "GOEN" ? { type: type as "DANKA" | "GOEN" } : {}),
-    ...(stageFilter ? { stage: stageFilter } : {}),
     ...(tag ? { priorityTags: { has: tag } } : {}),
     ...(search
       ? {
@@ -80,14 +74,7 @@ export default async function MembersPage({
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-stone-800 tracking-tight">会員管理</h1>
-          <p className="text-sm text-stone-400 mt-0.5">
-            {total.toLocaleString()} 名
-            {stageFilter && (
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[stageFilter]}`}>
-                {STAGE_LABELS[stageFilter]}
-              </span>
-            )}
-          </p>
+          <p className="text-sm text-stone-400 mt-0.5">{total.toLocaleString()} 名</p>
         </div>
         {isAdmin && (
           <div className="flex gap-2">
@@ -107,6 +94,7 @@ export default async function MembersPage({
       <Suspense fallback={<div className="h-12" />}>
         <MemberFilters currentType={type} currentSearch={search} currentTag={tag} />
       </Suspense>
+
 
       {/* リスト */}
       <div className="mt-4 space-y-2">
@@ -143,9 +131,6 @@ export default async function MembersPage({
                       : "bg-teal-100 text-teal-800"
                   }`}>
                     {member.type === "DANKA" ? "檀家" : "ご縁さん"}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STAGE_COLORS[member.stage]}`}>
-                    {STAGE_LABELS[member.stage]}
                   </span>
                 </div>
                 {member.summaryNote && (
@@ -185,7 +170,7 @@ export default async function MembersPage({
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page - 1}`}
+                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page - 1}`}
                 className="px-4 py-2 text-sm border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
               >
                 ← 前へ
@@ -193,7 +178,7 @@ export default async function MembersPage({
             )}
             {page < totalPages && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&stage=${stage ?? ""}&search=${search}&page=${page + 1}`}
+                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page + 1}`}
                 className="px-4 py-2 text-sm bg-amber-700 text-white rounded-xl hover:bg-amber-800 transition-colors"
               >
                 次へ →

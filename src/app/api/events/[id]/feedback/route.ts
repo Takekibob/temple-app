@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logMemberActivity } from "@/lib/memberActivities";
-
 // GET /api/events/[id]/feedback — 自分のフィードバックを取得
 export async function GET(
   _request: NextRequest,
@@ -54,8 +52,6 @@ export async function POST(
       return NextResponse.json({ error: "フィードバックを送信できません" }, { status: 400 });
     }
 
-    const isFirstFeedback = participation.feedbackScore == null;
-
     await prisma.eventParticipation.update({
       where: { id: participation.id },
       data: {
@@ -63,11 +59,6 @@ export async function POST(
         feedbackComment: comment?.trim() || null,
       },
     });
-
-    // 初回フィードバックのみアクティビティ記録
-    if (isFirstFeedback) {
-      await logMemberActivity(authUser.member.id, "EVENT_FEEDBACK", { eventId });
-    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

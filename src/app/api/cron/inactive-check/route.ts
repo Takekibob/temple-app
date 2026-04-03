@@ -40,10 +40,9 @@ export async function POST(request: NextRequest) {
     const inactiveCount = await prisma.member.count({
       where: {
         templeId: temple.id,
-        stage: { in: ["GOEN", "PROSPECT"] },
         OR: [
-          { lastActivityAt: { lt: ninetyDaysAgo } },
-          { lastActivityAt: null },
+          { lastContactAt: { lt: ninetyDaysAgo } },
+          { lastContactAt: null },
         ],
       },
     });

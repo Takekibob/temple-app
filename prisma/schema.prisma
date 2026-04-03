@@ -79,7 +79,6 @@ model Temple {
   blogPosts    BlogPost[]
   reservationBlocks ReservationBlock[]
   activityLogs ActivityLog[]
-  scoringRules ScoringRule[]
   membershipPlans    MembershipPlan[]
   donations          Donation[]
   lineMessages       LineMessage[]
@@ -176,7 +175,6 @@ model Member {
   joinedDate       DateTime   @default(now())
   interestTags     Json?      // ["zazen","shakyo","yoga"]
   referralSource   ReferralSource?
-  engagementScore  Int        @default(0)
   promotedAt       DateTime?  // ご縁さん→檀家に昇格した日時
   notes            String?
   summaryNote      String?    // 一行概要メモ（一覧表示用）
@@ -184,17 +182,6 @@ model Member {
   lastContactAt    DateTime?  // 最終接触日（離脱検知用）— INTERACTION メモ・予約・お布施で更新
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
-
-  // パイプライン・ステージ管理
-  stage               MemberStage @default(GOEN)
-  stageChangedAt      DateTime?
-  stageChangedBy      String?   // userId or "AUTO"
-  lifetimeScore       Int       @default(0)
-  firstContactAt      DateTime?
-  lastActivityAt      DateTime?
-  totalEventsAttended Int       @default(0)
-  totalDonations      Int       @default(0)
-  totalPayments       Int       @default(0)
 
   // --- v2追加：代理アカウント（高齢者対策） ---
   proxyUserId   String?
@@ -218,10 +205,7 @@ model Member {
   ofuse            Ofuse[]
   gojikaiPayments  GojikaiPayment[]
   eventParticipations EventParticipation[]
-  activities       MemberActivity[]
   favoriteTemples  MemberFavoriteTemple[]
-  stageTransitions StageTransition[]
-  scoringEvents    ScoringEvent[]
   subscriptions    MemberSubscription[]
   donations        Donation[]
   lineStepQueues   LineStepQueue[]
@@ -238,15 +222,6 @@ enum MemberType {
   GOEN  // ご縁さん
 
   @@map("member_type")
-}
-
-enum MemberStage {
-  GOEN            // ご縁さん（初期）
-  PROSPECT        // 見込み
-  DANKA_CANDIDATE // 檀家候補
-  DANKA           // 檀家
-
-  @@map("member_stage")
 }
 
 enum ReferralSource {
@@ -609,41 +584,6 @@ model AnnualEvent {
 }
 
 // ==========================================
-// アクティビティログ（エンゲージメントスコア計算用）
-// ==========================================
-model MemberActivity {
-  id        String       @id @default(uuid())
-  memberId  String
-  type      ActivityType
-  metadata  Json?        // { eventId, title, etc. }
-  score     Int          @default(0)
-  createdAt DateTime     @default(now())
-
-  member    Member       @relation(fields: [memberId], references: [id])
-
-  @@index([memberId, createdAt])
-  @@map("member_activities")
-}
-
-enum ActivityType {
-  LOGIN
-  NEWS_VIEW
-  EVENT_APPLY
-  EVENT_ATTEND
-  EVENT_FEEDBACK
-  KUYO_APPLY
-  CONTACT
-  CONSECUTIVE_MONTH
-  DONATION
-  DONATION_LARGE
-  SUBSCRIPTION_START
-  REFERRAL
-  LINE_MESSAGE_OPEN
-
-  @@map("activity_type")
-}
-
-// ==========================================
 // SUPER_ADMIN 操作ログ
 // ==========================================
 model SuperAdminLog {
@@ -715,60 +655,6 @@ model ActivityLog {
   @@index([templeId, createdAt(sort: Desc)])
   @@index([templeId, targetType, targetId])
   @@map("activity_logs")
-}
-
-// ==========================================
-// スコアリングルール（お寺ごとにカスタマイズ可能）
-// ==========================================
-model ScoringRule {
-  id           String   @id @default(uuid())
-  templeId     String
-  activityType String   // ActivityType enum value
-  score        Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  temple       Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  @@unique([templeId, activityType])
-  @@map("scoring_rules")
-}
-
-// ==========================================
-// スコアリングイベント（スコア付与履歴）
-// ==========================================
-model ScoringEvent {
-  id           String   @id @default(uuid())
-  memberId     String
-  activityType String
-  score        Int
-  sourceId     String?  // 関連レコードID（eventId, reservationIdなど）
-  note         String?
-  createdAt    DateTime @default(now())
-
-  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId, createdAt])
-  @@map("scoring_events")
-}
-
-// ==========================================
-// ステージ遷移履歴
-// ==========================================
-model StageTransition {
-  id          String       @id @default(uuid())
-  memberId    String
-  fromStage   MemberStage?
-  toStage     MemberStage
-  triggeredBy String?      // userId or "AUTO"
-  reason      String?
-  createdAt   DateTime     @default(now())
-
-  member      Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId, createdAt])
-  @@map("stage_transitions")
 }
 
 // ==========================================
@@ -897,7 +783,6 @@ model LineMessage {
   temple          Temple            @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
   messageType     LineMessageType
-  targetStage     MemberStage?
   targetMemberIds String[]
 
   content         Json

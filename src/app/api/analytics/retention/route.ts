@@ -17,21 +17,20 @@ export async function GET() {
       where: {
         templeId,
         user: { isActive: true },
-        lastActivityAt: { gte: thirtyDaysAgo },
+        lastContactAt: { gte: thirtyDaysAgo },
       },
     }),
     prisma.member.findMany({
       where: {
         templeId,
         user: { isActive: true },
-        stage: { in: ["GOEN", "PROSPECT"] },
         OR: [
-          { lastActivityAt: { lt: ninetyDaysAgo } },
-          { lastActivityAt: null },
+          { lastContactAt: { lt: ninetyDaysAgo } },
+          { lastContactAt: null },
         ],
       },
       include: { user: { select: { name: true } } },
-      orderBy: { lifetimeScore: "desc" },
+      orderBy: { lastContactAt: "desc" },
       take: 20,
     }),
   ]);
@@ -46,9 +45,8 @@ export async function GET() {
     inactiveRiskMembers: inactiveRisk.map((m) => ({
       id: m.id,
       name: m.user.name,
-      stage: m.stage,
-      lifetimeScore: m.lifetimeScore,
-      lastActivityAt: m.lastActivityAt,
+      type: m.type,
+      lastContactAt: m.lastContactAt,
     })),
   });
 }

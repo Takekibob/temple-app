@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { logActivity } from "@/lib/activityLog";
-import { awardScore } from "@/lib/scoring";
 
 export async function GET(request: NextRequest) {
   const authUser = await requireAdminOrStaff();
@@ -62,17 +61,6 @@ export async function POST(request: NextRequest) {
       donatedAt: donatedAt ? new Date(donatedAt) : new Date(),
     },
   });
-
-  // スコア付与
-  if (memberId) {
-    const activityType = Number(amount) >= 10000 ? "DONATION_LARGE" : "DONATION";
-    await awardScore({
-      memberId,
-      templeId: authUser.templeId,
-      activityType,
-      sourceId: donation.id,
-    }).catch(() => {});
-  }
 
   logActivity({
     templeId: authUser.templeId,

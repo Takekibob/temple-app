@@ -2,14 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import PromoteButton from "./PromoteButton";
-import StageChanger from "./StageChanger";
 import NotesClient from "./NotesClient";
-import { STAGE_LABELS, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
 import { logFeature } from "@/lib/featureLog";
 import {
   ChevronLeft, Pencil, GitBranch, Phone, MapPin, CalendarDays,
-  BookOpen, Coins, Heart, Zap, MessageCircle, CheckCircle2, XCircle,
+  BookOpen, Coins, Heart, MessageCircle, CheckCircle2, XCircle,
 } from "lucide-react";
 
 export default async function MemberDetailPage({
@@ -33,14 +30,11 @@ export default async function MemberDetailPage({
         orderBy: { createdAt: "desc" },
         take: 10,
       },
-      stageTransitions: { orderBy: { createdAt: "desc" }, take: 10 },
-      scoringEvents: { orderBy: { createdAt: "desc" }, take: 20 },
       gojikaiPayments: {
         orderBy: { fiscalYear: "desc" },
         take: 5,
         select: { id: true, fiscalYear: true, amount: true, status: true, paidAt: true },
       },
-      activities: { orderBy: { createdAt: "desc" }, take: 20 },
       memberNotes: {
         include: { author: { select: { name: true } } },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
@@ -52,7 +46,6 @@ export default async function MemberDetailPage({
 
   const interestTags = Array.isArray(member.interestTags) ? (member.interestTags as string[]) : [];
   const isDanka = member.type === "DANKA";
-  const isConversionCandidate = !isDanka && member.engagementScore >= 70;
 
   const serializedNotes = member.memberNotes.map((n) => ({
     ...n,
@@ -98,12 +91,6 @@ export default async function MemberDetailPage({
                 }`}>
                   {isDanka ? "檀家" : "ご縁さん"}
                 </span>
-                <StageChanger memberId={id} currentStage={member.stage} memberType={member.type} />
-                {isConversionCandidate && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">
-                    転換候補
-                  </span>
-                )}
               </div>
               {member.familyName && (
                 <p className="text-sm text-stone-500 mt-0.5">{member.familyName}家・{member.user.email}</p>
@@ -113,9 +100,6 @@ export default async function MemberDetailPage({
 
           {/* アクション */}
           <div className="flex gap-2 shrink-0">
-            {isConversionCandidate && (
-              <PromoteButton memberId={id} memberName={member.user.name} />
-            )}
             {isDanka && (
               <Link href={`/admin/members/${id}/family-tree`}
                 className="flex items-center gap-1.5 px-3 py-2 bg-white border border-stone-200 text-stone-600 text-sm rounded-xl hover:bg-stone-50 transition-colors">
@@ -268,25 +252,6 @@ export default async function MemberDetailPage({
 
         {/* 右カラム */}
         <div className="space-y-4">
-          {/* エンゲージメントスコア */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-2xl border border-amber-200 p-4 text-center">
-            <p className="text-xs text-amber-700 font-semibold mb-1">エンゲージメントスコア</p>
-            <p className="text-5xl font-bold text-amber-800">{member.engagementScore}</p>
-            <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-600 rounded-full transition-all" style={{ width: `${Math.min(100, member.engagementScore)}%` }} />
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-white/70 rounded-xl p-2">
-                <p className="font-bold text-stone-800 text-base">{member.lifetimeScore}</p>
-                <p className="text-stone-500">累計スコア</p>
-              </div>
-              <div className="bg-white/70 rounded-xl p-2">
-                <p className="font-bold text-stone-800 text-base">{member.totalEventsAttended}</p>
-                <p className="text-stone-500">参加イベント</p>
-              </div>
-            </div>
-          </div>
-
           {/* LINE連携 */}
           <Card title="LINE連携" icon={<MessageCircle size={14} className="text-stone-500" />}>
             <div className="flex items-center gap-2 mb-2">
@@ -323,42 +288,6 @@ export default async function MemberDetailPage({
             )}
           </Card>
 
-          {/* ステージ変更履歴 */}
-          {member.stageTransitions.length > 0 && (
-            <Card title="ステージ変更履歴" icon={<Zap size={14} className="text-stone-500" />}>
-              <div className="space-y-2">
-                {member.stageTransitions.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between text-xs">
-                    <span className="text-stone-600">
-                      {t.fromStage ? `${STAGE_LABELS[t.fromStage]} → ` : ""}
-                      <span className="font-semibold">{STAGE_LABELS[t.toStage]}</span>
-                      {t.triggeredBy === "AUTO" && <span className="ml-1 text-stone-300">自動</span>}
-                    </span>
-                    <span className="text-stone-400 shrink-0 ml-2">
-                      {t.createdAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* スコア獲得履歴 */}
-          {member.scoringEvents.length > 0 && (
-            <Card title="スコア獲得履歴" icon={<Zap size={14} className="text-amber-500" />}>
-              <div className="space-y-2">
-                {member.scoringEvents.slice(0, 8).map((e) => (
-                  <div key={e.id} className="flex items-center justify-between text-xs">
-                    <span className="text-stone-600">{ACTIVITY_TYPE_LABELS[e.activityType] ?? e.activityType}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-amber-700 font-bold">+{e.score}pt</span>
-                      <span className="text-stone-300">{e.createdAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
         </div>
       </div>
     </div>

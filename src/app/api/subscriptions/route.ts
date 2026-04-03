@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireAdminOrStaff } from "@/lib/auth";
 import { logActivity } from "@/lib/activityLog";
-import { awardScore } from "@/lib/scoring";
 
 export async function GET(request: NextRequest) {
   const authUser = await requireAdminOrStaff();
@@ -62,14 +61,6 @@ export async function POST(request: NextRequest) {
       currentPeriodStart: new Date(),
     },
   });
-
-  // スコア付与
-  await awardScore({
-    memberId: authUser.member.id,
-    templeId: authUser.templeId,
-    activityType: "SUBSCRIPTION_START",
-    sourceId: subscription.id,
-  }).catch(() => {});
 
   logActivity({
     templeId: authUser.templeId,

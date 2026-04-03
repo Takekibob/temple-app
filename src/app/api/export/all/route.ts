@@ -17,8 +17,6 @@ export async function POST() {
       announcements,
       deceased,
       gojikaiPayments,
-      scoringEvents,
-      stageTransitions,
       activityLogs,
     ] = await Promise.all([
       prisma.member.findMany({
@@ -36,12 +34,6 @@ export async function POST() {
         where: { member: { templeId } },
       }),
       prisma.gojikaiPayment.findMany({ where: { member: { templeId } } }),
-      prisma.scoringEvent.findMany({
-        where: { member: { templeId } },
-      }),
-      prisma.stageTransition.findMany({
-        where: { member: { templeId } },
-      }),
       prisma.activityLog.findMany({
         where: { templeId },
         orderBy: { createdAt: "desc" },
@@ -64,8 +56,6 @@ export async function POST() {
           announcements: announcements.length,
           deceased: deceased.length,
           gojikaiPayments: gojikaiPayments.length,
-          scoringEvents: scoringEvents.length,
-          stageTransitions: stageTransitions.length,
           activityLogs: activityLogs.length,
         },
       },
@@ -83,8 +73,6 @@ export async function POST() {
         announcements,
         deceased,
         gojikaiPayments,
-        scoringEvents,
-        stageTransitions,
         activityLogs,
       },
     });

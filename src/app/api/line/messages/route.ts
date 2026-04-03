@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const authUser = await requireAdmin();
   const body = await request.json();
-  const { messageType, targetStage, targetMemberIds, content, scheduledAt } = body;
+  const { messageType, targetType, targetMemberIds, content, scheduledAt } = body;
 
   if (!messageType || !content) {
     return NextResponse.json({ error: "messageType and content are required" }, { status: 400 });
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
 
   // 対象メンバーのlineUserIdを取得
   let memberIds: string[] = targetMemberIds ?? [];
-  if (messageType === "SEGMENT" && targetStage) {
+  if (messageType === "SEGMENT" && targetType) {
     const members = await prisma.member.findMany({
-      where: { templeId: authUser.templeId, stage: targetStage, lineUserId: { not: null } },
+      where: { templeId: authUser.templeId, type: targetType, lineUserId: { not: null } },
       select: { id: true },
     });
     memberIds = members.map((m) => m.id);
@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
     data: {
       templeId: authUser.templeId,
       messageType,
-      targetStage: targetStage ?? null,
       targetMemberIds: memberIds,
       content,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,

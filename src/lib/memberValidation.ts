@@ -30,29 +30,3 @@ export function normalizePostalCode(postalCode: string): string {
   return postalCode;
 }
 
-/**
- * タイプとステージの整合性チェック
- * - DANKA（檀家）は stage = DANKA のみ許可
- * - GOEN（ご縁さん）は stage = GOEN / PROSPECT / DANKA_CANDIDATE のみ許可
- */
-export function validateTypeStage(
-  type: "DANKA" | "GOEN",
-  stage: "GOEN" | "PROSPECT" | "DANKA_CANDIDATE" | "DANKA"
-): string | null {
-  if (type === "DANKA" && stage !== "DANKA") {
-    return "檀家のステージは「檀家」のみ設定できます";
-  }
-  if (type === "GOEN" && stage === "DANKA") {
-    return "ご縁さんのステージに「檀家」は設定できません（「檀家に昇格」ボタンを使用してください）";
-  }
-  return null;
-}
-
-/** タイプに対して選択可能なステージ一覧を返す */
-export function allowedStages(
-  type: "DANKA" | "GOEN"
-): ("GOEN" | "PROSPECT" | "DANKA_CANDIDATE" | "DANKA")[] {
-  return type === "DANKA"
-    ? ["DANKA"]
-    : ["GOEN", "PROSPECT", "DANKA_CANDIDATE"];
-}

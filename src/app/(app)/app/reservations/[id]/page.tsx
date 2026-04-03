@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -71,7 +72,7 @@ export default async function ReservationDetailPage({
     <div className="min-h-screen bg-stone-50">
       <header className="bg-white border-b border-stone-100 px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/app/reservations" className="text-stone-400 hover:text-stone-600 text-lg">‹</Link>
+          <Link href="/app/reservations" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"><ChevronLeft size={18} /></Link>
           <h1 className="text-base font-bold text-stone-800">予約詳細</h1>
         </div>
         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[reservation.status]}`}>

@@ -7,9 +7,9 @@ import { logout } from "@/app/auth/actions";
 import {
   LayoutDashboard, CalendarDays, Users, BookOpen, FilePen,
   Coins, Landmark, BarChart3, Calendar, TrendingUp, Bell,
-  PenLine, CalendarRange, MessageCircle, ArrowUpRight,
+  PenLine, CalendarRange, MessageCircle,
   BadgeJapaneseYen, LineChart, ScanLine, Package,
-  Settings, Target, UserCog, Ticket, CreditCard, ClipboardList,
+  Settings, UserCog, Ticket, CreditCard, ClipboardList,
   ChevronRight, Eye, LogOut, Menu, X,
 } from "lucide-react";
 
@@ -76,7 +76,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "CRM・収益",
     items: [
-      { icon: ArrowUpRight, label: "パイプライン", href: "/admin/pipeline" },
       { icon: BadgeJapaneseYen, label: "収益管理", href: "/admin/revenue", adminOnly: true },
       { icon: LineChart, label: "経営分析", href: "/admin/analytics/retention", adminOnly: true },
     ],
@@ -91,8 +90,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "システム",
     items: [
-      { icon: Settings, label: "設定", href: "/admin/settings", adminOnly: true, excludePrefix: "/admin/settings/scoring" },
-      { icon: Target, label: "スコアリング設定", href: "/admin/settings/scoring", adminOnly: true },
+      { icon: Settings, label: "設定", href: "/admin/settings", adminOnly: true },
       { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
       { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true },
       { icon: CreditCard, label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
