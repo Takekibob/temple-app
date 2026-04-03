@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import GoenCtaBanner from "@/components/app/GoenCtaBanner";
+import {
+  CalendarDays, BookOpen, ScrollText, Coins, Heart, Gift,
+  Newspaper, MapPin, Ticket, ChevronRight, Clock, Lock, Bell,
+} from "lucide-react";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -15,40 +19,43 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
   OTHER: "その他",
 };
 
-// クイックアクセスアイテム定義
-type QuickItem = { icon: string; label: string; href: string };
+type QuickItem = {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  label: string;
+  href: string;
+  color: string;
+};
 
 const DANKA_QUICK: QuickItem[] = [
-  { icon: "📿", label: "法要予約", href: "/app/reservations" },
-  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
-  { icon: "📖", label: "過去帳", href: "/app/deceased" },
-  { icon: "💰", label: "お布施", href: "/app/ofuse" },
-  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
-  { icon: "🎁", label: "寄付", href: "/app/donations" },
+  { icon: CalendarDays, label: "法要予約",  href: "/app/reservations",  color: "bg-amber-50 text-amber-700" },
+  { icon: ScrollText,  label: "過去帳",    href: "/app/deceased",       color: "bg-stone-50 text-stone-600" },
+  { icon: Coins,       label: "お布施",    href: "/app/ofuse",          color: "bg-yellow-50 text-yellow-700" },
+  { icon: BookOpen,    label: "イベント",  href: "/app/events",         color: "bg-teal-50 text-teal-700" },
+  { icon: Heart,       label: "参加予定",  href: "/app/events/my",      color: "bg-rose-50 text-rose-600" },
+  { icon: Gift,        label: "寄付",      href: "/app/donations",      color: "bg-purple-50 text-purple-600" },
 ];
 
 const GOEN_QUICK_BASE: QuickItem[] = [
-  { icon: "📅", label: "イベント", href: "/app/events" },
-  { icon: "📝", label: "ブログ", href: "/app/blog" },
-  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
-  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
-  { icon: "🎁", label: "寄付", href: "/app/donations" },
+  { icon: BookOpen,    label: "イベント",    href: "/app/events",       color: "bg-teal-50 text-teal-700" },
+  { icon: Newspaper,   label: "ブログ",      href: "/app/blog",         color: "bg-amber-50 text-amber-700" },
+  { icon: CalendarDays,label: "カレンダー",  href: "/app/calendar",     color: "bg-sky-50 text-sky-600" },
+  { icon: Heart,       label: "参加予定",    href: "/app/events/my",    color: "bg-rose-50 text-rose-600" },
+  { icon: Gift,        label: "寄付",        href: "/app/donations",    color: "bg-purple-50 text-purple-600" },
 ];
 
 const GOEN_QUICK_SUBSCRIBED: QuickItem[] = [
-  { icon: "📅", label: "イベント", href: "/app/events" },
-  { icon: "📝", label: "ブログ", href: "/app/blog" },
-  { icon: "🗓", label: "カレンダー", href: "/app/calendar" },
-  { icon: "🎫", label: "会員プラン", href: "/app/subscriptions" },
-  { icon: "❤️", label: "参加予定", href: "/app/events/my" },
-  { icon: "🎁", label: "寄付", href: "/app/donations" },
+  { icon: BookOpen,    label: "イベント",    href: "/app/events",       color: "bg-teal-50 text-teal-700" },
+  { icon: Newspaper,   label: "ブログ",      href: "/app/blog",         color: "bg-amber-50 text-amber-700" },
+  { icon: CalendarDays,label: "カレンダー",  href: "/app/calendar",     color: "bg-sky-50 text-sky-600" },
+  { icon: Ticket,      label: "会員プラン",  href: "/app/subscriptions",color: "bg-emerald-50 text-emerald-700" },
+  { icon: Heart,       label: "参加予定",    href: "/app/events/my",    color: "bg-rose-50 text-rose-600" },
+  { icon: Gift,        label: "寄付",        href: "/app/donations",    color: "bg-purple-50 text-purple-600" },
 ];
 
-// GOEN_QUICK_FREE は templeId が必要なので関数で生成
 function getGoenQuickFree(templeId: string | null | undefined): QuickItem[] {
   return [
     ...GOEN_QUICK_BASE,
-    { icon: "🏯", label: "お寺について", href: templeId ? `/app/temples/${templeId}` : "/app/events" },
+    { icon: MapPin, label: "お寺について", href: templeId ? `/app/temples/${templeId}` : "/app/events", color: "bg-stone-50 text-stone-600" },
   ];
 }
 
@@ -60,16 +67,11 @@ export default async function AppHomePage() {
   const isGoen = authUser.member?.type === "GOEN";
   const now = new Date();
 
-  // GOEN: このお寺の有効なサブスクリプション確認
   const hasSubscription =
     isGoen && authUser.member
       ? await prisma.memberSubscription
           .findFirst({
-            where: {
-              memberId: authUser.member.id,
-              status: "ACTIVE",
-              templeId: authUser.templeId,
-            },
+            where: { memberId: authUser.member.id, status: "ACTIVE", templeId: authUser.templeId },
             include: { plan: { select: { name: true } } },
           })
           .then((s) => s ?? null)
@@ -77,29 +79,26 @@ export default async function AppHomePage() {
 
   const isSubscribed = !!hasSubscription;
 
-  // GOEN 会員限定コンテンツのプレビュー（加入済み・未加入ともに取得）
-  const exclusivePreview =
-    isGoen
-      ? await Promise.all([
-          prisma.blogPost.findFirst({
-            where: { templeId: authUser.templeId, isSubscriberOnly: true, status: "PUBLISHED" },
-            orderBy: { publishedAt: "desc" },
-            select: { id: true, title: true },
-          }),
-          prisma.event.findFirst({
-            where: {
-              templeId: authUser.templeId,
-              visibility: "SUBSCRIBERS_ONLY",
-              status: "PUBLISHED",
-              eventDate: { gte: now },
-            },
-            orderBy: { eventDate: "asc" },
-            select: { id: true, title: true, eventDate: true },
-          }),
-        ])
-      : null;
+  const exclusivePreview = isGoen
+    ? await Promise.all([
+        prisma.blogPost.findFirst({
+          where: { templeId: authUser.templeId, isSubscriberOnly: true, status: "PUBLISHED" },
+          orderBy: { publishedAt: "desc" },
+          select: { id: true, title: true },
+        }),
+        prisma.event.findFirst({
+          where: {
+            templeId: authUser.templeId,
+            visibility: "SUBSCRIBERS_ONLY",
+            status: "PUBLISHED",
+            eventDate: { gte: now },
+          },
+          orderBy: { eventDate: "asc" },
+          select: { id: true, title: true, eventDate: true },
+        }),
+      ])
+    : null;
 
-  // 次回予約（檀家のみ）
   const nextReservation =
     isDanka && authUser.member
       ? await prisma.reservation.findFirst({
@@ -112,7 +111,6 @@ export default async function AppHomePage() {
         })
       : null;
 
-  // 申込済みイベント
   const upcomingParticipations = authUser.member
     ? await prisma.eventParticipation.findMany({
         where: {
@@ -128,7 +126,6 @@ export default async function AppHomePage() {
       })
     : [];
 
-  // 注目イベント（未申込）
   const memberType = authUser.member?.type;
   const featuredEvents = await prisma.event.findMany({
     where: {
@@ -149,7 +146,6 @@ export default async function AppHomePage() {
     take: 3,
   });
 
-  // 最新お知らせ
   const allowedSegments: AnnouncementTarget[] =
     memberType === "DANKA" ? ["ALL", "DANKA"] : memberType === "GOEN" ? ["ALL", "GOEN"] : ["ALL"];
 
@@ -171,7 +167,6 @@ export default async function AppHomePage() {
     ? `${authUser.member.familyName}家`
     : authUser.name;
 
-  // クイックアクセス items
   const quickItems: QuickItem[] = isDanka
     ? DANKA_QUICK
     : isSubscribed
@@ -181,232 +176,237 @@ export default async function AppHomePage() {
   const [exclusiveBlog, exclusiveEvent] = exclusivePreview ?? [null, null];
 
   return (
-    <div className="p-4 pb-24 max-w-lg mx-auto">
-      {/* ヘッダー挨拶 */}
-      <div className="mb-5 pt-2">
-        <h1 className="text-xl font-bold text-stone-800">
-          こんにちは、{displayName}さん
-        </h1>
-        {isGoen && isSubscribed && (
-          <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">
-            ✅ {hasSubscription.plan.name}
-          </span>
-        )}
-        {isGoen && !isSubscribed && (
-          <p className="text-xs text-stone-400 mt-0.5">ご縁さん</p>
-        )}
-        {isDanka && (
-          <p className="text-xs text-stone-400 mt-0.5">檀家</p>
-        )}
-      </div>
-
-      {/* クイックアクセス */}
-      <div className="mb-5">
-        <div className="grid grid-cols-3 gap-2">
-          {quickItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex flex-col items-center justify-center gap-1 bg-white border border-stone-200 rounded-xl py-3 hover:border-amber-300 hover:bg-amber-50 transition-colors"
-            >
-              <span className="text-2xl">{item.icon}</span>
-              <span className="text-xs text-stone-600 font-medium">{item.label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* GOEN 未加入: 入会促進バナー（dismissable） */}
-      {isGoen && !isSubscribed && <GoenCtaBanner />}
-
-      {/* GOEN 加入済み: 会員限定コンテンツカード */}
-      {isGoen && isSubscribed && (exclusiveBlog || exclusiveEvent) && (
-        <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-amber-800 mb-2">🔓 会員限定コンテンツ</p>
-          <div className="space-y-2">
-            {exclusiveBlog && (
-              <Link
-                href={`/app/blog/${exclusiveBlog.id}`}
-                className="flex items-center gap-2 text-sm text-stone-700 hover:text-amber-800 transition-colors"
-              >
-                <span className="text-base">📝</span>
-                <span className="truncate">{exclusiveBlog.title}</span>
-              </Link>
-            )}
-            {exclusiveEvent && (
-              <Link
-                href={`/app/events/${exclusiveEvent.id}`}
-                className="flex items-center gap-2 text-sm text-stone-700 hover:text-amber-800 transition-colors"
-              >
-                <span className="text-base">📅</span>
-                <span className="truncate">{exclusiveEvent.title}</span>
-                <span className="text-xs text-stone-400 shrink-0">
-                  {exclusiveEvent.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
-                </span>
-              </Link>
-            )}
-          </div>
-          <Link href="/app/blog" className="text-xs text-amber-700 hover:underline mt-2 inline-block">
-            すべて見る →
-          </Link>
-        </div>
-      )}
-
-      {/* GOEN 未加入: ロックされたコンテンツのFOMO表示 */}
-      {isGoen && !isSubscribed && (exclusiveBlog || exclusiveEvent) && (
-        <div className="mb-5 bg-stone-50 border border-stone-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-stone-500 mb-2">🔒 会員限定コンテンツ</p>
-          <div className="space-y-2">
-            {exclusiveBlog && (
-              <div className="flex items-center gap-2 text-sm text-stone-400">
-                <span className="text-base">📝</span>
-                <span className="truncate blur-sm select-none">{exclusiveBlog.title}</span>
-              </div>
-            )}
-            {exclusiveEvent && (
-              <div className="flex items-center gap-2 text-sm text-stone-400">
-                <span className="text-base">📅</span>
-                <span className="truncate blur-sm select-none">{exclusiveEvent.title}</span>
-              </div>
-            )}
-          </div>
-          <Link
-            href="/app/subscriptions"
-            className="text-xs text-amber-700 hover:underline mt-2 inline-block font-medium"
-          >
-            会員登録で読める →
-          </Link>
-        </div>
-      )}
-
-      {/* 檀家: 次回法要予約 */}
-      {isDanka && (
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-stone-600">次回の法要予約</h2>
-            <Link href="/app/reservations" className="text-xs text-amber-700 hover:underline">
-              一覧 →
-            </Link>
-          </div>
-          {nextReservation ? (
-            <Link
-              href={`/app/reservations/${nextReservation.id}`}
-              className="block bg-amber-50 border border-amber-200 rounded-xl p-4"
-            >
-              <p className="text-xs text-amber-700 font-medium mb-0.5">
-                {nextReservation.scheduledAt.toLocaleDateString("ja-JP", {
-                  year: "numeric", month: "long", day: "numeric", weekday: "short",
-                })}{" "}
-                {nextReservation.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
-              </p>
-              <p className="font-semibold text-stone-800">
-                {RESERVATION_TYPE_LABELS[nextReservation.type] ?? nextReservation.type}
-              </p>
-              <p className={`text-xs mt-1 ${nextReservation.status === "CONFIRMED" ? "text-teal-700" : "text-amber-700"}`}>
-                {nextReservation.status === "CONFIRMED" ? "確定済み" : "確認待ち"}
-              </p>
-            </Link>
-          ) : (
-            <div className="bg-white border border-stone-200 rounded-xl p-4 text-sm text-stone-400 text-center">
-              予約はありません
-              <br />
-              <Link href="/app/reservations/new" className="text-amber-700 text-xs hover:underline mt-1 inline-block">
-                法要を予約する →
-              </Link>
-            </div>
+    <div className="pb-28 max-w-lg mx-auto">
+      {/* ヘッダー */}
+      <div className="px-5 pt-6 pb-5">
+        <p className="text-xs text-stone-400 font-medium mb-0.5">
+          {isDanka ? "檀家" : isGoen ? "ご縁さん" : ""}
+          {isGoen && isSubscribed && (
+            <span className="ml-1.5 text-emerald-600 font-semibold">{hasSubscription.plan.name}</span>
           )}
-        </div>
-      )}
+        </p>
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">
+          こんにちは、<span className="text-amber-800">{displayName}</span>さん
+        </h1>
+      </div>
 
-      {/* 申込済みイベント */}
-      {upcomingParticipations.length > 0 && (
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-stone-600">参加予定のイベント</h2>
-            <Link href="/app/events/my" className="text-xs text-amber-700 hover:underline">
-              すべて →
-            </Link>
-          </div>
-          <ul className="space-y-2">
-            {upcomingParticipations.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/app/events/${p.event.id}`}
-                  className="block bg-white rounded-xl border border-stone-200 p-3 hover:border-amber-200 transition-colors"
-                >
-                  <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(p.event.category)}</p>
-                  <p className="font-medium text-stone-800 text-sm">{p.event.title}</p>
-                  <p className="text-xs text-stone-400 mt-0.5">
-                    {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}{" "}
-                    {p.event.startTime}
-                  </p>
+      <div className="px-4 space-y-5">
+        {/* クイックアクセス */}
+        <div className="grid grid-cols-3 gap-2.5">
+          {quickItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex flex-col items-center justify-center gap-2 bg-white border border-stone-100 rounded-2xl py-4 shadow-sm hover:shadow-md hover:border-amber-200 hover:-translate-y-0.5 transition-all"
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
+                  <Icon size={20} strokeWidth={1.8} />
+                </div>
+                <span className="text-xs text-stone-600 font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* GOEN 未加入: CTA バナー */}
+        {isGoen && !isSubscribed && <GoenCtaBanner />}
+
+        {/* GOEN 加入済み: 会員限定コンテンツ */}
+        {isGoen && isSubscribed && (exclusiveBlog || exclusiveEvent) && (
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-2xl p-4">
+            <p className="text-xs font-bold text-amber-800 mb-3 flex items-center gap-1.5">
+              <span className="w-4 h-4 bg-amber-700 text-white rounded-full flex items-center justify-center text-[9px]">✓</span>
+              会員限定コンテンツ
+            </p>
+            <div className="space-y-2">
+              {exclusiveBlog && (
+                <Link href={`/app/blog/${exclusiveBlog.id}`}
+                  className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2.5 hover:bg-white transition-colors">
+                  <Newspaper size={14} className="text-amber-700 shrink-0" />
+                  <span className="text-sm text-stone-700 truncate">{exclusiveBlog.title}</span>
+                  <ChevronRight size={14} className="text-stone-300 ml-auto shrink-0" />
                 </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 注目イベント */}
-      {featuredEvents.length > 0 && (
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-stone-600">
-              {isGoen ? "おすすめイベント" : "今後のイベント"}
-            </h2>
-            <Link href="/app/events" className="text-xs text-amber-700 hover:underline">
-              すべて →
-            </Link>
-          </div>
-          <ul className="space-y-2">
-            {featuredEvents.map((e) => (
-              <li key={e.id}>
-                <Link
-                  href={`/app/events/${e.id}`}
-                  className="block bg-white rounded-xl border border-stone-200 p-3 hover:border-amber-200 transition-colors"
-                >
-                  <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(e.category)}</p>
-                  <p className="font-medium text-stone-800 text-sm">{e.title}</p>
-                  <p className="text-xs text-stone-400 mt-0.5">
-                    {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}{" "}
-                    {e.startTime}
-                  </p>
+              )}
+              {exclusiveEvent && (
+                <Link href={`/app/events/${exclusiveEvent.id}`}
+                  className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2.5 hover:bg-white transition-colors">
+                  <BookOpen size={14} className="text-amber-700 shrink-0" />
+                  <span className="text-sm text-stone-700 truncate">{exclusiveEvent.title}</span>
+                  <span className="text-xs text-stone-400 shrink-0 ml-auto">
+                    {exclusiveEvent.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                  </span>
                 </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* お知らせ */}
-      {latestNews.length > 0 && (
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-stone-600">お知らせ</h2>
-            <Link href="/app/news" className="text-xs text-amber-700 hover:underline">
-              すべて →
+        {/* GOEN 未加入: ロックコンテンツ */}
+        {isGoen && !isSubscribed && (exclusiveBlog || exclusiveEvent) && (
+          <div className="border border-stone-200 rounded-2xl p-4 bg-stone-50">
+            <p className="text-xs font-semibold text-stone-400 mb-3 flex items-center gap-1.5">
+              <Lock size={12} />
+              会員限定コンテンツ
+            </p>
+            <div className="space-y-2">
+              {exclusiveBlog && (
+                <div className="flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5">
+                  <Newspaper size={14} className="text-stone-300 shrink-0" />
+                  <span className="text-sm text-stone-300 truncate blur-sm select-none">{exclusiveBlog.title}</span>
+                </div>
+              )}
+              {exclusiveEvent && (
+                <div className="flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5">
+                  <BookOpen size={14} className="text-stone-300 shrink-0" />
+                  <span className="text-sm text-stone-300 truncate blur-sm select-none">{exclusiveEvent.title}</span>
+                </div>
+              )}
+            </div>
+            <Link href="/app/subscriptions"
+              className="mt-3 inline-block text-xs text-amber-700 font-semibold hover:underline">
+              会員登録で読める →
             </Link>
           </div>
-          <ul className="space-y-1.5">
-            {latestNews.map((n) => (
-              <li key={n.id}>
-                <Link
-                  href={`/app/news/${n.id}`}
-                  className="flex items-center justify-between bg-white rounded-xl border border-stone-200 px-4 py-3 hover:border-amber-200 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm text-stone-700 truncate">{n.title}</p>
+        )}
+
+        {/* 檀家: 次回法要予約 */}
+        {isDanka && (
+          <section>
+            <SectionHeader title="次回の法要予約" moreHref="/app/reservations" moreLabel="一覧" />
+            {nextReservation ? (
+              <Link href={`/app/reservations/${nextReservation.id}`}
+                className="block bg-gradient-to-br from-amber-700 to-amber-800 rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-amber-200 text-xs font-medium mb-1">
+                      {nextReservation.scheduledAt.toLocaleDateString("ja-JP", {
+                        year: "numeric", month: "long", day: "numeric", weekday: "short",
+                      })}
+                    </p>
+                    <p className="text-xl font-bold">
+                      {RESERVATION_TYPE_LABELS[nextReservation.type] ?? nextReservation.type}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <Clock size={12} className="text-amber-200" />
+                      <p className="text-amber-100 text-xs">
+                        {nextReservation.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}〜
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    nextReservation.status === "CONFIRMED"
+                      ? "bg-white/20 text-white"
+                      : "bg-amber-600/50 text-amber-100"
+                  }`}>
+                    {nextReservation.status === "CONFIRMED" ? "確定済み" : "確認待ち"}
+                  </span>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-white border border-stone-100 rounded-2xl p-5 text-center shadow-sm">
+                <CalendarDays size={28} className="text-stone-200 mx-auto mb-2" />
+                <p className="text-sm text-stone-400 mb-2">予定している法要はありません</p>
+                <Link href="/app/reservations/new"
+                  className="text-xs text-amber-700 font-semibold hover:underline">
+                  法要を予約する →
+                </Link>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 参加予定のイベント */}
+        {upcomingParticipations.length > 0 && (
+          <section>
+            <SectionHeader title="参加予定のイベント" moreHref="/app/events/my" moreLabel="すべて" />
+            <div className="space-y-2">
+              {upcomingParticipations.map((p) => (
+                <Link key={p.id} href={`/app/events/${p.event.id}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
+                  <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
+                    <Heart size={16} className="text-rose-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(p.event.category)}</p>
+                    <p className="text-sm font-semibold text-stone-800 truncate">{p.event.title}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                      {" "}{p.event.startTime}
+                    </p>
+                  </div>
+                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 注目イベント */}
+        {featuredEvents.length > 0 && (
+          <section>
+            <SectionHeader
+              title={isGoen ? "おすすめイベント" : "今後のイベント"}
+              moreHref="/app/events" moreLabel="すべて"
+            />
+            <div className="space-y-2">
+              {featuredEvents.map((e) => (
+                <Link key={e.id} href={`/app/events/${e.id}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
+                  <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
+                    <BookOpen size={16} className="text-teal-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(e.category)}</p>
+                    <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                      {" "}{e.startTime}
+                    </p>
+                  </div>
+                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* お知らせ */}
+        {latestNews.length > 0 && (
+          <section>
+            <SectionHeader title="お知らせ" moreHref="/app/news" moreLabel="すべて" />
+            <div className="space-y-2">
+              {latestNews.map((n) => (
+                <Link key={n.id} href={`/app/news/${n.id}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3.5 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
+                  <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
+                    <Bell size={14} className="text-amber-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-stone-700 font-medium truncate">{n.title}</p>
                     <p className="text-xs text-stone-400 mt-0.5">
                       {n.publishedAt!.toLocaleDateString("ja-JP", { month: "long", day: "numeric" })}
                     </p>
                   </div>
-                  <span className="text-stone-300 ml-2 shrink-0">›</span>
+                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
                 </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, moreHref, moreLabel }: { title: string; moreHref: string; moreLabel: string }) {
+  return (
+    <div className="flex items-center justify-between mb-2.5">
+      <h2 className="text-sm font-bold text-stone-700">{title}</h2>
+      <Link href={moreHref} className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
+        {moreLabel}<ChevronRight size={12} />
+      </Link>
     </div>
   );
 }

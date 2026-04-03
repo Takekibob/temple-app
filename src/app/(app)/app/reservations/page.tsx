@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { CalendarDays, Clock, ChevronRight, Plus, Scroll } from "lucide-react";
 
 const TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -19,18 +20,17 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "キャンセル",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  CONFIRMED: "bg-teal-100 text-teal-800",
-  COMPLETED: "bg-stone-100 text-stone-600",
-  CANCELLED: "bg-red-100 text-red-700",
+const STATUS_STYLES: Record<string, string> = {
+  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
+  CONFIRMED: "bg-teal-50 text-teal-700 border border-teal-200",
+  COMPLETED: "bg-stone-100 text-stone-500",
+  CANCELLED: "bg-red-50 text-red-600 border border-red-100",
 };
 
 export default async function ReservationsPage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
-  // 檀家のみアクセス可
   if (!authUser.member || authUser.member.type !== "DANKA") {
     redirect("/app");
   }
@@ -54,126 +54,168 @@ export default async function ReservationsPage() {
   const recentPast = allPast.filter((r) => r.scheduledAt >= oneYearAgo);
   const olderCount = allPast.filter((r) => r.scheduledAt < oneYearAgo).length;
 
+  const next = upcoming[0] ?? null;
+
   return (
-    <div className="p-4 max-w-lg mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-stone-800">法要予約</h1>
+    <div className="max-w-lg mx-auto pb-28">
+      {/* ヘッダー */}
+      <div className="px-5 pt-6 pb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">法要予約</h1>
         <Link
           href="/app/reservations/new"
-          className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
+          className="flex items-center gap-1.5 text-xs text-white font-semibold bg-amber-700 px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-800 transition-colors"
         >
+          <Plus size={13} />
           新規予約
         </Link>
       </div>
 
-      {upcoming.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-medium text-stone-500 mb-2">予定</h2>
-          <ul className="space-y-3">
-            {upcoming.map((r) => (
-              <li key={r.id}>
-                <Link
-                  href={`/app/reservations/${r.id}`}
-                  className="block bg-white rounded-xl border border-stone-200 p-4 hover:border-amber-300 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-stone-800">{TYPE_LABELS[r.type] ?? r.type}</p>
-                      {r.deceasedPerson && (
-                        <p className="text-xs text-stone-500 mt-0.5">{r.deceasedPerson.name}</p>
-                      )}
-                      <p className="text-sm text-stone-600 mt-1">
-                        {r.scheduledAt.toLocaleDateString("ja-JP", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          weekday: "short",
-                        })}{" "}
-                        {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                      <p className="text-xs text-stone-400 mt-0.5">{r.durationMin}分</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                        {STATUS_LABELS[r.status]}
-                      </span>
-                      <span className="text-stone-300 text-sm">›</span>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {upcoming.length === 0 && (
-        <div className="bg-white rounded-xl border border-stone-200 p-8 text-center mb-6">
-          <p className="text-stone-400 text-sm">予定している法要はありません</p>
+      <div className="px-4 space-y-5">
+        {/* 直近の予約ハイライト */}
+        {next ? (
           <Link
-            href="/app/reservations/new"
-            className="mt-3 inline-block text-amber-700 text-sm hover:underline"
+            href={`/app/reservations/${next.id}`}
+            className="block bg-gradient-to-br from-amber-700 to-amber-800 rounded-2xl p-5 shadow-md text-white hover:from-amber-800 hover:to-amber-900 transition-colors"
           >
-            法要を予約する →
+            <p className="text-xs font-semibold text-amber-200 uppercase tracking-widest mb-2">次の法要</p>
+            <p className="text-xl font-bold mb-1">{TYPE_LABELS[next.type] ?? next.type}</p>
+            {next.deceasedPerson && (
+              <p className="text-sm text-amber-100 mb-3">{next.deceasedPerson.name}</p>
+            )}
+            <div className="flex items-center gap-4 text-sm text-amber-100">
+              <span className="flex items-center gap-1.5">
+                <CalendarDays size={14} />
+                {next.scheduledAt.toLocaleDateString("ja-JP", {
+                  month: "long", day: "numeric", weekday: "short",
+                })}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock size={14} />
+                {next.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                next.status === "CONFIRMED"
+                  ? "bg-white/20 text-white"
+                  : "bg-amber-500/50 text-amber-100"
+              }`}>
+                {STATUS_LABELS[next.status]}
+              </span>
+              <ChevronRight size={18} className="text-amber-300" />
+            </div>
           </Link>
-        </div>
-      )}
+        ) : (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-8 text-center">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Scroll size={22} className="text-amber-600" />
+            </div>
+            <p className="text-stone-500 text-sm font-medium mb-1">予定している法要はありません</p>
+            <Link
+              href="/app/reservations/new"
+              className="text-amber-700 text-sm font-semibold hover:underline"
+            >
+              法要を予約する →
+            </Link>
+          </div>
+        )}
 
-      {(recentPast.length > 0 || olderCount > 0) && (
-        <div>
-          <h2 className="text-sm font-medium text-stone-500 mb-2">過去の予約（直近1年）</h2>
-          <ul className="space-y-2">
-            {recentPast.map((r) => (
-              <li key={r.id}>
-                <Link
-                  href={`/app/reservations/${r.id}`}
-                  className="flex items-center justify-between bg-white rounded-xl border border-stone-100 p-3 hover:border-stone-200 transition-colors"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-stone-700">{TYPE_LABELS[r.type] ?? r.type}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {r.scheduledAt.toLocaleDateString("ja-JP")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                      {STATUS_LABELS[r.status]}
-                    </span>
-                    <span className="text-stone-300 text-sm">›</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {olderCount > 0 && (
-            <p className="text-xs text-stone-400 text-center mt-3">
-              他に{olderCount}件の過去の予約があります（1年以上前）
-            </p>
-          )}
-        </div>
-      )}
+        {/* その他の予定（2件目以降） */}
+        {upcoming.length > 1 && (
+          <section>
+            <SectionLabel>その他の予定</SectionLabel>
+            <div className="space-y-2.5">
+              {upcoming.slice(1).map((r) => (
+                <ReservationRow key={r.id} r={r} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 過去の予約 */}
+        {recentPast.length > 0 && (
+          <section>
+            <SectionLabel>過去の予約（直近1年）</SectionLabel>
+            <div className="space-y-2.5">
+              {recentPast.map((r) => (
+                <ReservationRow key={r.id} r={r} past />
+              ))}
+            </div>
+            {olderCount > 0 && (
+              <p className="text-xs text-stone-400 text-center mt-3">
+                他に{olderCount}件の過去の予約があります（1年以上前）
+              </p>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
 
-function CancelButton({ id }: { id: string }) {
+function ReservationRow({
+  r,
+  past,
+}: {
+  r: {
+    id: string;
+    type: string;
+    status: string;
+    scheduledAt: Date;
+    durationMin: number;
+    deceasedPerson: { name: string } | null;
+  };
+  past?: boolean;
+}) {
   return (
-    <form
-      action={async () => {
-        "use server";
-        const { prisma: db } = await import("@/lib/prisma");
-        await db.reservation.update({ where: { id }, data: { status: "CANCELLED" } });
-        const { revalidatePath } = await import("next/cache");
-        revalidatePath("/app/reservations");
-      }}
-      className="mt-3"
+    <Link
+      href={`/app/reservations/${r.id}`}
+      className={`flex items-center justify-between bg-white rounded-2xl border p-4 transition-all hover:shadow-sm ${
+        past
+          ? "border-stone-100 hover:border-stone-200"
+          : "border-stone-100 hover:border-amber-200"
+      }`}
     >
-      <button
-        type="submit"
-        className="text-xs text-red-600 hover:underline"
-      >
-        キャンセルする
-      </button>
-    </form>
+      <div className="flex items-center gap-3">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+          past ? "bg-stone-100" : "bg-amber-50"
+        }`}>
+          <CalendarDays size={16} className={past ? "text-stone-400" : "text-amber-700"} />
+        </div>
+        <div>
+          <p className={`text-sm font-semibold ${past ? "text-stone-500" : "text-stone-800"}`}>
+            {TYPE_LABELS[r.type] ?? r.type}
+          </p>
+          {r.deceasedPerson && (
+            <p className="text-xs text-stone-400">{r.deceasedPerson.name}</p>
+          )}
+          <p className="text-xs text-stone-400 mt-0.5">
+            {r.scheduledAt.toLocaleDateString("ja-JP", {
+              year: "numeric", month: "long", day: "numeric", weekday: "short",
+            })}
+            {" "}
+            {r.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0 ml-2">
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status]}`}>
+          {STATUS_LABELS[r.status]}
+        </span>
+        <ChevronRight size={15} className="text-stone-300" />
+      </div>
+    </Link>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="h-px flex-1 bg-stone-100" />
+      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest whitespace-nowrap">
+        {children}
+      </span>
+      <div className="h-px flex-1 bg-stone-100" />
+    </div>
   );
 }
