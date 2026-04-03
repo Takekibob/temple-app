@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, User, ChevronRight, Trash2, CheckCheck } from "lucide-react";
 
@@ -26,6 +27,7 @@ const SEGMENT_LABELS: Record<string, string> = {
 
 export default function NewsClient({ announcements: initial, hasMember }: Props) {
   const [items, setItems] = useState(initial);
+  const router = useRouter();
 
   const unreadCount = items.filter((a) => !a.isRead).length;
 
@@ -34,16 +36,19 @@ export default function NewsClient({ announcements: initial, hasMember }: Props)
       prev.map((a) => (a.id === id ? { ...a, isRead: true } : a))
     );
     await fetch(`/api/announcements/${id}/read`, { method: "PATCH" });
+    router.refresh();
   }
 
   async function deleteItem(id: string) {
     setItems((prev) => prev.filter((a) => a.id !== id));
     await fetch(`/api/announcements/${id}/delete`, { method: "DELETE" });
+    router.refresh();
   }
 
   async function markAllRead() {
     setItems((prev) => prev.map((a) => ({ ...a, isRead: true })));
     await fetch("/api/announcements/read-all", { method: "POST" });
+    router.refresh();
   }
 
   return (
