@@ -15,9 +15,10 @@ interface InitialData {
 
 interface Props {
   initial?: InitialData;
+  hasActivePlan?: boolean;
 }
 
-export default function BlogFormClient({ initial }: Props) {
+export default function BlogFormClient({ initial, hasActivePlan = false }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -152,18 +153,27 @@ export default function BlogFormClient({ initial }: Props) {
 
         <div className="bg-white rounded-xl border border-stone-200 p-5">
           <h2 className="font-semibold text-stone-700 mb-3">公開設定</h2>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className={`flex items-center gap-2 ${hasActivePlan ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
             <input
               type="checkbox"
               name="isSubscriberOnly"
               defaultChecked={initial?.isSubscriberOnly ?? false}
-              className="w-4 h-4 accent-amber-700"
+              disabled={!hasActivePlan}
+              className="w-4 h-4 accent-amber-700 disabled:cursor-not-allowed"
             />
             <span className="text-sm text-stone-700">会員プラン加入者のみ閲覧可</span>
           </label>
-          <p className="text-xs text-stone-400 mt-1 ml-6">
-            チェックすると、月払い・年払いいずれかに加入中の会員のみが閲覧できます
-          </p>
+          {hasActivePlan ? (
+            <p className="text-xs text-stone-400 mt-1 ml-6">
+              チェックすると、月払い・年払いいずれかに加入中の会員のみが閲覧できます
+            </p>
+          ) : (
+            <p className="text-xs text-amber-700 mt-1 ml-6">
+              この設定を使うには
+              <Link href="/admin/plans" className="underline font-semibold ml-1">会員プランの設定</Link>
+              が必要です。
+            </p>
+          )}
         </div>
 
         <div className="flex gap-3">

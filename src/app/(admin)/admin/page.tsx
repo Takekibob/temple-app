@@ -6,7 +6,7 @@ import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 import {
   CalendarDays, Users, UserCheck, Calendar,
   Coins, Clock, AlertTriangle, ChevronRight,
-  Plus, TrendingUp, BarChart3, Megaphone, FileText, Zap,
+  Plus, Bell,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -23,7 +23,6 @@ export default async function AdminDashboardPage() {
 
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const currentFiscalYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
 
   const [
     todayReservations,
@@ -35,9 +34,8 @@ export default async function AdminDashboardPage() {
     recentEventSignups,
     upcomingEvents,
     upcomingFollowups,
-    recentInteractions,
     unpaidGojikai,
-    churnRisk,
+    inactiveMembers,
   ] = await Promise.all([
     prisma.reservation.count({
       where: {
@@ -101,21 +99,12 @@ export default async function AdminDashboardPage() {
       },
       include: { member: { include: { user: { select: { name: true } } } } },
       orderBy: { followupDate: "asc" },
-      take: 10,
-    }),
-    prisma.memberNote.findMany({
-      where: { templeId: authUser.templeId, noteType: "INTERACTION" },
-      include: {
-        member: { include: { user: { select: { name: true } } } },
-        author: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+      take: 8,
     }),
     prisma.gojikaiPayment.findMany({
       where: {
         member: { templeId: authUser.templeId, type: "DANKA" },
-        fiscalYear: currentFiscalYear,
+        fiscalYear: now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1,
         status: "UNPAID",
       },
       include: { member: { include: { user: { select: { name: true } } } } },
@@ -179,10 +168,35 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl space-y-6">
-      {/* ヘッダー */}
-      <div>
-        <p className="text-xs text-stone-400 font-medium mb-0.5">{todayStr}</p>
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">ダッシュボード</h1>
+      {/* ヘッダー + クイックアクション */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs text-stone-400 font-medium mb-0.5">{todayStr}</p>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">ダッシュボード</h1>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/admin/reservations/new"
+            className="flex items-center gap-1.5 text-xs font-semibold bg-amber-700 text-white px-3 py-2 rounded-xl hover:bg-amber-800 transition-colors shadow-sm"
+          >
+            <Plus size={13} />
+            予約を追加
+          </Link>
+          <Link
+            href="/admin/events/new"
+            className="flex items-center gap-1.5 text-xs font-semibold bg-sky-600 text-white px-3 py-2 rounded-xl hover:bg-sky-700 transition-colors shadow-sm"
+          >
+            <Plus size={13} />
+            イベント作成
+          </Link>
+          <Link
+            href="/admin/announcements/new"
+            className="flex items-center gap-1.5 text-xs font-semibold bg-white text-stone-700 border border-stone-200 px-3 py-2 rounded-xl hover:bg-stone-50 transition-colors shadow-sm"
+          >
+            <Bell size={13} />
+            お知らせ
+          </Link>
+        </div>
       </div>
 
       {/* KPI カード */}
@@ -304,10 +318,10 @@ export default async function AdminDashboardPage() {
         </DashCard>
       </div>
 
-      {/* グラフ */}
+      {/* 月別グラフ */}
       <DashboardCharts data={chartData} />
 
-      {/* フォロー予定 & 対応履歴 */}
+      {/* フォロー予定 & 護持会費未納 */}
       <div className="grid lg:grid-cols-2 gap-4">
         <DashCard
           title="フォロー予定（2週間以内）"
@@ -344,49 +358,11 @@ export default async function AdminDashboardPage() {
         </DashCard>
 
         <DashCard
-          title="最近の対応履歴"
-          icon={FileText}
-          iconColor="text-stone-500"
-          moreHref="/admin/members"
-          moreLabel="会員一覧"
-        >
-          {recentInteractions.length === 0 ? (
-            <EmptyState text="対応履歴がありません" />
-          ) : (
-            <ul className="divide-y divide-stone-50">
-              {recentInteractions.map((note) => (
-                <li key={note.id}>
-                  <Link href={`/admin/members/${note.memberId}`}
-                    className="flex items-start gap-3 py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-stone-800">
-                        {note.member.user.name}
-                        <span className="ml-2 text-xs font-normal text-stone-400">{note.author.name}</span>
-                      </p>
-                      {note.title && (
-                        <p className="text-xs text-stone-600 mt-0.5 truncate">{note.title}</p>
-                      )}
-                      <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{note.content}</p>
-                    </div>
-                    <span className="text-xs text-stone-400 shrink-0">
-                      {new Date(note.createdAt).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </DashCard>
-      </div>
-
-      {/* 未納アラート・離脱予兆・スコアアップ */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <DashCard
           title="護持会費 未納"
           icon={Coins}
           iconColor="text-red-500"
           moreHref="/admin/gojikai"
-          moreLabel="管理"
+          moreLabel="護持会費を確認"
           badge={unpaidGojikai.length > 0 ? { count: unpaidGojikai.length, color: "red" } : undefined}
         >
           {unpaidGojikai.length === 0 ? (
@@ -405,85 +381,36 @@ export default async function AdminDashboardPage() {
             </ul>
           )}
         </DashCard>
+      </div>
 
+      {/* しばらく来ていない方 */}
+      {inactiveMembers.length > 0 && (
         <DashCard
-          title="離脱予兆"
+          title="しばらく連絡のない方（1年以上）"
           icon={AlertTriangle}
           iconColor="text-orange-500"
           moreHref="/admin/churn"
-          moreLabel="詳細"
-          badge={churnRisk.length > 0 ? { count: churnRisk.length, color: "orange" } : undefined}
+          moreLabel="全員を確認"
+          badge={{ count: inactiveMembers.length, color: "orange" }}
         >
-          {churnRisk.length === 0 ? (
-            <EmptyState text="問題なし" icon="✓" ok />
-          ) : (
-            <ul className="divide-y divide-stone-50">
-              {churnRisk.map((m) => {
-                const lastDate = m.lastContactAt ?? m.createdAt;
-                const monthsAgo = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-                return (
-                  <li key={m.id}>
-                    <Link href={`/admin/members/${m.id}`}
-                      className="flex items-center justify-between py-2.5 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
-                      <p className="text-sm text-stone-800 font-medium">{m.user.name}</p>
-                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{monthsAgo}ヶ月前</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </DashCard>
-
-        <DashCard
-          title="経営分析"
-          icon={TrendingUp}
-          iconColor="text-indigo-500"
-          moreHref="/admin/analytics/retention"
-          moreLabel="詳細"
-        >
-          <div className="flex flex-col gap-2 py-2">
-            <Link href="/admin/analytics/retention"
-              className="text-sm text-stone-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-xl -mx-3 transition-colors">
-              離脱予測・維持率分析 →
-            </Link>
-            <Link href="/admin/revenue"
-              className="text-sm text-stone-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-xl -mx-3 transition-colors">
-              収益レポート →
-            </Link>
+          <div className="flex flex-wrap gap-2 py-2">
+            {inactiveMembers.map((m) => {
+              const lastDate = m.lastContactAt ?? m.createdAt;
+              const monthsAgo = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+              return (
+                <Link
+                  key={m.id}
+                  href={`/admin/members/${m.id}`}
+                  className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 rounded-xl px-3 py-1.5 hover:border-orange-300 transition-colors"
+                >
+                  <span className="text-sm text-stone-700 font-medium">{m.user.name}</span>
+                  <span className="text-xs text-orange-500 font-semibold">{monthsAgo}ヶ月前</span>
+                </Link>
+              );
+            })}
           </div>
         </DashCard>
-      </div>
-
-      {/* クイックアクション */}
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Zap size={14} className="text-amber-600" />
-          <h2 className="text-sm font-bold text-stone-700">クイックアクション</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { icon: CalendarDays, label: "予約管理", href: "/admin/reservations", color: "text-amber-700 bg-amber-50" },
-            { icon: Users, label: "会員一覧", href: "/admin/members", color: "text-teal-700 bg-teal-50" },
-            { icon: Plus, label: "イベント作成", href: "/admin/events/new", color: "text-sky-700 bg-sky-50" },
-            { icon: Megaphone, label: "お知らせ作成", href: "/admin/announcements/new", color: "text-purple-700 bg-purple-50" },
-            { icon: TrendingUp, label: "イベント分析", href: "/admin/events/analytics", color: "text-indigo-700 bg-indigo-50" },
-            { icon: BarChart3, label: "機能利用ログ", href: "/admin/analytics/features", color: "text-stone-700 bg-stone-100" },
-            { icon: AlertTriangle, label: "離脱予兆", href: "/admin/churn", color: "text-orange-700 bg-orange-50" },
-          ].map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.href} href={action.href}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-stone-100 hover:border-amber-200 hover:shadow-sm transition-all bg-stone-50/50">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${action.color}`}>
-                  <Icon size={14} strokeWidth={1.8} />
-                </div>
-                <span className="text-xs font-medium text-stone-700">{action.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

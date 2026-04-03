@@ -28,6 +28,7 @@ interface Props {
   initialData?: EventData;
   isEdit?: boolean;
   customCategories?: string[];
+  hasActivePlan?: boolean;
 }
 
 const VISIBILITIES = [
@@ -36,7 +37,7 @@ const VISIBILITIES = [
   { value: "SUBSCRIBERS_ONLY", label: "会員プラン加入者限定" },
 ];
 
-export default function EventFormClient({ initialData, isEdit, customCategories = [] }: Props) {
+export default function EventFormClient({ initialData, isEdit, customCategories = [], hasActivePlan = false }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -201,9 +202,24 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 {VISIBILITIES.map((v) => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
+                  <option
+                    key={v.value}
+                    value={v.value}
+                    disabled={v.value === "SUBSCRIBERS_ONLY" && !hasActivePlan}
+                  >
+                    {v.value === "SUBSCRIBERS_ONLY" && !hasActivePlan
+                      ? `${v.label}（要：会員プラン設定）`
+                      : v.label}
+                  </option>
                 ))}
               </select>
+              {!hasActivePlan && (
+                <p className="text-xs text-amber-700 mt-1">
+                  「会員プラン加入者限定」を使うには
+                  <Link href="/admin/plans" className="underline font-semibold ml-1">会員プランの設定</Link>
+                  が必要です。
+                </p>
+              )}
             </div>
           </div>
         </div>

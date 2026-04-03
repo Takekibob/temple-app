@@ -7,11 +7,18 @@ export default async function AdminEventNewPage() {
   const authUser = await getAuthUser();
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
-  const temple = await prisma.temple.findUnique({
-    where: { id: authUser.templeId },
-    select: { customEventCategories: true },
-  });
+  const [temple, activePlan] = await Promise.all([
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId },
+      select: { customEventCategories: true },
+    }),
+    prisma.membershipPlan.findFirst({
+      where: { templeId: authUser.templeId, isActive: true },
+      select: { id: true },
+    }),
+  ]);
+
   const customCategories = (temple?.customEventCategories as string[]) ?? [];
 
-  return <EventFormClient customCategories={customCategories} />;
+  return <EventFormClient customCategories={customCategories} hasActivePlan={!!activePlan} />;
 }

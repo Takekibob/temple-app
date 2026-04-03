@@ -12,13 +12,20 @@ export default async function AdminBlogEditPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const { id } = await params;
-  const post = await prisma.blogPost.findFirst({
-    where: { id, templeId: authUser.templeId },
-  });
+
+  const [post, activePlan] = await Promise.all([
+    prisma.blogPost.findFirst({ where: { id, templeId: authUser.templeId } }),
+    prisma.membershipPlan.findFirst({
+      where: { templeId: authUser.templeId, isActive: true },
+      select: { id: true },
+    }),
+  ]);
+
   if (!post) notFound();
 
   return (
     <BlogFormClient
+      hasActivePlan={!!activePlan}
       initial={{
         id: post.id,
         title: post.title,

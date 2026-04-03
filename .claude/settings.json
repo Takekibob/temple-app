@@ -10,7 +10,13 @@
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/api/members/[id]/)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/mypage/)",
-      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/analytics/)"
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/analytics/)",
+      "Bash(ls \"/Users/haradatakeki/Developer/temple-app/src/app/\\(admin\\)/admin/members/[id]/\")",
+      "Bash(npm run:*)",
+      "Bash(ls -la /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/)",
+      "Bash(ls -la /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/read/)",
+      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/read/route.ts)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/new/)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
@@ -22,7 +28,8 @@
       "/Users/haradatakeki/Developer/temple-app/src/app/api/ocr/[id]",
       "/Users/haradatakeki/Developer/temple-app/src/app/api/onboarding-pack",
       "/Users/haradatakeki/Developer/temple-app/src/app/donate/[templeId]",
-      "/Users/haradatakeki/Developer/temple-app/src/app/temples/p"
+      "/Users/haradatakeki/Developer/temple-app/src/app/temples/p",
+      "/Users/haradatakeki/Developer/temple-app/src/app/(app)/app/temples/[id]"
     ]
   }
 }

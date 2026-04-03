@@ -6,10 +6,10 @@ import { useState, useEffect } from "react";
 import { logout } from "@/app/auth/actions";
 import {
   LayoutDashboard, CalendarDays, Users, BookOpen, FilePen,
-  Coins, Landmark, BarChart3, Calendar, TrendingUp, Bell,
-  PenLine, CalendarRange, MessageCircle,
-  BadgeJapaneseYen, LineChart, ScanLine, Package,
-  Settings, UserCog, Ticket, CreditCard, ClipboardList,
+  Coins, Landmark, BarChart3, Calendar,
+  Bell, PenLine, CalendarRange, MessageCircle,
+  BadgeJapaneseYen,
+  Settings, UserCog, Ticket, CreditCard,
   ChevronRight, Eye, LogOut, Menu, X,
 } from "lucide-react";
 
@@ -41,60 +41,45 @@ const NAV_SECTIONS: NavSection[] = [
     items: [{ icon: LayoutDashboard, label: "ダッシュボード", href: "/admin" }],
   },
   {
-    title: "檀家管理",
+    title: "会員・法要",
     items: [
       { icon: CalendarDays, label: "法要予約", href: "/admin/reservations" },
       { icon: Users, label: "会員一覧", href: "/admin/members" },
       { icon: BookOpen, label: "過去帳", href: "/admin/deceased" },
-      { icon: FilePen, label: "情報変更申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
+      { icon: FilePen, label: "情報変更の申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
     ],
   },
   {
-    title: "会計管理",
-    items: [
-      { icon: Coins, label: "お布施", href: "/admin/ofuse" },
-      { icon: Landmark, label: "護持会費", href: "/admin/gojikai" },
-      { icon: BarChart3, label: "レポート", href: "/admin/reports" },
-    ],
-  },
-  {
-    title: "イベント管理",
+    title: "イベント・行事",
     items: [
       { icon: Calendar, label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics" },
-      { icon: TrendingUp, label: "イベント分析", href: "/admin/events/analytics", adminOnly: true },
+      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events" },
     ],
   },
   {
-    title: "配信管理",
+    title: "お知らせ・発信",
     items: [
       { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
       { icon: PenLine, label: "ブログ", href: "/admin/blog" },
-      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events" },
       { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },
   {
-    title: "CRM・収益",
+    title: "お金の管理",
     items: [
+      { icon: Coins, label: "お布施", href: "/admin/ofuse" },
+      { icon: Landmark, label: "護持会費", href: "/admin/gojikai" },
+      { icon: BarChart3, label: "収支レポート", href: "/admin/reports" },
       { icon: BadgeJapaneseYen, label: "収益管理", href: "/admin/revenue", adminOnly: true },
-      { icon: LineChart, label: "経営分析", href: "/admin/analytics/retention", adminOnly: true },
     ],
   },
   {
-    title: "ブランディング",
+    title: "設定",
     items: [
-      { icon: ScanLine, label: "OCR取り込み", href: "/admin/ocr", adminOnly: true },
-      { icon: Package, label: "導入サポート", href: "/admin/onboarding-pack", adminOnly: true },
-    ],
-  },
-  {
-    title: "システム",
-    items: [
-      { icon: Settings, label: "設定", href: "/admin/settings", adminOnly: true },
+      { icon: Settings, label: "お寺の設定", href: "/admin/settings", adminOnly: true },
       { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
       { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true },
-      { icon: CreditCard, label: "プラン・お支払い", href: "/admin/billing", adminOnly: true },
-      { icon: ClipboardList, label: "操作ログ", href: "/admin/logs", adminOnly: true },
+      { icon: CreditCard, label: "お支払い", href: "/admin/billing", adminOnly: true },
     ],
   },
 ];
