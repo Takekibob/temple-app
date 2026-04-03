@@ -7,7 +7,8 @@ import { getCategoryLabel } from "@/lib/eventCategories";
 import GoenCtaBanner from "@/components/app/GoenCtaBanner";
 import {
   CalendarDays, BookOpen, ScrollText, Coins, Heart, Gift,
-  Newspaper, MapPin, Ticket, ChevronRight, Clock, Lock, Bell,
+  Newspaper, MapPin, ChevronRight, Clock, Lock, Bell,
+  Compass, CheckCircle,
 } from "lucide-react";
 
 const RESERVATION_TYPE_LABELS: Record<string, string> = {
@@ -35,29 +36,14 @@ const DANKA_QUICK: QuickItem[] = [
   { icon: ScrollText,   label: "過去帳",        href: "/app/deceased",      color: "bg-stone-50 text-stone-600" },
 ];
 
-const GOEN_QUICK_BASE: QuickItem[] = [
-  { icon: BookOpen,    label: "イベント",    href: "/app/events",       color: "bg-teal-50 text-teal-700" },
-  { icon: Newspaper,   label: "ブログ",      href: "/app/blog",         color: "bg-amber-50 text-amber-700" },
-  { icon: CalendarDays,label: "カレンダー",  href: "/app/calendar",     color: "bg-sky-50 text-sky-600" },
-  { icon: Heart,       label: "参加予定",    href: "/app/events/my",    color: "bg-rose-50 text-rose-600" },
-  { icon: Gift,        label: "寄付",        href: "/app/donations",    color: "bg-purple-50 text-purple-600" },
+const GOEN_QUICK: QuickItem[] = [
+  { icon: BookOpen,     label: "イベント",     href: "/app/events",               color: "bg-sky-50 text-sky-600" },
+  { icon: Newspaper,    label: "ブログ",        href: "/app/blog",                 color: "bg-amber-50 text-amber-700" },
+  { icon: Heart,        label: "お気に入り",    href: "/app/temples?tab=following", color: "bg-rose-50 text-rose-500" },
+  { icon: CheckCircle,  label: "参加予定",      href: "/app/events/my",            color: "bg-emerald-50 text-emerald-600" },
+  { icon: Compass,      label: "お寺を探す",    href: "/app/temples",              color: "bg-teal-50 text-teal-600" },
+  { icon: Gift,         label: "寄付",          href: "/app/donations",            color: "bg-purple-50 text-purple-600" },
 ];
-
-const GOEN_QUICK_SUBSCRIBED: QuickItem[] = [
-  { icon: BookOpen,    label: "イベント",    href: "/app/events",       color: "bg-teal-50 text-teal-700" },
-  { icon: Newspaper,   label: "ブログ",      href: "/app/blog",         color: "bg-amber-50 text-amber-700" },
-  { icon: CalendarDays,label: "カレンダー",  href: "/app/calendar",     color: "bg-sky-50 text-sky-600" },
-  { icon: Ticket,      label: "会員プラン",  href: "/app/subscriptions",color: "bg-emerald-50 text-emerald-700" },
-  { icon: Heart,       label: "参加予定",    href: "/app/events/my",    color: "bg-rose-50 text-rose-600" },
-  { icon: Gift,        label: "寄付",        href: "/app/donations",    color: "bg-purple-50 text-purple-600" },
-];
-
-function getGoenQuickFree(templeId: string | null | undefined): QuickItem[] {
-  return [
-    ...GOEN_QUICK_BASE,
-    { icon: MapPin, label: "お寺について", href: templeId ? `/app/temples/${templeId}` : "/app/events", color: "bg-stone-50 text-stone-600" },
-  ];
-}
 
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
@@ -219,11 +205,7 @@ export default async function AppHomePage() {
 
   const displayName = authUser.name;
 
-  const quickItems: QuickItem[] = isDanka
-    ? DANKA_QUICK
-    : isSubscribed
-    ? GOEN_QUICK_SUBSCRIBED
-    : getGoenQuickFree(authUser.templeId);
+  const quickItems: QuickItem[] = isDanka ? DANKA_QUICK : GOEN_QUICK;
 
   const [exclusiveBlog, exclusiveEvent] = exclusivePreview ?? [null, null];
 
