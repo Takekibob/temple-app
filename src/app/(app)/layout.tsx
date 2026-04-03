@@ -2,8 +2,6 @@ import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import BottomNav from "@/components/shared/BottomNav";
-import SimpleBottomNav from "@/components/shared/SimpleBottomNav";
-import FontSizeApplier from "@/components/shared/FontSizeApplier";
 import type { AnnouncementTarget } from "@/generated/prisma/enums";
 
 export default async function AppLayout({
@@ -16,13 +14,6 @@ export default async function AppLayout({
   const isAdminOrStaff =
     authUser != null &&
     ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
-
-  const isSimple = authUser?.displayMode === "SIMPLE";
-  const fontSize = (authUser?.fontSize ?? "MEDIUM") as "MEDIUM" | "LARGE" | "XLARGE";
-  const highContrast = authUser?.highContrast ?? false;
-
-  const bgClass = highContrast ? "bg-black" : "bg-stone-50";
-  const textClass = highContrast ? "text-white" : "";
 
   // 未読お知らせ数を取得
   let unreadNewsCount = 0;
@@ -46,8 +37,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className={`min-h-screen ${bgClass} ${textClass} pb-20`}>
-      <FontSizeApplier fontSize={fontSize} />
+    <div className="min-h-screen bg-stone-50 pb-20">
       {/* 管理者・スタッフ向けバナー */}
       {isAdminOrStaff && (
         <div className="sticky top-0 z-30 bg-amber-900 text-amber-100 text-xs py-1.5 px-4 flex items-center justify-between">
@@ -61,11 +51,7 @@ export default async function AppLayout({
         </div>
       )}
       {children}
-      {isSimple ? (
-        <SimpleBottomNav isDanka={isDanka} unreadNewsCount={unreadNewsCount} />
-      ) : (
-        <BottomNav isDanka={isDanka} unreadNewsCount={unreadNewsCount} />
-      )}
+      <BottomNav isDanka={isDanka} unreadNewsCount={unreadNewsCount} />
     </div>
   );
 }

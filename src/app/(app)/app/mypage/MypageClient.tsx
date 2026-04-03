@@ -5,7 +5,7 @@ import Link from "next/link";
 import { logout } from "@/app/auth/actions";
 import {
   CalendarDays, ScrollText, Coins, BookOpen, Heart, Gift,
-  Ticket, MapPin, Settings, Bell, Smartphone, ClipboardList,
+  Ticket, MapPin, Bell, Smartphone, ClipboardList,
   ChevronRight, LogOut, Pencil,
 } from "lucide-react";
 
@@ -168,7 +168,6 @@ export default function MypageClient({ user, member, templeId, subscriptionPlanN
           {isDanka && (
             <NavItem href="/app/mypage/danka-info" icon={ClipboardList} label="檀家情報" iconColor="text-amber-700 bg-amber-50" />
           )}
-          <NavItem href="/app/mypage/display" icon={Settings} label="表示設定" iconColor="text-stone-600 bg-stone-100" />
           <NavItem href="/app/mypage/notifications" icon={Bell} label="通知設定" iconColor="text-sky-600 bg-sky-50" />
           <NavItem
             href="/app/mypage/line"
