@@ -5,9 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 
 interface Props {
   isDanka: boolean;
+  unreadNewsCount?: number;
 }
 
-export default function SimpleBottomNav({ isDanka }: Props) {
+export default function SimpleBottomNav({ isDanka, unreadNewsCount = 0 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -68,13 +69,20 @@ export default function SimpleBottomNav({ isDanka }: Props) {
         )}
         <Link
           href="/app/news"
-          className={`${btnBase} flex-1 py-3 ${
+          className={`${btnBase} flex-1 py-3 relative ${
             pathname.startsWith("/app/news")
               ? "bg-amber-700 text-white"
               : "bg-stone-100 text-stone-700"
           }`}
         >
-          <span className="text-xl">📢</span>
+          <span className="relative">
+            <span className="text-xl">📢</span>
+            {unreadNewsCount > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-blue-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+                {unreadNewsCount > 99 ? "99+" : unreadNewsCount}
+              </span>
+            )}
+          </span>
           <span>お知らせ</span>
         </Link>
         <Link

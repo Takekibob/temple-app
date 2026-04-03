@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import BottomNav from "@/components/shared/BottomNav";
 import SimpleBottomNav from "@/components/shared/SimpleBottomNav";
 import FontSizeApplier from "@/components/shared/FontSizeApplier";
+import type { AnnouncementTarget } from "@/generated/prisma/enums";
 
-// 利用者側（檀家・ご縁さん）レイアウト
 export default async function AppLayout({
   children,
 }: {
@@ -23,6 +24,27 @@ export default async function AppLayout({
   const bgClass = highContrast ? "bg-black" : "bg-stone-50";
   const textClass = highContrast ? "text-white" : "";
 
+  // 未読お知らせ数を取得
+  let unreadNewsCount = 0;
+  if (authUser?.member) {
+    const memberType = authUser.member.type;
+    const memberId = authUser.member.id;
+    const allowedSegments: AnnouncementTarget[] =
+      memberType === "DANKA" ? ["ALL", "DANKA"] : ["ALL", "GOEN"];
+
+    unreadNewsCount = await prisma.announcement.count({
+      where: {
+        templeId: authUser.templeId,
+        publishedAt: { not: null, lte: new Date() },
+        OR: [
+          { memberId: null, targetSegment: { in: allowedSegments } },
+          { memberId },
+        ],
+        reads: { none: { memberId } },
+      },
+    });
+  }
+
   return (
     <div className={`min-h-screen ${bgClass} ${textClass} pb-20`}>
       <FontSizeApplier fontSize={fontSize} />
@@ -40,9 +62,9 @@ export default async function AppLayout({
       )}
       {children}
       {isSimple ? (
-        <SimpleBottomNav isDanka={isDanka} />
+        <SimpleBottomNav isDanka={isDanka} unreadNewsCount={unreadNewsCount} />
       ) : (
-        <BottomNav isDanka={isDanka} />
+        <BottomNav isDanka={isDanka} unreadNewsCount={unreadNewsCount} />
       )}
     </div>
   );
