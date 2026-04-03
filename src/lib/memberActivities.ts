@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import type { ActivityType } from "@/generated/prisma/enums";
 
+/**
+ * エンゲージメントスコア計算用のアクティビティを記録する。
+ * 操作ログ（監査ログ）は src/lib/activityLog.ts の logActivity を使うこと。
+ */
 const ACTIVITY_POINTS: Record<ActivityType, number> = {
   LOGIN: 1,
   NEWS_VIEW: 2,
@@ -17,7 +21,7 @@ const ACTIVITY_POINTS: Record<ActivityType, number> = {
   LINE_MESSAGE_OPEN: 1,
 };
 
-export async function logActivity(
+export async function logMemberActivity(
   memberId: string,
   type: ActivityType,
   metadata?: Record<string, unknown>

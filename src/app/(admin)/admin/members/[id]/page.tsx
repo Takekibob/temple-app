@@ -30,7 +30,6 @@ export default async function MemberDetailPage({
         orderBy: { createdAt: "desc" },
         take: 10,
       },
-      interactions: { orderBy: { createdAt: "desc" }, take: 20 },
       stageTransitions: { orderBy: { createdAt: "desc" }, take: 10 },
       scoringEvents: { orderBy: { createdAt: "desc" }, take: 20 },
       gojikaiPayments: {
@@ -408,27 +407,6 @@ export default async function MemberDetailPage({
             )}
           </section>
 
-          {/* 対応履歴 */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">対応履歴</h2>
-            {member.interactions.length === 0 ? (
-              <p className="text-sm text-stone-400">記録なし</p>
-            ) : (
-              <ul className="space-y-3">
-                {member.interactions.map((i) => (
-                  <li key={i.id} className="text-sm border-l-2 border-stone-200 pl-2">
-                    <p className="text-stone-800">{i.staffNote}</p>
-                    {i.category && (
-                      <p className="text-xs text-stone-400 mt-0.5">{i.category}</p>
-                    )}
-                    <p className="text-xs text-stone-300 mt-0.5">
-                      {i.createdAt.toLocaleDateString("ja-JP")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </div>
       </div>
     </div>

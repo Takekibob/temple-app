@@ -103,9 +103,7 @@ model User {
   name         String
   email        String   @unique
   phone        String?
-  passwordHash String?
   authProvider AuthProvider @default(EMAIL)
-  pushToken    String?
   pushEnabled  Boolean  @default(true)
   isActive     Boolean  @default(true)
   lastLoginAt  DateTime?
@@ -220,7 +218,6 @@ model Member {
   ofuse            Ofuse[]
   gojikaiPayments  GojikaiPayment[]
   eventParticipations EventParticipation[]
-  interactions     MemberInteraction[]
   activities       MemberActivity[]
   favoriteTemples  MemberFavoriteTemple[]
   stageTransitions StageTransition[]
@@ -593,21 +590,6 @@ model AnnualEvent {
   temple  Temple @relation(fields: [templeId], references: [id])
 
   @@map("annual_events")
-}
-
-// ==========================================
-// 対応履歴（CRMメモ）
-// ==========================================
-model MemberInteraction {
-  id        String   @id @default(uuid())
-  memberId  String
-  staffNote String
-  category  String?
-  createdAt DateTime @default(now())
-
-  member  Member @relation(fields: [memberId], references: [id])
-
-  @@map("member_interactions")
 }
 
 // ==========================================

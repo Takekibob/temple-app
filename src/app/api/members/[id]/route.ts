@@ -22,7 +22,6 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           take: 10,
         },
-        interactions: { orderBy: { createdAt: "desc" }, take: 20 },
         gojikaiPayments: { orderBy: { createdAt: "desc" }, take: 5 },
       },
     });

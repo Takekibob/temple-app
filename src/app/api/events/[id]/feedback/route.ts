@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logActivity } from "@/lib/activities";
+import { logMemberActivity } from "@/lib/memberActivities";
 
 // GET /api/events/[id]/feedback — 自分のフィードバックを取得
 export async function GET(
@@ -66,7 +66,7 @@ export async function POST(
 
     // 初回フィードバックのみアクティビティ記録
     if (isFirstFeedback) {
-      await logActivity(authUser.member.id, "EVENT_FEEDBACK", { eventId });
+      await logMemberActivity(authUser.member.id, "EVENT_FEEDBACK", { eventId });
     }
 
     return NextResponse.json({ ok: true });
