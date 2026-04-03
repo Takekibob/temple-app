@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma";
 import type { EventVisibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import { getCategoryLabel, getCategoryIcon, STANDARD_CATEGORY_KEYS } from "@/lib/eventCategories";
-import { MapPin, Clock, Users, CheckCircle, Heart } from "lucide-react";
+import { MapPin, Clock, Users, CheckCircle, Heart, Sparkles } from "lucide-react";
+import { Suspense } from "react";
+import SearchBar from "@/components/app/SearchBar";
 
 type EventRow = Prisma.EventGetPayload<{
   include: {
@@ -19,10 +21,12 @@ function EventCard({
   event,
   showTemple,
   myStatus,
+  recommended,
 }: {
   event: EventRow;
   showTemple: boolean;
   myStatus?: string;
+  recommended?: boolean;
 }) {
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
   const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
@@ -45,6 +49,11 @@ function EventCard({
                 檀家限定
               </span>
             )}
+            {recommended && (
+              <span className="bg-amber-500/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                <Sparkles size={10} />おすすめ
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -58,6 +67,11 @@ function EventCard({
             {event.visibility === "DANKA_ONLY" && (
               <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full font-medium">
                 檀家限定
+              </span>
+            )}
+            {recommended && (
+              <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <Sparkles size={10} />おすすめ
               </span>
             )}
           </div>
@@ -120,15 +134,16 @@ const INCLUDE = {
 export default async function AppEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; denomination?: string }>;
+  searchParams: Promise<{ category?: string; denomination?: string; search?: string }>;
 }) {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
-  const { category, denomination } = await searchParams;
+  const { category, denomination, search } = await searchParams;
   const isDanka = authUser.member?.type === "DANKA";
   const myTempleId = authUser.member?.templeId ?? null;
   const today = new Date(new Date().toDateString());
+  const interestTags: string[] = (authUser.member as { interestTags?: string[] } | null)?.interestTags ?? [];
 
   const STANDARD_NON_OTHER = STANDARD_CATEGORY_KEYS.filter((k) => k !== "OTHER");
   const categoryFilter: Prisma.EventWhereInput =
@@ -138,10 +153,21 @@ export default async function AppEventsPage({
       ? { category }
       : {};
 
+  const searchFilter: Prisma.EventWhereInput = search
+    ? {
+        OR: [
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+          { location: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
   const baseWhere: Prisma.EventWhereInput = {
     status: "PUBLISHED",
     eventDate: { gte: today },
     ...categoryFilter,
+    ...searchFilter,
     ...(denomination ? { temple: { denomination } } : {}),
   };
 
@@ -243,6 +269,13 @@ export default async function AppEventsPage({
         </Link>
       </div>
 
+      {/* 検索バー */}
+      <div className="px-4 pb-3">
+        <Suspense>
+          <SearchBar placeholder="イベントを検索…" />
+        </Suspense>
+      </div>
+
       {/* カテゴリフィルタ */}
       <div className="flex gap-2 overflow-x-auto px-5 pb-4 scrollbar-hide">
         <Link
@@ -286,7 +319,8 @@ export default async function AppEventsPage({
             <div className="space-y-3">
               {myTempleEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={false}
-                  myStatus={myParticipationMap[event.id]} />
+                  myStatus={myParticipationMap[event.id]}
+                  recommended={!category && !search && interestTags.includes(event.category)} />
               ))}
             </div>
           </section>
@@ -320,7 +354,8 @@ export default async function AppEventsPage({
             <div className="space-y-3">
               {favoriteEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}
-                  myStatus={myParticipationMap[event.id]} />
+                  myStatus={myParticipationMap[event.id]}
+                  recommended={!category && !search && interestTags.includes(event.category)} />
               ))}
             </div>
           </section>
@@ -338,7 +373,8 @@ export default async function AppEventsPage({
             <div className="space-y-3">
               {otherEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}
-                  myStatus={myParticipationMap[event.id]} />
+                  myStatus={myParticipationMap[event.id]}
+                  recommended={!category && !search && interestTags.includes(event.category)} />
               ))}
             </div>
           </section>

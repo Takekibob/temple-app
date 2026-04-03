@@ -7,7 +7,7 @@ import FavoriteButton from "./FavoriteButton";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users } from "lucide-react";
 
 const INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "月額",
@@ -67,6 +67,8 @@ export default async function TempleProfilePage({
     isFavorite = !!fav;
   }
 
+  const followerCount = await prisma.memberFavoriteTemple.count({ where: { templeId: id } });
+
   const [templePlans, subscribedPlanIds] = await Promise.all([
     prisma.membershipPlan.findMany({
       where: { templeId: id, isActive: true, templateKey: { in: PLAN_TEMPLATES.map((t) => t.key) } },
@@ -123,6 +125,12 @@ export default async function TempleProfilePage({
               <h1 className="text-xl font-bold text-stone-800">{temple.name}</h1>
               {temple.denomination && (
                 <p className="text-sm text-amber-700 font-medium mt-0.5">{temple.denomination}</p>
+              )}
+              {followerCount > 0 && (
+                <p className="text-xs text-stone-400 mt-1 flex items-center gap-1">
+                  <Users size={11} />
+                  {followerCount}人がフォロー中
+                </p>
               )}
             </div>
           </div>

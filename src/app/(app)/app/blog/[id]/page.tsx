@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasActiveSubscription } from "@/lib/subscription";
 import { ChevronLeft, Lock, Calendar } from "lucide-react";
+import BlogLikeButton from "./BlogLikeButton";
 
 export default async function AppBlogDetailPage({
   params,
@@ -27,6 +28,7 @@ export default async function AppBlogDetailPage({
       publishedAt: true,
       templeId: true,
       temple: { select: { name: true } },
+      _count: { select: { likes: true } },
     },
   });
   if (!post) notFound();
@@ -46,6 +48,11 @@ export default async function AppBlogDetailPage({
     const ok = await hasActiveSubscription(memberId, post.templeId);
     if (!ok) redirect("/app/subscriptions");
   }
+
+  const myLike = await prisma.blogLike.findFirst({
+    where: { postId: id, memberId },
+    select: { id: true },
+  });
 
   return (
     <div className="max-w-lg mx-auto pb-28">
@@ -97,6 +104,14 @@ export default async function AppBlogDetailPage({
             <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
               {post.body}
             </p>
+          </div>
+
+          <div className="border-t border-stone-100 pt-4 mt-6">
+            <BlogLikeButton
+              postId={post.id}
+              initialLiked={!!myLike}
+              initialCount={post._count.likes}
+            />
           </div>
         </div>
       </div>

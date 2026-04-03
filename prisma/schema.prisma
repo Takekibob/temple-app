@@ -213,6 +213,7 @@ model Member {
   announcements    Announcement[]
   announcementReads AnnouncementRead[]
   changeRequests   MemberChangeRequest[]
+  blogLikes        BlogLike[]
 
   @@map("members")
 }
@@ -1068,8 +1069,22 @@ model BlogPost {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  likes            BlogLike[]
+
   @@index([templeId, status, publishedAt])
   @@map("blog_posts")
+}
+
+model BlogLike {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, memberId])
+  @@map("blog_likes")
 }
 
 enum BlogPostStatus {
