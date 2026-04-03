@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ReservationStatusForm from "./ReservationStatusForm";
+import { ChevronLeft, Printer, CalendarDays, Clock, User, Flower2, UtensilsCrossed, Users } from "lucide-react";
 
 const TYPE_LABELS: Record<string, string> = {
   ANNUAL_MEMORIAL: "年忌法要",
@@ -26,11 +27,7 @@ export default async function AdminReservationDetailPage({
   const reservation = await prisma.reservation.findFirst({
     where: { id, templeId: authUser.templeId },
     include: {
-      member: {
-        include: {
-          user: { select: { name: true, email: true, phone: true } },
-        },
-      },
+      member: { include: { user: { select: { name: true, email: true, phone: true } } } },
       deceasedPerson: { select: { name: true, relationship: true } },
     },
   });
@@ -41,139 +38,150 @@ export default async function AdminReservationDetailPage({
 
   return (
     <div className="p-6 max-w-2xl">
-      <Link
-        href="/admin/reservations"
-        className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block"
-      >
-        ← 法要予約一覧
+      {/* パンくず */}
+      <Link href="/admin/reservations" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-4 transition-colors">
+        <ChevronLeft size={14} />法要予約一覧
       </Link>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-stone-800">予約詳細</h1>
-          {reservation.memberEditedAt && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-              内容変更あり（{reservation.memberEditedAt.toLocaleDateString("ja-JP")} {reservation.memberEditedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）
-            </span>
-          )}
-          {reservation.isAdminCreated && (
-            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-              代理入力
-            </span>
-          )}
+
+      {/* ヘッダー */}
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h1 className="text-xl font-bold text-stone-800">
+              {TYPE_LABELS[reservation.type] ?? reservation.type}
+            </h1>
+            {reservation.isAdminCreated && (
+              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                代理入力
+              </span>
+            )}
+            {reservation.memberEditedAt && (
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                内容変更あり
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-stone-500">{reservation.member.user.name}</p>
         </div>
-        <Link
-          href={`/admin/reservations/${id}/print`}
-          target="_blank"
-          className="px-3 py-1.5 text-sm border border-stone-200 text-stone-600 rounded-lg hover:bg-stone-50"
-        >
-          印刷
+        <Link href={`/admin/reservations/${id}/print`} target="_blank"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 text-stone-600 rounded-xl hover:bg-stone-50 transition-colors">
+          <Printer size={14} />印刷
         </Link>
       </div>
 
-      <div className="space-y-4">
-        {/* 予約情報 */}
-        <section className="bg-white rounded-xl border border-stone-200 p-4">
-          <h2 className="font-semibold text-stone-800 mb-3">予約情報</h2>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-400">種別</dt>
-            <dd className="text-stone-800 font-medium">{TYPE_LABELS[reservation.type] ?? reservation.type}</dd>
-
-            <dt className="text-stone-400">日時</dt>
-            <dd className="text-stone-800">
-              {reservation.scheduledAt.toLocaleDateString("ja-JP", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                weekday: "short",
-              })}{" "}
-              {reservation.scheduledAt.toLocaleTimeString("ja-JP", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </dd>
-
-            <dt className="text-stone-400">所要時間</dt>
-            <dd className="text-stone-800">{reservation.durationMin}分</dd>
-
-            {reservation.deceasedPerson && (
-              <>
-                <dt className="text-stone-400">対象故人</dt>
-                <dd className="text-stone-800">
-                  {reservation.deceasedPerson.name}
-                  {reservation.deceasedPerson.relationship
-                    ? `（${reservation.deceasedPerson.relationship}）`
-                    : ""}
-                </dd>
-              </>
-            )}
-
-            {reservation.notes && (
-              <>
-                <dt className="text-stone-400">備考</dt>
-                <dd className="text-stone-800">{reservation.notes}</dd>
-              </>
-            )}
-
-            {reservation.attendees != null && (
-              <>
-                <dt className="text-stone-400">参列人数</dt>
-                <dd className="text-stone-800">{reservation.attendees}名</dd>
-              </>
-            )}
-
-            <dt className="text-stone-400">お清め</dt>
-            <dd className="text-stone-800">{reservation.purificationRequired ? "あり" : "なし"}</dd>
-
-            <dt className="text-stone-400">お花</dt>
-            <dd className="text-stone-800">
-              {reservation.flowerOrder
-                ? `注文あり${reservation.flowerDetail ? `（${reservation.flowerDetail}）` : ""}`
-                : "なし"}
-            </dd>
-
-            <dt className="text-stone-400">お料理</dt>
-            <dd className="text-stone-800">
-              {reservation.cateringOrder
-                ? `注文あり${reservation.cateringCount ? `・${reservation.cateringCount}名分` : ""}${reservation.cateringDetail ? `（${reservation.cateringDetail}）` : ""}`
-                : "なし"}
-            </dd>
-
-            <dt className="text-stone-400">予約日</dt>
-            <dd className="text-stone-400">{reservation.createdAt.toLocaleDateString("ja-JP")}</dd>
-          </dl>
-        </section>
-
-        {/* 会員情報 */}
-        <section className="bg-white rounded-xl border border-stone-200 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-stone-800">予約者</h2>
-            <Link
-              href={`/admin/members/${reservation.memberId}`}
-              className="text-xs text-amber-700 hover:underline"
-            >
-              会員詳細 →
-            </Link>
-          </div>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-400">氏名</dt>
-            <dd className="text-stone-800">{reservation.member.user.name}</dd>
-            <dt className="text-stone-400">メール</dt>
-            <dd className="text-stone-800">{reservation.member.user.email}</dd>
-            {reservation.member.user.phone && (
-              <>
-                <dt className="text-stone-400">電話</dt>
-                <dd className="text-stone-800">{reservation.member.user.phone}</dd>
-              </>
-            )}
-          </dl>
-        </section>
-
-        {/* ステータス管理 */}
+      <div className="space-y-3">
+        {/* ステータス */}
         <ReservationStatusForm
           id={reservation.id}
           currentStatus={reservation.status}
           isReadOnly={isStaffOnly}
         />
+
+        {/* 日時 */}
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl border border-amber-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarDays size={15} className="text-amber-700" />
+            <h2 className="font-semibold text-amber-800 text-sm">法要日時</h2>
+          </div>
+          <p className="text-2xl font-bold text-amber-900">
+            {reservation.scheduledAt.toLocaleDateString("ja-JP", {
+              year: "numeric", month: "long", day: "numeric", weekday: "short",
+            })}
+          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-1.5 text-amber-700">
+              <Clock size={14} />
+              <span className="text-lg font-semibold">
+                {reservation.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}〜
+              </span>
+            </div>
+            <span className="text-sm text-amber-600">{reservation.durationMin}分</span>
+          </div>
+        </div>
+
+        {/* 予約詳細 */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+          <h2 className="font-semibold text-stone-800 text-sm mb-3">詳細情報</h2>
+          <div className="space-y-3">
+            {reservation.deceasedPerson && (
+              <InfoRow label="対象故人">
+                {reservation.deceasedPerson.name}
+                {reservation.deceasedPerson.relationship && `（${reservation.deceasedPerson.relationship}）`}
+              </InfoRow>
+            )}
+            {reservation.attendees != null && (
+              <InfoRow icon={<Users size={13} className="text-stone-400" />} label="参列人数">
+                {reservation.attendees}名
+              </InfoRow>
+            )}
+            <InfoRow label="お清め">
+              {reservation.purificationRequired ? (
+                <span className="text-teal-700 font-medium">あり</span>
+              ) : "なし"}
+            </InfoRow>
+            <InfoRow icon={<Flower2 size={13} className="text-stone-400" />} label="お花">
+              {reservation.flowerOrder
+                ? <span className="text-teal-700 font-medium">注文あり{reservation.flowerDetail && `（${reservation.flowerDetail}）`}</span>
+                : "なし"}
+            </InfoRow>
+            <InfoRow icon={<UtensilsCrossed size={13} className="text-stone-400" />} label="お料理">
+              {reservation.cateringOrder
+                ? <span className="text-teal-700 font-medium">
+                    注文あり{reservation.cateringCount && `・${reservation.cateringCount}名分`}
+                    {reservation.cateringDetail && `（${reservation.cateringDetail}）`}
+                  </span>
+                : "なし"}
+            </InfoRow>
+            {reservation.notes && (
+              <div className="pt-2 border-t border-stone-50">
+                <p className="text-xs text-stone-400 mb-1">備考</p>
+                <p className="text-sm text-stone-700 bg-stone-50 rounded-xl p-3 leading-relaxed">{reservation.notes}</p>
+              </div>
+            )}
+            {reservation.memberEditedAt && (
+              <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
+                {reservation.memberEditedAt.toLocaleDateString("ja-JP")} {reservation.memberEditedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })} に変更
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 予約者 */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <User size={14} className="text-stone-400" />
+              <h2 className="font-semibold text-stone-800 text-sm">予約者</h2>
+            </div>
+            <Link href={`/admin/members/${reservation.memberId}`}
+              className="text-xs text-amber-700 hover:text-amber-900 font-medium">
+              会員詳細 →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            <InfoRow label="氏名">{reservation.member.user.name}</InfoRow>
+            {reservation.member.user.phone && (
+              <InfoRow label="電話">
+                <a href={`tel:${reservation.member.user.phone}`} className="text-amber-700 hover:underline">
+                  {reservation.member.user.phone}
+                </a>
+              </InfoRow>
+            )}
+            <InfoRow label="メール">{reservation.member.user.email}</InfoRow>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, children }: { icon?: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      {icon && <span className="mt-0.5 shrink-0">{icon}</span>}
+      <div className="flex items-start gap-3 flex-1">
+        <span className="text-xs text-stone-400 w-16 shrink-0 mt-0.5">{label}</span>
+        <span className="text-sm text-stone-800 flex-1">{children}</span>
       </div>
     </div>
   );

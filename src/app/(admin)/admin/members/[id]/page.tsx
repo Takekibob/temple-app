@@ -7,6 +7,10 @@ import StageChanger from "./StageChanger";
 import NotesClient from "./NotesClient";
 import { STAGE_LABELS, ACTIVITY_TYPE_LABELS } from "@/lib/scoring";
 import { logFeature } from "@/lib/featureLog";
+import {
+  ChevronLeft, Pencil, GitBranch, Phone, MapPin, CalendarDays,
+  BookOpen, Coins, Heart, Zap, MessageCircle, CheckCircle2, XCircle,
+} from "lucide-react";
 
 export default async function MemberDetailPage({
   params,
@@ -17,7 +21,6 @@ export default async function MemberDetailPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const { id } = await params;
-
   void logFeature(authUser.templeId, authUser.id, "member_detail", "view");
 
   const member = await prisma.member.findFirst({
@@ -51,7 +54,6 @@ export default async function MemberDetailPage({
   const isDanka = member.type === "DANKA";
   const isConversionCandidate = !isDanka && member.engagementScore >= 70;
 
-  // MemberNote を Client Component に渡せる形にシリアライズ
   const serializedNotes = member.memberNotes.map((n) => ({
     ...n,
     followupDate: n.followupDate ? n.followupDate.toISOString().slice(0, 10) : null,
@@ -59,355 +61,339 @@ export default async function MemberDetailPage({
     updatedAt: n.updatedAt.toISOString(),
   }));
 
+  const TAG_COLORS: Record<string, string> = {
+    要フォロー: "bg-amber-100 text-amber-800",
+    要注意: "bg-red-100 text-red-700",
+    VIP: "bg-green-100 text-green-800",
+    体調注意: "bg-orange-100 text-orange-700",
+    遠方: "bg-blue-100 text-blue-700",
+    一人暮らし: "bg-purple-100 text-purple-700",
+    跡継ぎ不在: "bg-stone-100 text-stone-600",
+  };
+
   return (
     <div className="p-6 max-w-4xl">
-      {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <Link href="/admin/members" className="text-sm text-stone-400 hover:text-stone-600 mb-2 inline-block">
-            ← 会員一覧
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-lg">
+      {/* パンくず + ヘッダー */}
+      <div className="mb-5">
+        <Link href="/admin/members" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-3 transition-colors">
+          <ChevronLeft size={14} />会員一覧
+        </Link>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* アバター */}
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 ${
+              isDanka
+                ? "bg-gradient-to-br from-amber-600 to-amber-800"
+                : "bg-gradient-to-br from-teal-500 to-teal-700"
+            }`}>
               {member.user.name.charAt(0)}
             </div>
+
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-stone-800">{member.user.name}</h1>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    isDanka ? "bg-amber-100 text-amber-800" : "bg-teal-100 text-teal-800"
-                  }`}
-                >
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  isDanka ? "bg-amber-100 text-amber-800" : "bg-teal-100 text-teal-800"
+                }`}>
                   {isDanka ? "檀家" : "ご縁さん"}
                 </span>
                 <StageChanger memberId={id} currentStage={member.stage} memberType={member.type} />
                 {isConversionCandidate && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">
                     転換候補
                   </span>
                 )}
               </div>
-              <p className="text-sm text-stone-500">{member.user.email}</p>
+              {member.familyName && (
+                <p className="text-sm text-stone-500 mt-0.5">{member.familyName}家・{member.user.email}</p>
+              )}
             </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {isConversionCandidate && (
-            <PromoteButton memberId={id} memberName={member.user.name} />
-          )}
-          {isDanka && (
-            <Link
-              href={`/admin/members/${id}/family-tree`}
-              className="px-4 py-2 bg-white border border-stone-200 text-stone-600 text-sm rounded-lg hover:bg-stone-50"
-            >
-              家系図
+
+          {/* アクション */}
+          <div className="flex gap-2 shrink-0">
+            {isConversionCandidate && (
+              <PromoteButton memberId={id} memberName={member.user.name} />
+            )}
+            {isDanka && (
+              <Link href={`/admin/members/${id}/family-tree`}
+                className="flex items-center gap-1.5 px-3 py-2 bg-white border border-stone-200 text-stone-600 text-sm rounded-xl hover:bg-stone-50 transition-colors">
+                <GitBranch size={14} />家系図
+              </Link>
+            )}
+            <Link href={`/admin/members/${id}/edit`}
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-700 text-white text-sm rounded-xl hover:bg-amber-800 transition-colors font-medium">
+              <Pencil size={14} />編集
             </Link>
-          )}
-          <Link
-            href={`/admin/members/${id}/edit`}
-            className="px-4 py-2 bg-amber-700 text-white text-sm rounded-lg hover:bg-amber-800"
-          >
-            編集
-          </Link>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* 左カラム: 基本情報 */}
+        {/* 左カラム */}
         <div className="lg:col-span-2 space-y-4">
           {/* 基本情報 */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">基本情報</h2>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-stone-400">家名</dt>
-              <dd className="text-stone-800">{member.familyName}</dd>
-              <dt className="text-stone-400">電話番号</dt>
-              <dd className="text-stone-800">{member.user.phone ?? member.phone ?? "—"}</dd>
-              <dt className="text-stone-400">住所</dt>
-              <dd className="text-stone-800">{member.address ?? "—"}</dd>
-              <dt className="text-stone-400">登録日</dt>
-              <dd className="text-stone-800">{member.joinedDate.toLocaleDateString("ja-JP")}</dd>
-              {member.notes && (
-                <>
-                  <dt className="text-stone-400">備考</dt>
-                  <dd className="text-stone-800">{member.notes}</dd>
-                </>
+          <Card title="基本情報">
+            <div className="space-y-3">
+              {member.user.phone || member.phone ? (
+                <Row icon={<Phone size={14} className="text-stone-400" />} label="電話番号"
+                  value={<a href={`tel:${member.user.phone ?? member.phone}`} className="text-amber-700 hover:underline">{member.user.phone ?? member.phone}</a>} />
+              ) : null}
+              {member.address && (
+                <Row icon={<MapPin size={14} className="text-stone-400" />} label="住所" value={member.address} />
               )}
-            </dl>
-            {/* サマリーメモ・優先度タグ */}
-            {(member.summaryNote || member.priorityTags.length > 0) && (
+              <Row icon={<CalendarDays size={14} className="text-stone-400" />} label="登録日"
+                value={member.joinedDate.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })} />
+              {member.notes && (
+                <div className="pt-2 border-t border-stone-50">
+                  <p className="text-xs text-stone-400 mb-1">備考</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{member.notes}</p>
+                </div>
+              )}
+            </div>
+            {(member.priorityTags.length > 0 || member.summaryNote) && (
               <div className="mt-3 pt-3 border-t border-stone-100 space-y-2">
                 {member.priorityTags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {member.priorityTags.map((tag) => (
-                      <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        tag === "要フォロー" ? "bg-amber-100 text-amber-800" :
-                        tag === "要注意" ? "bg-red-100 text-red-700" :
-                        tag === "VIP" ? "bg-green-100 text-green-800" :
-                        "bg-stone-100 text-stone-600"
-                      }`}>
+                      <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-semibold ${TAG_COLORS[tag] ?? "bg-stone-100 text-stone-600"}`}>
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
                 {member.summaryNote && (
-                  <p className="text-sm text-stone-600 leading-relaxed">{member.summaryNote}</p>
+                  <p className="text-sm text-stone-600 leading-relaxed bg-stone-50 rounded-xl p-3">{member.summaryNote}</p>
                 )}
               </div>
             )}
-          </section>
+          </Card>
 
-          {/* 檀家専用: 過去帳 */}
+          {/* 過去帳（檀家） */}
           {isDanka && (
-            <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-stone-800">過去帳（{member.deceasedPersons.length}件）</h2>
-                <Link href={`/admin/deceased?memberId=${id}`} className="text-xs text-amber-700">
-                  過去帳を見る →
-                </Link>
-              </div>
+            <Card
+              title={`過去帳（${member.deceasedPersons.length}件）`}
+              icon={<BookOpen size={14} className="text-stone-500" />}
+              action={<Link href={`/admin/deceased?memberId=${id}`} className="text-xs text-amber-700 hover:text-amber-900 font-medium">すべて見る →</Link>}
+            >
               {member.deceasedPersons.length === 0 ? (
                 <p className="text-sm text-stone-400">登録なし</p>
               ) : (
-                <ul className="space-y-2">
+                <div className="space-y-2">
                   {member.deceasedPersons.slice(0, 3).map((p) => (
-                    <li key={p.id} className="text-sm flex justify-between">
-                      <span className="text-stone-800">{p.name}</span>
-                      <span className="text-stone-400">
-                        {p.deathDate ? p.deathDate.toLocaleDateString("ja-JP") : "—"}
+                    <div key={p.id} className="flex justify-between items-center py-1.5 border-b border-stone-50 last:border-0">
+                      <span className="text-sm font-medium text-stone-800">{p.name}</span>
+                      <span className="text-xs text-stone-400">
+                        {p.deathDate ? p.deathDate.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" }) : "—"}
                       </span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
-            </section>
+            </Card>
           )}
 
-          {/* 檀家専用: 護持会費 */}
+          {/* 護持会費（檀家） */}
           {isDanka && (
-            <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-stone-800">護持会費</h2>
-                <Link href="/admin/gojikai" className="text-xs text-amber-700">
-                  一覧へ →
-                </Link>
-              </div>
+            <Card
+              title="護持会費"
+              icon={<Coins size={14} className="text-stone-500" />}
+              action={<Link href="/admin/gojikai" className="text-xs text-amber-700 hover:text-amber-900 font-medium">一覧へ →</Link>}
+            >
               {member.gojikaiPayments.length === 0 ? (
                 <p className="text-sm text-stone-400">支払い記録なし</p>
               ) : (
-                <ul className="divide-y divide-stone-50">
+                <div className="space-y-2">
                   {member.gojikaiPayments.map((p) => (
-                    <li key={p.id} className="text-sm flex items-center justify-between py-2">
-                      <span className="text-stone-800 font-medium">{p.fiscalYear}年度</span>
+                    <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-stone-50 last:border-0">
+                      <span className="text-sm font-semibold text-stone-800">{p.fiscalYear}年度</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-stone-500 text-xs">
-                          {p.paidAt ? new Date(p.paidAt).toLocaleDateString("ja-JP") : "—"}
-                        </span>
-                        <span className="text-stone-700">¥{p.amount.toLocaleString()}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          p.status === "PAID"
-                            ? "bg-teal-100 text-teal-800"
-                            : p.status === "EXEMPT"
-                            ? "bg-stone-100 text-stone-500"
-                            : "bg-red-100 text-red-700"
+                        <span className="text-sm font-medium text-stone-700">¥{p.amount.toLocaleString()}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          p.status === "PAID" ? "bg-teal-100 text-teal-800" :
+                          p.status === "EXEMPT" ? "bg-stone-100 text-stone-500" :
+                          "bg-red-100 text-red-700"
                         }`}>
                           {p.status === "PAID" ? "納付済" : p.status === "EXEMPT" ? "免除" : "未納"}
                         </span>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          )}
-
-          {/* ご縁さん専用: 興味タグ + スコア */}
-          {!isDanka && (
-            <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <h2 className="font-semibold text-stone-800 mb-3">興味・関心</h2>
-              {interestTags.length === 0 ? (
-                <p className="text-sm text-stone-400">タグなし</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {interestTags.map((tag) => (
-                    <span key={tag} className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full">
-                      {tag}
-                    </span>
+                    </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Card>
+          )}
+
+          {/* 興味・関心（ご縁さん） */}
+          {!isDanka && interestTags.length > 0 && (
+            <Card title="興味・関心" icon={<Heart size={14} className="text-stone-500" />}>
+              <div className="flex flex-wrap gap-2">
+                {interestTags.map((tag) => (
+                  <span key={tag} className="px-2.5 py-1 bg-teal-50 text-teal-700 text-xs rounded-full font-medium border border-teal-100">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Card>
           )}
 
           {/* メモ・対応履歴 */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">
-              メモ・対応履歴
-              <span className="ml-2 text-xs font-normal text-stone-400">
-                ({member.memberNotes.length}件)
-              </span>
-            </h2>
+          <Card
+            title={`メモ・対応履歴（${member.memberNotes.length}件）`}
+            icon={<BookOpen size={14} className="text-stone-500" />}
+          >
             <NotesClient memberId={id} initialNotes={serializedNotes} />
-          </section>
+          </Card>
 
           {/* イベント参加履歴 */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">
-              イベント参加履歴（{member.eventParticipations.length}件）
-            </h2>
-            {member.eventParticipations.length === 0 ? (
-              <p className="text-sm text-stone-400">参加記録なし</p>
-            ) : (
-              <ul className="space-y-2">
+          {member.eventParticipations.length > 0 && (
+            <Card
+              title={`イベント参加履歴（${member.eventParticipations.length}件）`}
+              icon={<CalendarDays size={14} className="text-stone-500" />}
+            >
+              <div className="space-y-2">
                 {member.eventParticipations.map((ep) => (
-                  <li key={ep.id} className="text-sm flex justify-between items-center">
-                    <span className="text-stone-800">{ep.event.title}</span>
-                    <span className="text-stone-400">
-                      {ep.event.eventDate.toLocaleDateString("ja-JP")}
+                  <div key={ep.id} className="flex justify-between items-center py-1.5 border-b border-stone-50 last:border-0">
+                    <span className="text-sm text-stone-800">{ep.event.title}</span>
+                    <span className="text-xs text-stone-400 shrink-0 ml-2">
+                      {ep.event.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                     </span>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            )}
-          </section>
+              </div>
+            </Card>
+          )}
         </div>
 
-        {/* 右カラム: エンゲージメント + 対応履歴 */}
+        {/* 右カラム */}
         <div className="space-y-4">
-          {/* LINE連携状況 */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">LINE連携</h2>
+          {/* エンゲージメントスコア */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-2xl border border-amber-200 p-4 text-center">
+            <p className="text-xs text-amber-700 font-semibold mb-1">エンゲージメントスコア</p>
+            <p className="text-5xl font-bold text-amber-800">{member.engagementScore}</p>
+            <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-600 rounded-full transition-all" style={{ width: `${Math.min(100, member.engagementScore)}%` }} />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-white/70 rounded-xl p-2">
+                <p className="font-bold text-stone-800 text-base">{member.lifetimeScore}</p>
+                <p className="text-stone-500">累計スコア</p>
+              </div>
+              <div className="bg-white/70 rounded-xl p-2">
+                <p className="font-bold text-stone-800 text-base">{member.totalEventsAttended}</p>
+                <p className="text-stone-500">参加イベント</p>
+              </div>
+            </div>
+          </div>
+
+          {/* LINE連携 */}
+          <Card title="LINE連携" icon={<MessageCircle size={14} className="text-stone-500" />}>
             <div className="flex items-center gap-2 mb-2">
-              <span className={`w-2 h-2 rounded-full ${member.lineUserId ? "bg-green-500" : "bg-stone-300"}`} />
-              <span className="text-sm font-medium text-stone-700">
+              {member.lineUserId ? (
+                <CheckCircle2 size={16} className="text-green-500" />
+              ) : (
+                <XCircle size={16} className="text-stone-300" />
+              )}
+              <span className={`text-sm font-semibold ${member.lineUserId ? "text-green-700" : "text-stone-400"}`}>
                 {member.lineUserId ? "連携済み" : "未連携"}
               </span>
             </div>
             {member.lineUserId && (
-              <dl className="space-y-1 text-xs text-stone-500">
-                <div className="flex justify-between">
-                  <dt>通知有効</dt>
-                  <dd className={member.lineNotifyEnabled ? "text-teal-700 font-medium" : "text-stone-400"}>
-                    {member.lineNotifyEnabled ? "有効" : "無効"}
-                  </dd>
-                </div>
-                {member.lineNotifyEnabled && (
-                  <>
-                    <div className="flex justify-between">
-                      <dt>予約通知</dt>
-                      <dd>{member.notifyReservation ? "✓" : "—"}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>イベント通知</dt>
-                      <dd>{member.notifyEvent ? "✓" : "—"}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>命日通知</dt>
-                      <dd>{member.notifyAnniversary ? "✓" : "—"}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>お知らせ通知</dt>
-                      <dd>{member.notifyAnnouncement ? "✓" : "—"}</dd>
-                    </div>
-                  </>
-                )}
-              </dl>
+              <div className="space-y-1.5 mt-2">
+                {[
+                  { label: "予約通知", value: member.notifyReservation },
+                  { label: "イベント通知", value: member.notifyEvent },
+                  { label: "命日通知", value: member.notifyAnniversary },
+                  { label: "お知らせ通知", value: member.notifyAnnouncement },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex justify-between items-center text-xs">
+                    <span className="text-stone-500">{label}</span>
+                    <span className={value ? "text-teal-600 font-semibold" : "text-stone-300"}>
+                      {value ? "ON" : "OFF"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
             {!member.lineUserId && member.lineCode && member.lineCodeExpiresAt && (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-amber-600 mt-2 bg-amber-50 rounded-lg p-2">
                 連携コード有効期限: {member.lineCodeExpiresAt.toLocaleDateString("ja-JP")}
               </p>
             )}
-          </section>
+          </Card>
 
-          {/* エンゲージメントスコア */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4 text-center">
-            <p className="text-xs text-stone-400 mb-1">エンゲージメントスコア</p>
-            <p className="text-4xl font-bold text-amber-700">{member.engagementScore}</p>
-            <div className="mt-2 h-2 bg-stone-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-amber-500 rounded-full"
-                style={{ width: `${Math.min(100, member.engagementScore)}%` }}
-              />
-            </div>
-            <div className="mt-3 flex justify-around text-xs text-stone-500">
-              <div>
-                <p className="font-semibold text-stone-700">{member.lifetimeScore}</p>
-                <p>累計スコア</p>
-              </div>
-              <div>
-                <p className="font-semibold text-stone-700">{member.totalEventsAttended}</p>
-                <p>参加イベント</p>
-              </div>
-            </div>
-          </section>
-
-          {/* ステージ遷移履歴 */}
+          {/* ステージ変更履歴 */}
           {member.stageTransitions.length > 0 && (
-            <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <h2 className="font-semibold text-stone-800 mb-3">ステージ変更履歴</h2>
-              <ul className="space-y-2">
+            <Card title="ステージ変更履歴" icon={<Zap size={14} className="text-stone-500" />}>
+              <div className="space-y-2">
                 {member.stageTransitions.map((t) => (
-                  <li key={t.id} className="text-xs flex items-center justify-between">
+                  <div key={t.id} className="flex items-center justify-between text-xs">
                     <span className="text-stone-600">
                       {t.fromStage ? `${STAGE_LABELS[t.fromStage]} → ` : ""}
-                      {STAGE_LABELS[t.toStage]}
-                      {t.triggeredBy === "AUTO" && (
-                        <span className="ml-1 text-stone-300">自動</span>
-                      )}
+                      <span className="font-semibold">{STAGE_LABELS[t.toStage]}</span>
+                      {t.triggeredBy === "AUTO" && <span className="ml-1 text-stone-300">自動</span>}
                     </span>
-                    <span className="text-stone-300">
-                      {t.createdAt.toLocaleDateString("ja-JP")}
+                    <span className="text-stone-400 shrink-0 ml-2">
+                      {t.createdAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                     </span>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            </section>
+              </div>
+            </Card>
           )}
 
-          {/* スコアリングイベント */}
+          {/* スコア獲得履歴 */}
           {member.scoringEvents.length > 0 && (
-            <section className="bg-white rounded-xl border border-stone-200 p-4">
-              <h2 className="font-semibold text-stone-800 mb-3">スコア獲得履歴</h2>
-              <ul className="space-y-2">
-                {member.scoringEvents.map((e) => (
-                  <li key={e.id} className="text-xs flex justify-between items-center">
-                    <span className="text-stone-600">
-                      {ACTIVITY_TYPE_LABELS[e.activityType] ?? e.activityType}
-                    </span>
-                    <div className="text-right">
-                      <span className="text-amber-700 font-medium">+{e.score}pt</span>
-                      <p className="text-stone-300">{e.createdAt.toLocaleDateString("ja-JP")}</p>
+            <Card title="スコア獲得履歴" icon={<Zap size={14} className="text-amber-500" />}>
+              <div className="space-y-2">
+                {member.scoringEvents.slice(0, 8).map((e) => (
+                  <div key={e.id} className="flex items-center justify-between text-xs">
+                    <span className="text-stone-600">{ACTIVITY_TYPE_LABELS[e.activityType] ?? e.activityType}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-amber-700 font-bold">+{e.score}pt</span>
+                      <span className="text-stone-300">{e.createdAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}</span>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            </section>
+              </div>
+            </Card>
           )}
-
-          {/* アクティビティログ */}
-          <section className="bg-white rounded-xl border border-stone-200 p-4">
-            <h2 className="font-semibold text-stone-800 mb-3">アクティビティ</h2>
-            {member.activities.length === 0 ? (
-              <p className="text-sm text-stone-400">記録なし</p>
-            ) : (
-              <ul className="space-y-2">
-                {member.activities.map((a) => (
-                  <li key={a.id} className="text-xs flex justify-between items-center">
-                    <span className="text-stone-600">{ACTIVITY_TYPE_LABELS[a.type] ?? a.type}</span>
-                    <div className="text-right">
-                      <span className="text-amber-700 font-medium">+{a.score}pt</span>
-                      <p className="text-stone-300">{a.createdAt.toLocaleDateString("ja-JP")}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
         </div>
+      </div>
+    </div>
+  );
+}
+
+function Card({
+  title, icon, action, children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <h2 className="font-semibold text-stone-800 text-sm">{title}</h2>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-stone-400">{label}</p>
+        <p className="text-sm text-stone-800">{value}</p>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChangeRequestsClient from "./ChangeRequestsClient";
+import { FilePen } from "lucide-react";
 
 export default async function ChangeRequestsPage() {
   const authUser = await getAuthUser();
@@ -16,12 +17,22 @@ export default async function ChangeRequestsPage() {
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   });
 
+  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+
   return (
     <div className="p-6 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-800">檀家情報 変更申請</h1>
-        <p className="text-sm text-stone-500 mt-0.5">
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-0.5">
+          <FilePen size={18} className="text-amber-700" />
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">情報変更申請</h1>
+        </div>
+        <p className="text-sm text-stone-400">
           檀家から申請された情報変更を確認・承認・却下できます
+          {pendingCount > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+              未対応 {pendingCount}件
+            </span>
+          )}
         </p>
       </div>
 

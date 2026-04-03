@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import GojikaiClient from "./GojikaiClient";
+import { Landmark } from "lucide-react";
 
 interface SearchParams {
   year?: string;
@@ -17,7 +18,6 @@ export default async function AdminGojikaiPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const { year } = await searchParams;
-  // 日本の年度は4月始まり: 1〜3月は前年度
   const now = new Date();
   const currentFiscalYear =
     now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
@@ -25,21 +25,15 @@ export default async function AdminGojikaiPage({
 
   const [payments, rule] = await Promise.all([
     prisma.gojikaiPayment.findMany({
-      where: {
-        fiscalYear,
-        member: { templeId: authUser.templeId },
-      },
+      where: { fiscalYear, member: { templeId: authUser.templeId } },
       orderBy: { createdAt: "asc" },
-      include: {
-        member: { include: { user: { select: { name: true } } } },
-      },
+      include: { member: { include: { user: { select: { name: true } } } } },
     }),
     prisma.gojikaiRule.findFirst({ where: { templeId: authUser.templeId } }),
   ]);
 
   const years = Array.from({ length: 5 }, (_, i) => currentFiscalYear - i);
 
-  // Serialize Date objects for client component
   const serializedPayments = payments.map((p) => ({
     ...p,
     paidAt: p.paidAt ? p.paidAt.toISOString() : null,
@@ -47,27 +41,54 @@ export default async function AdminGojikaiPage({
     createdAt: p.createdAt.toISOString(),
   }));
 
+  const paidCount = payments.filter((p) => p.status === "PAID").length;
+  const unpaidCount = payments.filter((p) => p.status === "UNPAID").length;
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 max-w-4xl">
+      {/* ヘッダー */}
+      <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">護持会費管理</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{fiscalYear}年度（{fiscalYear}/4〜{fiscalYear + 1}/3）</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <Landmark size={18} className="text-amber-700" />
+            <h1 className="text-2xl font-bold text-stone-800 tracking-tight">護持会費管理</h1>
+          </div>
+          <p className="text-sm text-stone-400">
+            {fiscalYear}年度（{fiscalYear}/4〜{fiscalYear + 1}/3）
+          </p>
+        </div>
+      </div>
+
+      {/* サマリー */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 text-center">
+          <p className="text-xs text-stone-400 mb-1">全体</p>
+          <p className="text-2xl font-bold text-stone-800">{payments.length}<span className="text-sm font-normal text-stone-400 ml-0.5">件</span></p>
+        </div>
+        <div className="bg-teal-50 rounded-2xl border border-teal-200 p-4 text-center">
+          <p className="text-xs text-teal-600 mb-1">納付済み</p>
+          <p className="text-2xl font-bold text-teal-700">{paidCount}<span className="text-sm font-normal text-teal-500 ml-0.5">件</span></p>
+        </div>
+        <div className={`rounded-2xl border p-4 text-center ${unpaidCount > 0 ? "bg-red-50 border-red-200" : "bg-stone-50 border-stone-100"}`}>
+          <p className={`text-xs mb-1 ${unpaidCount > 0 ? "text-red-600" : "text-stone-400"}`}>未納</p>
+          <p className={`text-2xl font-bold ${unpaidCount > 0 ? "text-red-700" : "text-stone-400"}`}>
+            {unpaidCount}<span className="text-sm font-normal ml-0.5">件</span>
+          </p>
         </div>
       </div>
 
       {/* 年度切替 */}
-      <div className="flex gap-2 mb-6 items-center">
-        <span className="text-sm text-stone-500">年度:</span>
-        <div className="flex gap-1 bg-white border border-stone-200 rounded-lg p-1">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="text-xs text-stone-400 font-medium">年度:</span>
+        <div className="flex gap-1 bg-stone-100 rounded-xl p-1">
           {years.map((y) => (
             <Link
               key={y}
               href={`/admin/gojikai?year=${y}`}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 fiscalYear === y
-                  ? "bg-amber-700 text-white font-medium"
-                  : "text-stone-600 hover:bg-stone-100"
+                  ? "bg-white text-amber-800 shadow-sm"
+                  : "text-stone-500 hover:text-stone-700"
               }`}
             >
               {y}年度
