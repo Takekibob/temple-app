@@ -101,7 +101,6 @@ async function main() {
       address: "長野県長野市大字長野1-1-1",
       phone: "090-0001-0001",
       email: PILOT_DANKA_EMAIL,
-      engagementScore: 45,
     },
   });
   console.log(`  ✅ Danka member: ${dankaUser.name} <${dankaUser.email}>`);
@@ -133,7 +132,6 @@ async function main() {
       familyName: "鈴木",
       email: PILOT_GOEN_EMAIL,
       phone: "090-0002-0002",
-      engagementScore: 28,
       referralSource: "SNS",
     },
   });
@@ -331,7 +329,6 @@ async function main() {
       address: "京都府京都市上京区1-2-3",
       phone: "090-0003-0003",
       email: DEMO2_DANKA_EMAIL,
-      engagementScore: 30,
     },
   });
   console.log(`  ✅ Temple 2 danka: ${danka2.name} <${danka2.email}>`);
