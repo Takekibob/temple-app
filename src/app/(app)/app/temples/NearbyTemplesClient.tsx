@@ -34,9 +34,11 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 export default function NearbyTemplesClient({
   temples,
   hasMember,
+  initialTab = "all",
 }: {
   temples: TempleItem[];
   hasMember: boolean;
+  initialTab?: "all" | "following";
 }) {
   const [sorted, setSorted] = useState<TempleWithDistance[]>(
     temples.map((t) => ({ ...t, distanceKm: null }))
@@ -46,7 +48,7 @@ export default function NearbyTemplesClient({
   );
   const [geoState, setGeoState] = useState<"idle" | "loading" | "granted" | "denied">("idle");
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"all" | "following">("all");
+  const [tab, setTab] = useState<"all" | "following">(initialTab);
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
 

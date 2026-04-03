@@ -3,7 +3,12 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import NearbyTemplesClient from "./NearbyTemplesClient";
 
-export default async function TemplesPage() {
+export default async function TemplesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
@@ -56,7 +61,11 @@ export default async function TemplesPage() {
       </div>
 
       <div className="px-4">
-        <NearbyTemplesClient temples={templeItems} hasMember={!!memberId} />
+        <NearbyTemplesClient
+          temples={templeItems}
+          hasMember={!!memberId}
+          initialTab={tab === "following" ? "following" : "all"}
+        />
       </div>
     </div>
   );
