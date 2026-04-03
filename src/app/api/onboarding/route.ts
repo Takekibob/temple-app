@@ -93,13 +93,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 既にmembersレコードがある場合はスキップ
+    const type = memberType === "DANKA" ? MemberType.DANKA : MemberType.GOEN;
+
+    // 既にmembersレコードがある場合はtypeが異なれば更新
     const existing = await prisma.member.findUnique({ where: { userId: dbUser.id } });
     if (existing) {
+      if (existing.type !== type) {
+        await prisma.member.update({ where: { id: existing.id }, data: { type } });
+      }
       return NextResponse.json({ ok: true });
     }
-
-    const type = memberType === "DANKA" ? MemberType.DANKA : MemberType.GOEN;
 
     await prisma.member.create({
       data: {

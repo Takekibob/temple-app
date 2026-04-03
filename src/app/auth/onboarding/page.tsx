@@ -23,10 +23,12 @@ export default async function OnboardingPage() {
       redirect("/superadmin");
     }
     if (dbUser?.member) {
+      // ADMIN/STAFFは管理画面へ。MEMBERは既に会員登録済みだが、
+      // Supabaseのauthユーザーが初めてログインする場合はtypeを変更できるよう通す
       if (["ADMIN", "STAFF"].includes(dbUser.role)) {
         redirect("/admin");
       }
-      redirect("/app");
+      // SUPER_ADMINはスキップ済みなのでここに到達しない
     }
   }
 

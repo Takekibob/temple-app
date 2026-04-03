@@ -12,13 +12,14 @@ import {
 
 interface Props {
   user: { name: string; email: string };
-  member: { id: string; familyName: string } | null;
+  member: { id: string; familyName: string; type: string } | null;
   templeId: string | null;
   lineLinked: boolean;
 }
 
 export default function MypageClient({ user, member, templeId, lineLinked }: Props) {
   const [isLogoutPending, startLogoutTransition] = useTransition();
+  const isDanka = member?.type === "DANKA";
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -48,11 +49,15 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-stone-800 text-base">{user.name}</p>
                 <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
-                <div className="mt-2">
-                  <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">
-                    檀家
-                  </span>
-                </div>
+                {member && (
+                  <div className="mt-2">
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                      isDanka ? "bg-amber-100 text-amber-800" : "bg-teal-100 text-teal-800"
+                    }`}>
+                      {isDanka ? "檀家" : "ご縁さん"}
+                    </span>
+                  </div>
+                )}
               </div>
               <Link href="/app/mypage/profile"
                 className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl border border-stone-200 text-stone-400 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-all">
@@ -85,23 +90,28 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
 
         {/* お寺との繋がり */}
         <NavSection title="お寺との繋がり">
-          {templeId && (
+          {isDanka && templeId && (
             <NavItem href={`/app/temples/${templeId}`} icon={MapPin} label="所属寺院について" iconColor="text-stone-600 bg-stone-100" />
+          )}
+          {!isDanka && (
+            <NavItem href="/app/temples" icon={MapPin} label="お気に入りのお寺" iconColor="text-stone-600 bg-stone-100" />
           )}
           <NavItem href="/app/donations/new" icon={Gift} label="寄付する" iconColor="text-purple-600 bg-purple-50" />
           <NavItem href="/app/subscriptions" icon={Ticket} label="会員プラン" iconColor="text-emerald-700 bg-emerald-50" />
         </NavSection>
 
-        {/* お寺との記録 */}
-        <NavSection title="お寺との記録">
-          <NavItem href="/app/reservations" icon={CalendarDays} label="法要予約履歴" iconColor="text-amber-700 bg-amber-50" />
-          <NavItem href="/app/ofuse" icon={Coins} label="お布施履歴" iconColor="text-yellow-700 bg-yellow-50" />
-          <NavItem href="/app/deceased" icon={ScrollText} label="過去帳" iconColor="text-stone-600 bg-stone-100" />
-        </NavSection>
+        {/* お寺との記録（檀家のみ） */}
+        {isDanka && (
+          <NavSection title="お寺との記録">
+            <NavItem href="/app/reservations" icon={CalendarDays} label="法要予約履歴" iconColor="text-amber-700 bg-amber-50" />
+            <NavItem href="/app/ofuse" icon={Coins} label="お布施履歴" iconColor="text-yellow-700 bg-yellow-50" />
+            <NavItem href="/app/deceased" icon={ScrollText} label="過去帳" iconColor="text-stone-600 bg-stone-100" />
+          </NavSection>
+        )}
 
         {/* アカウント情報 */}
         <NavSection title="アカウント情報">
-          {member && (
+          {isDanka && (
             <NavItem href="/app/mypage/danka-info" icon={ClipboardList} label="檀家情報" iconColor="text-amber-700 bg-amber-50" />
           )}
           <NavItem

@@ -71,7 +71,7 @@ export async function POST(
           familyName: m.familyName,
           address: m.address ?? null,
           postalCode: m.postalCode ?? null,
-          type: m.type ?? "DANKA",
+          type: m.type ?? "GOEN",
           notes: m.notes ?? null,
         },
       });
