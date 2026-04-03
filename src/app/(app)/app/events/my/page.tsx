@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
-import { BookOpen, Clock, ChevronRight, CheckCircle, Users } from "lucide-react";
+import { BookOpen, Clock, ChevronRight, CheckCircle, Users, PenLine } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   APPLIED: "確認待ち",
@@ -154,41 +154,54 @@ function ParticipationRow({
   };
   past?: boolean;
 }) {
+  const canFeedback = past && ["ATTENDED", "CONFIRMED"].includes(p.status);
+
   return (
-    <Link
-      href={`/app/events/${p.event.id}`}
-      className={`flex items-center justify-between bg-white rounded-2xl border p-4 transition-all hover:shadow-sm ${
-        past ? "border-stone-100 hover:border-stone-200" : "border-stone-100 hover:border-teal-200"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-          past ? "bg-stone-100" : "bg-teal-50"
-        }`}>
-          <BookOpen size={15} className={past ? "text-stone-400" : "text-teal-600"} />
+    <div className={`bg-white rounded-2xl border ${past ? "border-stone-100" : "border-stone-100"}`}>
+      <Link
+        href={`/app/events/${p.event.id}`}
+        className={`flex items-center justify-between p-4 transition-all hover:opacity-80 ${canFeedback ? "" : "rounded-2xl"}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            past ? "bg-stone-100" : "bg-teal-50"
+          }`}>
+            <BookOpen size={15} className={past ? "text-stone-400" : "text-teal-600"} />
+          </div>
+          <div>
+            <p className="text-xs text-stone-400 mb-0.5">
+              {getCategoryIcon(p.event.category)} {getCategoryLabel(p.event.category)}
+            </p>
+            <p className={`text-sm font-semibold leading-snug ${past ? "text-stone-500" : "text-stone-800"}`}>
+              {p.event.title}
+            </p>
+            <p className="text-xs text-stone-400 mt-0.5">
+              {p.event.eventDate.toLocaleDateString("ja-JP", {
+                month: "long", day: "numeric", weekday: "short",
+              })}
+              {" "}{p.event.startTime}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-stone-400 mb-0.5">
-            {getCategoryIcon(p.event.category)} {getCategoryLabel(p.event.category)}
-          </p>
-          <p className={`text-sm font-semibold leading-snug ${past ? "text-stone-500" : "text-stone-800"}`}>
-            {p.event.title}
-          </p>
-          <p className="text-xs text-stone-400 mt-0.5">
-            {p.event.eventDate.toLocaleDateString("ja-JP", {
-              month: "long", day: "numeric", weekday: "short",
-            })}
-            {" "}{p.event.startTime}
-          </p>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES[p.status]}`}>
+            {STATUS_LABELS[p.status]}
+          </span>
+          <ChevronRight size={15} className="text-stone-300" />
         </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-2">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES[p.status]}`}>
-          {STATUS_LABELS[p.status]}
-        </span>
-        <ChevronRight size={15} className="text-stone-300" />
-      </div>
-    </Link>
+      </Link>
+      {canFeedback && (
+        <div className="border-t border-stone-50 px-4 pb-3 pt-2.5">
+          <Link
+            href={`/app/events/${p.event.id}/feedback`}
+            className="inline-flex items-center gap-1.5 text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+          >
+            <PenLine size={12} />
+            感想を書く
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 

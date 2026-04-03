@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasActiveSubscription } from "@/lib/subscription";
-import { Newspaper, Lock, ChevronRight, Calendar } from "lucide-react";
+import { Newspaper, Lock, ChevronRight, Calendar, MapPin } from "lucide-react";
 import { Suspense } from "react";
 import SearchBar from "@/components/app/SearchBar";
 
@@ -112,14 +112,14 @@ export default async function AppBlogPage({
               <SectionLabel>所属のお寺</SectionLabel>
             )}
             {myTemplePosts.map((p) => (
-              <PostCard key={p.id} post={p} showTemple={false} locked={p.isSubscriberOnly && !isSubscriberByTemple[p.templeId]} />
+              <PostCard key={p.id} post={p} locked={p.isSubscriberOnly && !isSubscriberByTemple[p.templeId]} />
             ))}
 
             {followedPosts.length > 0 && (
               <>
                 {myTemplePosts.length > 0 && <SectionLabel>フォロー中のお寺</SectionLabel>}
                 {followedPosts.map((p) => (
-                  <PostCard key={p.id} post={p} showTemple={true} locked={p.isSubscriberOnly && !isSubscriberByTemple[p.templeId]} />
+                  <PostCard key={p.id} post={p} locked={p.isSubscriberOnly && !isSubscriberByTemple[p.templeId]} />
                 ))}
               </>
             )}
@@ -156,11 +156,9 @@ type PostRow = {
 
 function PostCard({
   post: p,
-  showTemple,
   locked,
 }: {
   post: PostRow;
-  showTemple: boolean;
   locked: boolean;
 }) {
   return (
@@ -180,33 +178,40 @@ function PostCard({
               </div>
             </div>
           )}
-          {p.isSubscriberOnly && (
-            <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 flex gap-1.5">
+            <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+              <MapPin size={10} />
+              {p.temple.name}
+            </span>
+            {p.isSubscriberOnly && (
               <span className="bg-amber-700/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <Lock size={10} />
                 会員限定
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
       <div className="p-4">
-        {!p.coverImageUrl && p.isSubscriberOnly && (
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          {!p.coverImageUrl && (
+            <span className="inline-flex items-center gap-1 text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full">
+              <MapPin size={10} />
+              {p.temple.name}
+            </span>
+          )}
+          {p.isSubscriberOnly && !p.coverImageUrl && (
             <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
               <Lock size={9} />
               会員限定
             </span>
-          </div>
-        )}
+          )}
+        </div>
         <p className="text-xs text-stone-400 flex items-center gap-1 mb-1.5">
           <Calendar size={11} />
           {p.publishedAt?.toLocaleDateString("ja-JP", {
             year: "numeric", month: "long", day: "numeric",
           })}
-          {showTemple && (
-            <span className="ml-1 text-stone-300">· {p.temple.name}</span>
-          )}
         </p>
         <p className="font-bold text-stone-800 leading-snug">{p.title}</p>
         {!locked && (

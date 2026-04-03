@@ -16,7 +16,7 @@ export default async function FeedbackPage({
 
   const [event, participation] = await Promise.all([
     prisma.event.findFirst({
-      where: { id: eventId, templeId: authUser.templeId },
+      where: { id: eventId },
       select: { id: true, title: true, eventDate: true, startTime: true },
     }),
     prisma.eventParticipation.findUnique({
@@ -26,7 +26,9 @@ export default async function FeedbackPage({
   ]);
 
   if (!event) notFound();
-  if (!participation || !["ATTENDED", "CONFIRMED", "APPLIED"].includes(participation.status)) {
+  // イベント終了前は感想不可
+  if (event.eventDate >= new Date()) redirect(`/app/events/${eventId}`);
+  if (!participation || !["ATTENDED", "CONFIRMED"].includes(participation.status)) {
     redirect(`/app/events/${eventId}`);
   }
 
