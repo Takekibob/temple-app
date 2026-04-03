@@ -38,19 +38,20 @@ export default async function ReservationsPage() {
   const reservations = await prisma.reservation.findMany({
     where: { memberId: authUser.member.id },
     include: { deceasedPerson: { select: { name: true } } },
-    orderBy: { scheduledAt: "desc" },
+    orderBy: { scheduledAt: "asc" },
   });
 
   const now = new Date();
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
+  // upcoming: 早い順（asc のまま）、past: 新しい順（reverse）
   const upcoming = reservations.filter(
     (r) => r.status !== "CANCELLED" && r.status !== "COMPLETED" && r.scheduledAt > now
   );
-  const allPast = reservations.filter(
-    (r) => r.status === "COMPLETED" || r.status === "CANCELLED" || r.scheduledAt <= now
-  );
+  const allPast = reservations
+    .filter((r) => r.status === "COMPLETED" || r.status === "CANCELLED" || r.scheduledAt <= now)
+    .reverse();
   const recentPast = allPast.filter((r) => r.scheduledAt >= oneYearAgo);
   const olderCount = allPast.filter((r) => r.scheduledAt < oneYearAgo).length;
 
