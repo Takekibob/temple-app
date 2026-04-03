@@ -34,6 +34,7 @@ export default async function ProfileEditPage() {
             address: user.member.address ?? "",
             interestTags,
           } : null}
+          avatarUrl={user.avatarUrl ?? null}
         />
       </div>
     </div>

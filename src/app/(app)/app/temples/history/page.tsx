@@ -71,10 +71,17 @@ export default async function TempleHistoryPage() {
         <Link href="/app" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors">
           <ChevronLeft size={18} />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-stone-800 tracking-tight">参拝履歴</h1>
           <p className="text-xs text-stone-400 mt-0.5">お寺との歩み・ご縁の記録</p>
         </div>
+        <Link
+          href="/app/temples/visit"
+          className="flex items-center gap-1.5 text-xs font-semibold bg-teal-600 text-white px-3 py-2 rounded-xl hover:bg-teal-700 transition-colors shadow-sm shrink-0"
+        >
+          <Stamp size={13} />
+          記録する
+        </Link>
       </div>
 
       <div className="px-4 space-y-6">

@@ -20,7 +20,7 @@ export default async function MypagePage() {
 
   return (
     <MypageClient
-      user={{ name: user.name, email: user.email }}
+      user={{ name: user.name, email: user.email, avatarUrl: user.avatarUrl ?? null }}
       member={
         user.member
           ? { id: user.member.id, familyName: user.member.familyName, type: user.member.type }

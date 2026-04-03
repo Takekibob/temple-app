@@ -16,7 +16,9 @@
       "Bash(ls -la /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/)",
       "Bash(ls -la /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/read/)",
       "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/read/route.ts)",
-      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/new/)"
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/new/)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/temples/)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

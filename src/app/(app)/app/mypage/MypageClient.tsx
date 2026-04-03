@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { logout } from "@/app/auth/actions";
+import Image from "next/image";
 import {
   CalendarDays, ScrollText, Coins,
   Bell, Smartphone, ClipboardList,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 
 interface Props {
-  user: { name: string; email: string };
+  user: { name: string; email: string; avatarUrl: string | null };
   member: { id: string; familyName: string; type: string } | null;
   templeId: string | null;
   lineLinked: boolean;
@@ -43,8 +44,12 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
           <div className="h-2 bg-gradient-to-r from-amber-700 to-amber-500" />
           <div className="p-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
-                {user.name.charAt(0)}
+              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0 relative">
+                {user.avatarUrl ? (
+                  <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+                ) : (
+                  user.name.charAt(0)
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-stone-800 text-base">{user.name}</p>
