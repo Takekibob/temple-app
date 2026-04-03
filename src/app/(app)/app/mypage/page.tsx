@@ -26,6 +26,7 @@ export default async function MypagePage() {
           ? { id: user.member.id, familyName: user.member.familyName }
           : null
       }
+      templeId={user.templeId ?? null}
       lineLinked={!!user.member?.lineUserId}
     />
   );

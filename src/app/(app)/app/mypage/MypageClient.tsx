@@ -7,15 +7,17 @@ import {
   CalendarDays, ScrollText, Coins,
   Bell, Smartphone, ClipboardList,
   ChevronRight, LogOut, Pencil,
+  MapPin, Gift, Ticket,
 } from "lucide-react";
 
 interface Props {
   user: { name: string; email: string };
   member: { id: string; familyName: string } | null;
+  templeId: string | null;
   lineLinked: boolean;
 }
 
-export default function MypageClient({ user, member, lineLinked }: Props) {
+export default function MypageClient({ user, member, templeId, lineLinked }: Props) {
   const [isLogoutPending, startLogoutTransition] = useTransition();
 
   return (
@@ -80,6 +82,15 @@ export default function MypageClient({ user, member, lineLinked }: Props) {
             </div>
           </Link>
         )}
+
+        {/* お寺との繋がり */}
+        <NavSection title="お寺との繋がり">
+          {templeId && (
+            <NavItem href={`/app/temples/${templeId}`} icon={MapPin} label="所属寺院について" iconColor="text-stone-600 bg-stone-100" />
+          )}
+          <NavItem href="/app/donations/new" icon={Gift} label="寄付する" iconColor="text-purple-600 bg-purple-50" />
+          <NavItem href="/app/subscriptions" icon={Ticket} label="会員プラン" iconColor="text-emerald-700 bg-emerald-50" />
+        </NavSection>
 
         {/* お寺との記録 */}
         <NavSection title="お寺との記録">
