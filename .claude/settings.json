@@ -18,7 +18,12 @@
       "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/api/announcements/[id]/read/route.ts)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/new/)",
       "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/)",
-      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/temples/)"
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/temples/)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/)",
+      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/temples/[id]/FavoriteButton.tsx)",
+      "Bash(git rm:*)",
+      "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/api/ofuse/[id]/receipt/route.ts)",
+      "Bash(curl -L \"https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.ttf\" -o /Users/haradatakeki/Developer/temple-app/public/fonts/NotoSansJP-Regular.ttf)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
