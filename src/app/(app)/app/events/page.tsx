@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { EventVisibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import { getCategoryLabel, getCategoryIcon, STANDARD_CATEGORY_KEYS } from "@/lib/eventCategories";
-import { MapPin, Clock, Users, ChevronRight, CheckCircle } from "lucide-react";
+import { MapPin, Clock, Users, CheckCircle, Heart } from "lucide-react";
 
 type EventRow = Prisma.EventGetPayload<{
   include: {
@@ -290,6 +290,27 @@ export default async function AppEventsPage({
               ))}
             </div>
           </section>
+        )}
+
+        {/* ご縁さん: フォロー0件の誘導バナー */}
+        {!isDanka && favoriteTempleIds.length === 0 && (
+          <Link
+            href="/app/temples"
+            className="flex items-center gap-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-2xl border border-rose-100 px-4 py-4 hover:shadow-md transition-all"
+          >
+            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+              <Heart size={20} className="text-rose-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-stone-800">お気に入りのお寺をフォローしよう</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                フォローするとそのお寺のイベントがここに表示されます
+              </p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-amber-700 bg-white px-3 py-1.5 rounded-full border border-amber-200 shadow-sm whitespace-nowrap">
+              お寺を探す
+            </span>
+          </Link>
         )}
 
         {/* ご縁さん: お気に入り寺院 */}
