@@ -24,7 +24,7 @@ export default async function FamilyTreePage({
   if (!member) notFound();
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-4 sm:p-6 max-w-3xl">
       <div className="mb-6">
         <Link
           href={`/admin/members/${id}`}

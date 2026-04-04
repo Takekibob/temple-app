@@ -37,14 +37,14 @@ export default async function AdminReservationDetailPage({
   const isStaffOnly = authUser.role === "STAFF";
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       {/* パンくず */}
       <Link href="/admin/reservations" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-4 transition-colors">
         <ChevronLeft size={14} />法要予約一覧
       </Link>
 
       {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <h1 className="text-xl font-bold text-stone-800">

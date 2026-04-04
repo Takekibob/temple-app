@@ -128,7 +128,7 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <Link href="/admin/events" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
         ← イベント管理
       </Link>

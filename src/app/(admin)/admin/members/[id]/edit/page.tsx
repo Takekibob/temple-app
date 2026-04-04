@@ -101,7 +101,7 @@ export default function MemberEditPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <Link href={`/admin/members/${id}`} className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
         ← 詳細に戻る
       </Link>

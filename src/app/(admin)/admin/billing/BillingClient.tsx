@@ -116,7 +116,7 @@ export default function BillingClient() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
         <div className="text-stone-400 text-sm animate-pulse">読み込み中…</div>
       </div>
     );
@@ -125,7 +125,7 @@ export default function BillingClient() {
   const info = status ? STATUS_LABELS[status.planStatus] : null;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-stone-800">プラン・お支払い</h1>
 
       {/* 成功・キャンセルメッセージ */}

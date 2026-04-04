@@ -23,7 +23,11 @@
       "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(app\\\\\\)/app/temples/[id]/FavoriteButton.tsx)",
       "Bash(git rm:*)",
       "Bash(cat /Users/haradatakeki/Developer/temple-app/src/app/api/ofuse/[id]/receipt/route.ts)",
-      "Bash(curl -L \"https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.ttf\" -o /Users/haradatakeki/Developer/temple-app/public/fonts/NotoSansJP-Regular.ttf)"
+      "Bash(curl -L \"https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.ttf\" -o /Users/haradatakeki/Developer/temple-app/public/fonts/NotoSansJP-Regular.ttf)",
+      "Bash(grep -rn \"sql\\\\`\\\\|Sql\\\\`\\\\|raw\\\\`\" /Users/haradatakeki/Developer/temple-app/src/app/api --include=\"*.ts\")",
+      "Bash(find /Users/haradatakeki/Developer/temple-app -name layout.tsx -path *admin*)",
+      "Bash(xargs sed:*)",
+      "Bash(grep -n \"flex items-start justify-between\\\\|flex gap-2 shrink-0\\\\|flex gap-2$\" /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/reservations/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/announcements/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/blog/page.tsx)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

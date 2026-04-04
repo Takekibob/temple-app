@@ -231,7 +231,7 @@ export default function SettingsClient({
   ];
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-stone-800 mb-6">システム設定</h1>
 
       {/* Tabs */}

@@ -20,7 +20,7 @@ export default async function ChangeRequestsPage() {
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-4 sm:p-6 max-w-3xl">
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-0.5">
           <FilePen size={18} className="text-amber-700" />

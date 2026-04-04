@@ -69,15 +69,15 @@ export default async function MembersPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-4 sm:p-6 max-w-5xl">
       {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-stone-800 tracking-tight">会員管理</h1>
           <p className="text-sm text-stone-400 mt-0.5">{total.toLocaleString()} 名</p>
         </div>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <ExportButton href="/api/export/members" label="CSV出力" filename="members.csv" />
             <Link
               href="/admin/members/import"

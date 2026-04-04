@@ -65,14 +65,14 @@ export default async function MemberDetailPage({
   };
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-4 sm:p-6 max-w-4xl">
       {/* パンくず + ヘッダー */}
       <div className="mb-5">
         <Link href="/admin/members" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-3 transition-colors">
           <ChevronLeft size={14} />会員一覧
         </Link>
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex items-center gap-4">
             {/* アバター */}
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 ${
@@ -83,7 +83,7 @@ export default async function MemberDetailPage({
               {member.user.name.charAt(0)}
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-stone-800">{member.user.name}</h1>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -93,7 +93,7 @@ export default async function MemberDetailPage({
                 </span>
               </div>
               {member.familyName && (
-                <p className="text-sm text-stone-500 mt-0.5">{member.familyName}家・{member.user.email}</p>
+                <p className="text-sm text-stone-500 mt-0.5 truncate">{member.familyName}家・{member.user.email}</p>
               )}
             </div>
           </div>

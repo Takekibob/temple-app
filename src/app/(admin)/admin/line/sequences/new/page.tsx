@@ -47,7 +47,7 @@ export default function NewSequencePage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-stone-800 mb-6">ステップ配信シーケンス作成</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">

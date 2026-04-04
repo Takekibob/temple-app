@@ -30,9 +30,9 @@ export default async function OcrPage() {
   ]);
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-4 sm:p-6 max-w-3xl">
       {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <ScanLine size={18} className="text-amber-700" />

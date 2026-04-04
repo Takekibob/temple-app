@@ -242,7 +242,8 @@ export default function AnnualEventsClient({ initialEvents }: { initialEvents: A
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b border-stone-100 bg-stone-50">
                 <th className="text-left px-4 py-3 text-stone-500 font-medium">行事名</th>
@@ -293,6 +294,7 @@ export default function AnnualEventsClient({ initialEvents }: { initialEvents: A
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

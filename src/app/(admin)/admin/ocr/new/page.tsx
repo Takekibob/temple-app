@@ -33,7 +33,7 @@ export default function NewOcrPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-stone-800 mb-2">紙データ取り込み申請</h1>
       <p className="text-sm text-stone-500 mb-6">
         過去帳・檀家名簿などの紙書類をデジタル化します。

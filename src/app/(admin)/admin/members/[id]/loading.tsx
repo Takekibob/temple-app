@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminMemberDetailLoading() {
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       {/* パンくず */}
       <Skeleton className="h-4 w-40 mb-4" />
 

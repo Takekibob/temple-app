@@ -83,9 +83,9 @@ export default async function AdminOfusePage({
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-4 sm:p-6 max-w-4xl">
       {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
         <div>
           <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お布施管理</h1>
           <p className="text-sm text-stone-400 mt-0.5">{selectedYear}年</p>

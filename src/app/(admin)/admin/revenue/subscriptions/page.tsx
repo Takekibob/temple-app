@@ -72,7 +72,7 @@ export default async function SubscriptionsPage({
   const activePlanKey = planKey ?? "";
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-4 sm:p-6 max-w-4xl">
       {/* ヘッダー */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-0.5">

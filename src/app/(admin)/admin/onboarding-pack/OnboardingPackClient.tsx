@@ -40,7 +40,7 @@ export default function OnboardingPackClient({ existingPack }: { existingPack: P
 
   if (!pack) {
     return (
-      <div className="p-6 max-w-2xl">
+      <div className="p-4 sm:p-6 max-w-2xl">
         <h1 className="text-2xl font-bold text-stone-800 mb-2">導入おまかせパック</h1>
         <p className="text-sm text-stone-500 mb-6">
           初期データ移行・LINE設定・研修・30日サポートをすべておまかせいただけるサービスです。
@@ -83,7 +83,7 @@ export default function OnboardingPackClient({ existingPack }: { existingPack: P
   const currentStep = STATUS_STEPS[pack.status] ?? { label: pack.status, step: 1 };
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-stone-800 mb-2">導入おまかせパック</h1>
       <p className="text-sm text-stone-500 mb-6">
         申込日: {new Date(pack.createdAt).toLocaleDateString("ja-JP")}

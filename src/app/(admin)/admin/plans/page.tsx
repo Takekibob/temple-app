@@ -22,7 +22,7 @@ export default async function AdminPlansPage() {
   const planMap = Object.fromEntries(existingPlans.map((p) => [p.templateKey!, p]));
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-stone-800">会員プラン管理</h1>
         <p className="text-sm text-stone-500 mt-0.5">

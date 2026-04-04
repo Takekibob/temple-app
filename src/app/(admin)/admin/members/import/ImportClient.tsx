@@ -56,7 +56,7 @@ export default function ImportClient() {
   }
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-4 sm:p-6 max-w-3xl">
       <Link href="/admin/members" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
         ← 会員一覧
       </Link>

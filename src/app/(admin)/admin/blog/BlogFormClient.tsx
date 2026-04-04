@@ -85,7 +85,7 @@ export default function BlogFormClient({ initial, hasActivePlan = false }: Props
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <Link href="/admin/blog" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
         ← ブログ管理
       </Link>

@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminSettingsLoading() {
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="p-4 sm:p-6 max-w-2xl space-y-6">
       <Skeleton className="h-7 w-36" />
 
       {[...Array(3)].map((_, g) => (
