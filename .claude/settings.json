@@ -27,7 +27,13 @@
       "Bash(grep -rn \"sql\\\\`\\\\|Sql\\\\`\\\\|raw\\\\`\" /Users/haradatakeki/Developer/temple-app/src/app/api --include=\"*.ts\")",
       "Bash(find /Users/haradatakeki/Developer/temple-app -name layout.tsx -path *admin*)",
       "Bash(xargs sed:*)",
-      "Bash(grep -n \"flex items-start justify-between\\\\|flex gap-2 shrink-0\\\\|flex gap-2$\" /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/reservations/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/announcements/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/blog/page.tsx)"
+      "Bash(grep -n \"flex items-start justify-between\\\\|flex gap-2 shrink-0\\\\|flex gap-2$\" /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/reservations/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/events/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/announcements/page.tsx /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/blog/page.tsx)",
+      "Bash(grep -rn \"member\\\\.type\\\\|memberType\\\\|type.*DANKA\\\\|type.*GOEN\\\\|isDanka\\\\|isGoen\" /Users/haradatakeki/Developer/temple-app/src --include=*.ts --include=*.tsx -l)",
+      "Bash(grep -rn \"EventVisibility\\\\|DANKA_ONLY\\\\|SUBSCRIBERS_ONLY\" /Users/haradatakeki/Developer/temple-app/src/app --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn \"AnnouncementTarget\\\\|targetSegment.*DANKA\\\\|targetSegment.*GOEN\" /Users/haradatakeki/Developer/temple-app/src/app --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn member.templeId /Users/haradatakeki/Developer/temple-app/src/app --include=*.ts --include=*.tsx)",
+      "Bash(mkdir -p /Users/haradatakeki/Developer/temple-app/src/app/api/membership-types/[id])",
+      "Bash(mkdir -p /Users/haradatakeki/Developer/temple-app/src/app/api/memberships/[id])"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",

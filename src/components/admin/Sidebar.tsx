@@ -8,7 +8,7 @@ import {
   LayoutDashboard, CalendarDays, Users, BookOpen, FilePen,
   Coins, Landmark, BarChart3, Calendar,
   Bell, PenLine, CalendarRange, MessageCircle,
-  BadgeJapaneseYen,
+  BadgeJapaneseYen, Layers,
   Settings, UserCog, Ticket, CreditCard,
   ChevronRight, Eye, LogOut, Menu, X,
 } from "lucide-react";
@@ -45,7 +45,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: "会員・法要",
     items: [
       { icon: CalendarDays, label: "法要予約", href: "/admin/reservations" },
-      { icon: Users, label: "会員一覧", href: "/admin/members" },
+      { icon: Users, label: "会員一覧", href: "/admin/members", excludePrefix: "/admin/memberships" },
+      { icon: Layers, label: "メンバーシップ設計", href: "/admin/memberships", adminOnly: true },
       { icon: BookOpen, label: "過去帳", href: "/admin/deceased" },
       { icon: FilePen, label: "情報変更の申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
     ],

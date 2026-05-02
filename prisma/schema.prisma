@@ -57,11 +57,8 @@ model Temple {
   stripeConnectAccountId  String?  @unique
   stripeConnectOnboarded  Boolean  @default(false)
 
-  // --- v2追加：ステージ閾値カスタマイズ ---
-  thresholdGoen      Int @default(10)  // → PROSPECT遷移スコア
-  thresholdProspect  Int @default(50)  // → DANKA_CANDIDATE遷移スコア
-  thresholdCandidate Int @default(80)  // 住職通知スコア
-  dankaGoalAnnual    Int?              // 年間檀家増加目標
+  // メンバーシップ目標（任意）
+  membershipGoalAnnual Int?  // 年間メンバーシップ加入目標
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -80,6 +77,8 @@ model Temple {
   reservationBlocks ReservationBlock[]
   activityLogs ActivityLog[]
   membershipPlans    MembershipPlan[]
+  membershipTypes    MembershipType[]
+  memberships        Membership[]
   donations          Donation[]
   lineMessages       LineMessage[]
   lineStepSequences  LineStepSequence[]
@@ -163,22 +162,25 @@ enum AuthProvider {
 }
 
 // ==========================================
-// 会員（檀家 + ご縁さん統合）
+// 会員（MembershipTypeで役割を柔軟設計）
+// NOTE: type フィールドはSupabase RLSポリシーが依存するため残存（@deprecated）
 // ==========================================
 model Member {
   id               String     @id @default(uuid())
-  templeId         String?    // NULLable: 檀家は必須、ご縁さんはNULL
+  templeId         String?    // NULL可: フォロー中のメインお寺（任意）
   userId           String     @unique
+  // @deprecated — RLSポリシー依存のため削除不可。新規コードでは memberships を使用すること
   type             MemberType @default(GOEN)
+  promotedAt       DateTime?  // @deprecated
   familyName       String
   address          String?
   postalCode       String?
   phone            String?
   email            String?
   joinedDate       DateTime   @default(now())
+  engagementScore  Int        @default(0)  // エンゲージメントスコア
   interestTags     Json?      // ["zazen","shakyo","yoga"]
   referralSource   ReferralSource?
-  promotedAt       DateTime?  // ご縁さん→檀家に昇格した日時
   notes            String?
   summaryNote      String?    // 一行概要メモ（一覧表示用）
   priorityTags     String[]   @default([]) // ["要フォロー","VIP","要注意"]
@@ -210,6 +212,7 @@ model Member {
   eventParticipations EventParticipation[]
   favoriteTemples  MemberFavoriteTemple[]
   subscriptions    MemberSubscription[]
+  memberships      Membership[]
   donations        Donation[]
   lineStepQueues   LineStepQueue[]
   memberNotes      MemberNote[]
@@ -222,9 +225,11 @@ model Member {
   @@map("members")
 }
 
+// @deprecated — Supabase RLS ポリシーが依存するため削除不可
+// 新規コードでは Membership モデルを使用すること
 enum MemberType {
-  DANKA // 檀家
-  GOEN  // ご縁さん
+  DANKA // @deprecated
+  GOEN  // @deprecated
 
   @@map("member_type")
 }
@@ -382,8 +387,10 @@ model Event {
 enum EventVisibility {
   PUBLIC              // 誰でも
   MEMBERS_ONLY        // 廃止予定（既存データ互換性のために残存）→ PUBLIC と同等に扱う
-  DANKA_ONLY          // 檀家限定（自寺院の檀家のみ）
-  SUBSCRIBERS_ONLY    // 会員プラン加入者限定
+  MEMBERSHIP_REQUIRED // いずれかのMembershipTypeに加入済みの会員のみ
+  SUBSCRIBERS_ONLY    // 会員プラン加入者限定（Stripe課金）
+  // 後方互換性のため残存（UI では MEMBERSHIP_REQUIRED を使用すること）
+  DANKA_ONLY          // @deprecated — 旧「檀家限定」（廃止予定）
 
   @@map("event_visibility")
 }
@@ -560,9 +567,11 @@ model AnnouncementRead {
 }
 
 enum AnnouncementTarget {
-  ALL
-  DANKA
-  GOEN
+  ALL      // 全員
+  MEMBERS  // いずれかのMembershipTypeに加入済みの会員
+  // 後方互換性のため残存（UI では MEMBERS/ALL を使用すること）
+  DANKA    // @deprecated — 旧「檀家」セグメント（廃止予定）
+  GOEN     // @deprecated — 旧「ご縁さん」セグメント（廃止予定）
 
   @@map("announcement_target")
 }
@@ -853,9 +862,11 @@ model LineStepSequence {
 enum LineStepTrigger {
   FIRST_EVENT_ATTEND
   LINE_REGISTER
-  STAGE_CHANGE_PROSPECT
-  STAGE_CHANGE_CANDIDATE
   DONATION_FIRST
+  MEMBERSHIP_JOIN           // メンバーシップ加入時
+  // 後方互換性のため残存
+  STAGE_CHANGE_PROSPECT     // @deprecated
+  STAGE_CHANGE_CANDIDATE    // @deprecated
 
   @@map("line_step_trigger")
 }
@@ -1143,4 +1154,95 @@ model TempleVisit {
 
   @@index([memberId, visitedAt(sort: Desc)])
   @@map("temple_visits")
+}
+
+// ==========================================
+// メンバーシップ種別（お寺が自由に設計）
+// ==========================================
+model MembershipType {
+  id            String       @id @default(uuid())
+  templeId      String
+  temple        Temple       @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  name          String       // 例: "ご縁さん" "月額サポーター" "檀家" "巡礼会員"
+  description   String?
+  pricingModel  PricingModel @default(FREE)
+  priceJpy      Int?         // pricingModel が FREE の場合は NULL
+  billingCycle  BillingCycle? // MONTHLY / YEARLY（SUBSCRIPTION の場合）
+  isPublic      Boolean      @default(true)  // 利用者画面に公開するか
+  sortOrder     Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  stages        MembershipStage[]
+  memberships   Membership[]
+
+  @@index([templeId])
+  @@map("membership_types")
+}
+
+// ==========================================
+// メンバーシップステージ（加入後の進行段階）
+// ==========================================
+model MembershipStage {
+  id               String         @id @default(uuid())
+  membershipTypeId String
+  membershipType   MembershipType @relation(fields: [membershipTypeId], references: [id], onDelete: Cascade)
+  name             String         // 例: "新規" "アクティブ" "コア"
+  order            Int
+  autoPromoteRules Json?          // 自動昇格条件（将来拡張用）
+  createdAt        DateTime       @default(now())
+
+  memberships      Membership[]   @relation("CurrentStage")
+
+  @@map("membership_stages")
+}
+
+// ==========================================
+// メンバーシップ（会員と種別の紐付け）
+// ==========================================
+model Membership {
+  id               String          @id @default(uuid())
+  memberId         String
+  member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membershipTypeId String
+  membershipType   MembershipType  @relation(fields: [membershipTypeId], references: [id])
+  templeId         String          // クエリ効率化のための非正規化
+  temple           Temple          @relation(fields: [templeId], references: [id])
+  currentStageId   String?
+  currentStage     MembershipStage? @relation("CurrentStage", fields: [currentStageId], references: [id])
+  status           MembershipStatus @default(ACTIVE)
+  joinedAt         DateTime        @default(now())
+  stripeSubId      String?         // Stripe サブスクリプション ID
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([memberId, membershipTypeId])
+  @@index([memberId, status])
+  @@index([templeId, status])
+  @@map("memberships")
+}
+
+enum PricingModel {
+  FREE
+  ONE_TIME
+  SUBSCRIPTION
+  DONATION
+
+  @@map("pricing_model")
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+
+  @@map("billing_cycle")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAUSED
+  CHURNED
+
+  @@map("membership_status")
 }
