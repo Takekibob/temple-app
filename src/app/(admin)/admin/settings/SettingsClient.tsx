@@ -10,6 +10,9 @@ interface TempleSettings {
   phone: string | null;
   email: string | null;
   websiteUrl: string | null;
+  instagramUrl: string | null;
+  lineOfficialUrl: string | null;
+  youtubeUrl: string | null;
   logoUrl: string | null;
   description: string | null;
   bookingStartTime: string;
@@ -78,6 +81,9 @@ export default function SettingsClient({
     phone: initialSettings.phone ?? "",
     email: initialSettings.email ?? "",
     websiteUrl: initialSettings.websiteUrl ?? "",
+    instagramUrl: initialSettings.instagramUrl ?? "",
+    lineOfficialUrl: initialSettings.lineOfficialUrl ?? "",
+    youtubeUrl: initialSettings.youtubeUrl ?? "",
     description: initialSettings.description ?? "",
   });
   const [basicSaving, startBasic] = useTransition();
@@ -95,6 +101,9 @@ export default function SettingsClient({
           phone: basic.phone || null,
           email: basic.email || null,
           websiteUrl: basic.websiteUrl || null,
+          instagramUrl: basic.instagramUrl || null,
+          lineOfficialUrl: basic.lineOfficialUrl || null,
+          youtubeUrl: basic.youtubeUrl || null,
           description: basic.description || null,
         }),
       });
@@ -296,6 +305,9 @@ export default function SettingsClient({
               { key: "phone", label: "電話番号", placeholder: "03-xxxx-xxxx" },
               { key: "email", label: "メールアドレス", placeholder: "info@example.com" },
               { key: "websiteUrl", label: "公式サイトURL", placeholder: "https://example.com" },
+              { key: "instagramUrl", label: "Instagram URL", placeholder: "https://www.instagram.com/..." },
+              { key: "lineOfficialUrl", label: "LINE公式アカウントURL", placeholder: "https://lin.ee/..." },
+              { key: "youtubeUrl", label: "YouTube チャンネルURL", placeholder: "https://www.youtube.com/@..." },
             ].map(({ key, label, required, placeholder }) => (
               <div key={key}>
                 <label className="block text-xs font-medium text-stone-600 mb-1">

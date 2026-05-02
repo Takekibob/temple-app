@@ -5,7 +5,9 @@ import { logActivity } from "@/lib/activityLog";
 import { validatePhone } from "@/lib/memberValidation";
 
 const ALLOWED_FIELDS = [
-  "name", "denomination", "address", "phone", "email", "websiteUrl", "description",
+  "name", "denomination", "address", "phone", "email",
+  "websiteUrl", "instagramUrl", "lineOfficialUrl", "youtubeUrl",
+  "description",
   "bookingStartTime", "bookingEndTime", "bookingDuration", "bookingMaxSlots", "bookingAdvanceDays",
   "reminderDayBefore", "reminderDayBeforeTime", "reminderDayOf", "reminderDayOfTime",
   "reminderMeinichi", "customEventCategories",
@@ -25,7 +27,8 @@ export async function GET() {
       where: { id: authUser.templeId },
       select: {
         id: true, name: true, denomination: true, address: true, phone: true,
-        email: true, websiteUrl: true, logoUrl: true, description: true,
+        email: true, websiteUrl: true, instagramUrl: true, lineOfficialUrl: true, youtubeUrl: true,
+        logoUrl: true, description: true,
         bookingStartTime: true, bookingEndTime: true, bookingDuration: true,
         bookingMaxSlots: true, bookingAdvanceDays: true,
         reminderDayBefore: true, reminderDayBeforeTime: true,

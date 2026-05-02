@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Globe, ExternalLink, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift, Stamp } from "lucide-react";
+import { MapPin, Phone, Globe, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift, Stamp, Youtube, Instagram, MessageCircle } from "lucide-react";
 import FollowButton from "./FollowButton";
 
 const INTERVAL_LABELS: Record<string, string> = {
@@ -37,6 +37,9 @@ export default async function TempleProfilePage({
       logoUrl: true,
       coverImageUrl: true,
       websiteUrl: true,
+      instagramUrl: true,
+      lineOfficialUrl: true,
+      youtubeUrl: true,
       stripeConnectOnboarded: true,
     },
   });
@@ -150,22 +153,37 @@ export default async function TempleProfilePage({
                 </a>
               </div>
             )}
-
-            {temple.websiteUrl && (
-              <div className="flex items-center gap-3 py-2.5">
-                <Globe size={14} className="text-stone-400 shrink-0" />
-                <Link
-                  href={temple.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-amber-700 hover:underline flex items-center gap-1"
-                >
-                  公式サイトを見る
-                  <ExternalLink size={12} />
-                </Link>
-              </div>
-            )}
           </div>
+
+          {/* リンク集 */}
+          {(temple.websiteUrl || temple.instagramUrl || temple.lineOfficialUrl || temple.youtubeUrl) && (
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {temple.websiteUrl && (
+                <Link href={temple.websiteUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-stone-700 hover:bg-stone-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  <Globe size={14} />公式サイト
+                </Link>
+              )}
+              {temple.instagramUrl && (
+                <Link href={temple.instagramUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  <Instagram size={14} />Instagram
+                </Link>
+              )}
+              {temple.lineOfficialUrl && (
+                <Link href={temple.lineOfficialUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05b34a] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  <MessageCircle size={14} />LINE公式
+                </Link>
+              )}
+              {temple.youtubeUrl && (
+                <Link href={temple.youtubeUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  <Youtube size={14} />YouTube
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 説明文 */}

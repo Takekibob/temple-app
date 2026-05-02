@@ -25,8 +25,11 @@ model Temple {
 
   // マルチテンプル対応（追加フィールド）
   coverImageUrl String? // カバー画像URL
-  websiteUrl    String? // 公式サイトURL
-  latitude      Decimal? // 緯度（将来の地図表示用）
+  websiteUrl      String?  // 公式サイトURL
+  instagramUrl    String?  // Instagram公式アカウントURL
+  lineOfficialUrl String?  // LINE公式アカウントURL
+  youtubeUrl      String?  // YouTubeチャンネルURL
+  latitude        Decimal? // 緯度（将来の地図表示用）
   longitude     Decimal? // 経度（将来の地図表示用）
   isActive      Boolean  @default(true)
 
@@ -1149,8 +1152,10 @@ model TempleVisit {
   member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   templeId  String
   temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  memo      String   @default("")
-  visitedAt DateTime @default(now())
+  memo      String      @default("")
+  source    VisitSource @default(SELF_REPORT)
+  photoUrl  String?
+  visitedAt DateTime    @default(now())
 
   @@index([memberId, visitedAt(sort: Desc)])
   @@map("temple_visits")
@@ -1245,4 +1250,12 @@ enum MembershipStatus {
   CHURNED
 
   @@map("membership_status")
+}
+
+enum VisitSource {
+  SELF_REPORT    // 参加者自己申告
+  TEMPLE_RECORD  // お寺が記録
+  EVENT_CHECKIN  // イベントチェックイン
+
+  @@map("visit_source")
 }

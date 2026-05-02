@@ -3,10 +3,17 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
+interface MembershipType {
+  id: string;
+  name: string;
+}
+
 interface Props {
   currentType?: string;
   currentSearch: string;
   currentTag?: string;
+  currentMembershipTypeId?: string;
+  membershipTypes?: MembershipType[];
 }
 
 const PRESET_TAGS = ["要フォロー", "要注意", "VIP", "体調注意", "遠方", "一人暮らし", "跡継ぎ不在"];
@@ -21,7 +28,13 @@ const TAG_COLORS: Record<string, string> = {
   跡継ぎ不在: "bg-stone-100 text-stone-600",
 };
 
-export default function MemberFilters({ currentType, currentSearch, currentTag }: Props) {
+export default function MemberFilters({
+  currentType,
+  currentSearch,
+  currentTag,
+  currentMembershipTypeId,
+  membershipTypes = [],
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -38,30 +51,51 @@ export default function MemberFilters({ currentType, currentSearch, currentTag }
     [router, searchParams]
   );
 
-  const TYPE_FILTERS = [
-    { value: "", label: "全員" },
-    { value: "DANKA", label: "檀家" },
-    { value: "GOEN", label: "ご縁さん" },
-  ];
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* タイプフィルター */}
-        <div className="flex gap-1 bg-white border border-stone-200 rounded-lg p-1">
-          {TYPE_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => updateParams({ type: f.value })}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                (currentType ?? "") === f.value
-                  ? "bg-amber-700 text-white font-medium"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        {/* メンバーシップ / タイプフィルター */}
+        <div className="flex flex-wrap gap-1 bg-white border border-stone-200 rounded-lg p-1">
+          <button
+            onClick={() => updateParams({ membershipTypeId: "", type: "" })}
+            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+              !currentMembershipTypeId && !currentType
+                ? "bg-amber-700 text-white font-medium"
+                : "text-stone-600 hover:bg-stone-100"
+            }`}
+          >
+            全員
+          </button>
+          {membershipTypes.length > 0
+            ? membershipTypes.map((mt) => (
+                <button
+                  key={mt.id}
+                  onClick={() => updateParams({ membershipTypeId: mt.id, type: "" })}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    currentMembershipTypeId === mt.id
+                      ? "bg-amber-700 text-white font-medium"
+                      : "text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  {mt.name}
+                </button>
+              ))
+            : [
+                { value: "DANKA", label: "檀家" },
+                { value: "GOEN", label: "ご縁さん" },
+              ].map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => updateParams({ type: f.value, membershipTypeId: "" })}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    currentType === f.value
+                      ? "bg-amber-700 text-white font-medium"
+                      : "text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
         </div>
 
         {/* 氏名検索 */}

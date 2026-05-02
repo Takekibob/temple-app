@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MembershipStatus } from "@/generated/prisma/enums";
 import MemberFilters from "./MemberFilters";
 import ExportButton from "@/components/admin/ExportButton";
 import { logFeature } from "@/lib/featureLog";
@@ -25,6 +26,7 @@ interface SearchParams {
   search?: string;
   page?: string;
   tag?: string;
+  membershipTypeId?: string;
 }
 
 export default async function MembersPage({
@@ -36,23 +38,39 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, search = "", page: pageStr = "1", tag } = await searchParams;
+  const { type, search = "", page: pageStr = "1", tag, membershipTypeId } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
 
   if (tag) void logFeature(authUser.templeId, authUser.id, "tag_filter", tag);
 
+  const [membershipTypes] = await Promise.all([
+    prisma.membershipType.findMany({
+      where: { templeId: authUser.templeId },
+      select: { id: true, name: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
+
+  const membershipFilter = membershipTypeId
+    ? { memberships: { some: { membershipTypeId, status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
+    : type === "DANKA" || type === "GOEN"
+    ? { type: type as "DANKA" | "GOEN" }
+    : {};
+
+  const searchFilter = search
+    ? {
+        OR: [
+          { user: { name: { contains: search, mode: "insensitive" as const } } },
+          { familyName: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
   const where = {
     templeId: authUser.templeId,
-    ...(type === "DANKA" || type === "GOEN" ? { type: type as "DANKA" | "GOEN" } : {}),
+    ...membershipFilter,
     ...(tag ? { priorityTags: { has: tag } } : {}),
-    ...(search
-      ? {
-          OR: [
-            { user: { name: { contains: search, mode: "insensitive" as const } } },
-            { familyName: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
+    ...searchFilter,
   };
 
   const [members, total] = await Promise.all([
@@ -92,7 +110,13 @@ export default async function MembersPage({
 
       {/* フィルター */}
       <Suspense fallback={<div className="h-12" />}>
-        <MemberFilters currentType={type} currentSearch={search} currentTag={tag} />
+        <MemberFilters
+          currentType={type}
+          currentSearch={search}
+          currentTag={tag}
+          currentMembershipTypeId={membershipTypeId}
+          membershipTypes={membershipTypes}
+        />
       </Suspense>
 
 

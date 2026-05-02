@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { logout } from "@/app/auth/actions";
 import {
-  LayoutDashboard, CalendarDays, Users, BookOpen, FilePen,
-  Coins, Landmark, BarChart3, Calendar,
+  LayoutDashboard, Users, FilePen,
+  Coins, BarChart3, Calendar,
   Bell, PenLine, CalendarRange, MessageCircle,
   BadgeJapaneseYen, Layers,
   Settings, UserCog, Ticket, CreditCard,
@@ -44,11 +44,10 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "会員・法要",
     items: [
-      { icon: CalendarDays, label: "法要予約", href: "/admin/reservations" },
       { icon: Users, label: "会員一覧", href: "/admin/members", excludePrefix: "/admin/memberships" },
       { icon: Layers, label: "メンバーシップ設計", href: "/admin/memberships", adminOnly: true },
-      { icon: BookOpen, label: "過去帳", href: "/admin/deceased" },
       { icon: FilePen, label: "情報変更の申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
+      // 法要予約・過去帳は Step3 (DANKA移行) 完了後に復活予定
     ],
   },
   {
@@ -70,7 +69,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "お金の管理",
     items: [
       { icon: Coins, label: "お布施", href: "/admin/ofuse", premiumOnly: true },
-      { icon: Landmark, label: "護持会費", href: "/admin/gojikai", premiumOnly: true },
+      // 護持会費は Step3 (DANKA移行) 完了後に復活予定
       { icon: BarChart3, label: "お布施会計", href: "/admin/reports", premiumOnly: true },
       { icon: BadgeJapaneseYen, label: "収益ダッシュボード", href: "/admin/revenue", adminOnly: true, premiumOnly: true },
     ],

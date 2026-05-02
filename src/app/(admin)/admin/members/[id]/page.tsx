@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import NotesClient from "./NotesClient";
+import MembershipCard from "./MembershipCard";
 import { logFeature } from "@/lib/featureLog";
 import {
   ChevronLeft, Pencil, GitBranch, Phone, MapPin, CalendarDays,
@@ -43,6 +44,22 @@ export default async function MemberDetailPage({
   });
 
   if (!member) notFound();
+
+  const [activeMemberships, membershipTypes] = await Promise.all([
+    prisma.membership.findMany({
+      where: { memberId: id, templeId: authUser.templeId, status: "ACTIVE" },
+      include: {
+        membershipType: { select: { id: true, name: true, pricingModel: true, priceJpy: true } },
+        currentStage: { select: { id: true, name: true } },
+      },
+      orderBy: { joinedAt: "asc" },
+    }),
+    prisma.membershipType.findMany({
+      where: { templeId: authUser.templeId },
+      select: { id: true, name: true, pricingModel: true, priceJpy: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   const interestTags = Array.isArray(member.interestTags) ? (member.interestTags as string[]) : [];
   const isDanka = member.type === "DANKA";
@@ -252,6 +269,18 @@ export default async function MemberDetailPage({
 
         {/* 右カラム */}
         <div className="space-y-4">
+          {/* メンバーシップ */}
+          <MembershipCard
+            memberId={id}
+            initialMemberships={activeMemberships.map((m) => ({
+              id: m.id,
+              membershipType: m.membershipType,
+              stage: m.currentStage,
+              joinedAt: m.joinedAt.toISOString(),
+            }))}
+            availableTypes={membershipTypes}
+          />
+
           {/* LINE連携 */}
           <Card title="LINE連携" icon={<MessageCircle size={14} className="text-stone-500" />}>
             <div className="flex items-center gap-2 mb-2">

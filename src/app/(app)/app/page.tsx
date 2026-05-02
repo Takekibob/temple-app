@@ -7,19 +7,10 @@ import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import GoenCtaBanner from "@/components/app/GoenCtaBanner";
 import {
-  CalendarDays, CalendarRange, BookOpen, Heart, Gift,
+  CalendarRange, BookOpen, Heart, Gift,
   Newspaper, MapPin, ChevronRight, Clock, Lock, Bell,
-  Compass, Coins, Stamp,
+  Compass, Stamp,
 } from "lucide-react";
-
-const RESERVATION_TYPE_LABELS: Record<string, string> = {
-  ANNUAL_MEMORIAL: "年忌法要",
-  MONTHLY_MEMORIAL: "月命日",
-  NIBON: "初盆・お盆",
-  KUYO: "供養",
-  FUNERAL: "葬儀",
-  OTHER: "その他",
-};
 
 type QuickItem = {
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
@@ -31,10 +22,8 @@ type QuickItem = {
 // メンバーシップ加入済み会員向け（旧 DANKA_QUICK）
 const MEMBER_QUICK: QuickItem[] = [
   { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
-  { icon: CalendarDays,  label: "法要予約",   href: "/app/reservations",    color: "bg-amber-50 text-amber-700" },
   { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
   { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
-  { icon: Coins,         label: "お布施",     href: "/app/ofuse",           color: "bg-yellow-50 text-yellow-700" },
   { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
 ];
 
@@ -92,18 +81,6 @@ export default async function AppHomePage() {
         }),
       ])
     : null;
-
-  const nextReservation =
-    hasMembership && authUser.member
-      ? await prisma.reservation.findFirst({
-          where: {
-            memberId: authUser.member.id,
-            scheduledAt: { gte: now },
-            status: { in: ["PENDING", "CONFIRMED"] },
-          },
-          orderBy: { scheduledAt: "asc" },
-        })
-      : null;
 
   const upcomingParticipations = authUser.member
     ? await prisma.eventParticipation.findMany({
@@ -426,52 +403,6 @@ export default async function AppHomePage() {
           </div>
         )}
 
-        {/* 檀家: 次回法要予約 */}
-        {hasMembership && (
-          <section>
-            <SectionHeader title="次回の法要予約" moreHref="/app/reservations" moreLabel="一覧" />
-            {nextReservation ? (
-              <Link href={`/app/reservations/${nextReservation.id}`}
-                className="block bg-gradient-to-br from-amber-700 to-amber-800 rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-amber-200 text-xs font-medium mb-1">
-                      {nextReservation.scheduledAt.toLocaleDateString("ja-JP", {
-                        year: "numeric", month: "long", day: "numeric", weekday: "short",
-                      })}
-                    </p>
-                    <p className="text-xl font-bold">
-                      {RESERVATION_TYPE_LABELS[nextReservation.type] ?? nextReservation.type}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      <Clock size={12} className="text-amber-200" />
-                      <p className="text-amber-100 text-xs">
-                        {nextReservation.scheduledAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}〜
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    nextReservation.status === "CONFIRMED"
-                      ? "bg-white/20 text-white"
-                      : "bg-amber-600/50 text-amber-100"
-                  }`}>
-                    {nextReservation.status === "CONFIRMED" ? "確定済み" : "確認待ち"}
-                  </span>
-                </div>
-              </Link>
-            ) : (
-              <div className="bg-white border border-stone-100 rounded-2xl p-5 text-center shadow-sm">
-                <CalendarDays size={28} className="text-stone-200 mx-auto mb-2" />
-                <p className="text-sm text-stone-400 mb-2">予定している法要はありません</p>
-                <Link href="/app/reservations/new"
-                  className="text-xs text-amber-700 font-semibold hover:underline">
-                  法要を予約する →
-                </Link>
-              </div>
-            )}
-          </section>
-        )}
-
         {/* 参加予定のイベント */}
         {upcomingParticipations.length > 0 && (
           <section>
@@ -529,20 +460,7 @@ export default async function AppHomePage() {
           </section>
         )}
 
-        {/* GOEN: 法要について */}
-        {isFollower && (
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-            <p className="text-xs font-bold text-amber-800 mb-1.5 flex items-center gap-1.5">
-              <CalendarDays size={13} />
-              法要・命日管理について
-            </p>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              年忌法要・月命日などの法要予約・過去帳管理は、檀家としてご登録された方のみご利用いただけます。詳しくはお寺にお問い合わせください。
-            </p>
-          </div>
-        )}
-
-        {/* 次回の行事（檀家のみ） */}
+        {/* 次回の行事（会員のみ） */}
         {hasMembership && featuredEvents.length > 0 && (
           <section>
             <SectionHeader title="次回の行事" moreHref="/app/events" moreLabel="すべて" />
