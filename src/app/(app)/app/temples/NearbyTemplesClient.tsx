@@ -1,8 +1,19 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Navigation, Loader2, Search, Heart, ChevronRight } from "lucide-react";
+import { MapPin, Navigation, Loader2, Search, Heart, ChevronRight, SlidersHorizontal } from "lucide-react";
+
+const PREFECTURES = [
+  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+  "新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県",
+  "静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県",
+  "奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県",
+  "徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県",
+  "熊本県","大分県","宮崎県","鹿児島県","沖縄県",
+];
 
 interface TempleItem {
   id: string;
@@ -35,11 +46,20 @@ export default function NearbyTemplesClient({
   temples,
   hasMember,
   initialTab = "all",
+  denominations,
+  initialDenomination,
+  initialSearch,
 }: {
   temples: TempleItem[];
   hasMember: boolean;
   initialTab?: "all" | "following";
+  denominations: string[];
+  initialDenomination: string;
+  initialSearch: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [sorted, setSorted] = useState<TempleWithDistance[]>(
     temples.map((t) => ({ ...t, distanceKm: null }))
   );
@@ -47,11 +67,25 @@ export default function NearbyTemplesClient({
     new Set(temples.filter((t) => t.isFavorite).map((t) => t.id))
   );
   const [geoState, setGeoState] = useState<"idle" | "loading" | "granted" | "denied">("idle");
-  const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "following">(initialTab);
+  const [search, setSearch] = useState(initialSearch);
+  const [denomination, setDenomination] = useState(initialDenomination);
+  const [prefecture, setPrefecture] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
 
+  // サーバーフィルタ（denomination / search）が変わったら URL を更新してリフェッチ
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (tab === "following") params.set("tab", "following");
+    if (denomination) params.set("denomination", denomination);
+    if (search.trim()) params.set("search", search.trim());
+    router.replace(`${pathname}?${params.toString()}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [denomination, search]);
+
+  // 位置情報
   useEffect(() => {
     if (!navigator.geolocation) {
       setGeoState("denied");
@@ -83,6 +117,12 @@ export default function NearbyTemplesClient({
       { timeout: 8000 }
     );
   }, []);
+
+  // テンプルリスト更新時に favorites / sorted を同期
+  useEffect(() => {
+    setSorted(temples.map((t) => ({ ...t, distanceKm: null })));
+    setFavorites(new Set(temples.filter((t) => t.isFavorite).map((t) => t.id)));
+  }, [temples]);
 
   function toggleFavorite(e: React.MouseEvent, templeId: string) {
     e.preventDefault();
@@ -119,18 +159,15 @@ export default function NearbyTemplesClient({
     });
   }
 
+  // クライアント側フィルタ（tab / prefecture）
   const filtered = sorted.filter((t) => {
     if (tab === "following" && !favorites.has(t.id)) return false;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      t.name.toLowerCase().includes(q) ||
-      (t.denomination ?? "").toLowerCase().includes(q) ||
-      (t.address ?? "").toLowerCase().includes(q)
-    );
+    if (prefecture && !(t.address ?? "").includes(prefecture)) return false;
+    return true;
   });
 
   const followingCount = favorites.size;
+  const hasActiveFilter = !!denomination || !!prefecture;
 
   return (
     <div className="space-y-3">
@@ -141,10 +178,63 @@ export default function NearbyTemplesClient({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="お寺の名前・宗派・住所で検索…"
-          className="w-full pl-9 pr-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200 transition-colors"
+          placeholder="お寺の名前・説明文で検索…"
+          className="w-full pl-9 pr-10 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200 transition-colors"
         />
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors ${
+            showFilters || hasActiveFilter
+              ? "text-amber-700 bg-amber-50"
+              : "text-stone-400 hover:text-stone-600"
+          }`}
+          aria-label="フィルター"
+        >
+          <SlidersHorizontal size={14} />
+        </button>
       </div>
+
+      {/* フィルタパネル */}
+      {showFilters && (
+        <div className="bg-white border border-stone-200 rounded-xl p-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-1">宗派</label>
+              <select
+                value={denomination}
+                onChange={(e) => setDenomination(e.target.value)}
+                className="w-full text-xs border border-stone-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-amber-400 text-stone-700"
+              >
+                <option value="">すべて</option>
+                {denominations.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-1">都道府県</label>
+              <select
+                value={prefecture}
+                onChange={(e) => setPrefecture(e.target.value)}
+                className="w-full text-xs border border-stone-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-amber-400 text-stone-700"
+              >
+                <option value="">すべて</option>
+                {PREFECTURES.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {hasActiveFilter && (
+            <button
+              onClick={() => { setDenomination(""); setPrefecture(""); }}
+              className="text-xs text-amber-700 font-medium hover:underline"
+            >
+              フィルターをリセット
+            </button>
+          )}
+        </div>
+      )}
 
       {/* タブ */}
       <div className="flex gap-2">
@@ -289,6 +379,12 @@ export default function NearbyTemplesClient({
       {filtered.length === 0 && !(tab === "following" && followingCount === 0) && (
         <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center shadow-sm">
           <p className="text-sm text-stone-400">該当するお寺が見つかりませんでした</p>
+        </div>
+      )}
+
+      {isPending && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+          更新中…
         </div>
       )}
     </div>

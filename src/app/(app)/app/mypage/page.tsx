@@ -23,7 +23,7 @@ export default async function MypagePage() {
       user={{ name: user.name, email: user.email, avatarUrl: user.avatarUrl ?? null }}
       member={
         user.member
-          ? { id: user.member.id, familyName: user.member.familyName, type: user.member.type }
+          ? { id: user.member.id, familyName: user.member.familyName }
           : null
       }
       templeId={user.templeId ?? null}

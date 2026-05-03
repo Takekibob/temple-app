@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 
 interface Props {
   templeId: string;
   initialFollowing: boolean;
+  redirectAfter?: string;
 }
 
-export default function FollowButton({ templeId, initialFollowing }: Props) {
+export default function FollowButton({ templeId, initialFollowing, redirectAfter }: Props) {
   const [following, setFollowing] = useState(initialFollowing);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function toggle() {
     setLoading(true);
@@ -25,6 +28,9 @@ export default function FollowButton({ templeId, initialFollowing }: Props) {
           body: JSON.stringify({ templeId }),
         });
         setFollowing(true);
+        if (redirectAfter) {
+          router.push(redirectAfter);
+        }
       }
     } finally {
       setLoading(false);

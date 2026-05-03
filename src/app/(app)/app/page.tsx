@@ -2,13 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasActiveMembership } from "@/lib/memberUtils";
-import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { getCategoryLabel } from "@/lib/eventCategories";
-import GoenCtaBanner from "@/components/app/GoenCtaBanner";
 import {
-  CalendarRange, BookOpen, Heart, Gift,
-  Newspaper, MapPin, ChevronRight, Clock, Lock, Bell,
+  CalendarRange, BookOpen, Heart,
+  Bell, MapPin, ChevronRight, Clock,
   Compass, Stamp,
 } from "lucide-react";
 
@@ -19,22 +16,12 @@ type QuickItem = {
   color: string;
 };
 
-// メンバーシップ加入済み会員向け（旧 DANKA_QUICK）
-const MEMBER_QUICK: QuickItem[] = [
-  { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
-  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
-  { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
-  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
-];
-
-// 未加入（フォロワー）向け（旧 GOEN_QUICK）
-const FOLLOWER_QUICK: QuickItem[] = [
-  { icon: BookOpen,      label: "イベント",   href: "/app/events",          color: "bg-sky-50 text-sky-600" },
-  { icon: Bell,          label: "お知らせ",   href: "/app/news",            color: "bg-orange-50 text-orange-600" },
-  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",        color: "bg-violet-50 text-violet-600" },
-  { icon: Compass,       label: "お寺を探す", href: "/app/temples",         color: "bg-emerald-50 text-emerald-600" },
-  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",   color: "bg-teal-50 text-teal-600" },
-  { icon: Gift,          label: "寄付",       href: "/app/donations/new",   color: "bg-purple-50 text-purple-600" },
+const QUICK_ITEMS: QuickItem[] = [
+  { icon: BookOpen,      label: "イベント",   href: "/app/events",         color: "bg-sky-50 text-sky-600" },
+  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",       color: "bg-violet-50 text-violet-600" },
+  { icon: Bell,          label: "お知らせ",   href: "/app/news",           color: "bg-orange-50 text-orange-600" },
+  { icon: Compass,       label: "お寺を探す", href: "/app/temples",        color: "bg-emerald-50 text-emerald-600" },
+  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",  color: "bg-teal-50 text-teal-600" },
 ];
 
 export default async function AppHomePage() {
@@ -44,160 +31,98 @@ export default async function AppHomePage() {
   const memberId = authUser.member?.id;
   const now = new Date();
 
-  // メンバーシップ加入状況（旧 isDanka の代替）
-  const hasMembership = memberId
-    ? await hasActiveMembership(memberId, authUser.templeId)
-    : false;
-  const isFollower = !hasMembership; // 未加入フォロワー（旧 isGoen の位置づけ）
-
-  const hasSubscription =
-    isFollower && authUser.member
-      ? await prisma.memberSubscription
-          .findFirst({
-            where: { memberId: authUser.member.id, status: "ACTIVE", templeId: authUser.templeId },
-            include: { plan: { select: { name: true } } },
-          })
-          .then((s) => s ?? null)
-      : null;
-
-  const isSubscribed = !!hasSubscription;
-
-  const exclusivePreview = isFollower
-    ? await Promise.all([
-        prisma.blogPost.findFirst({
-          where: { templeId: authUser.templeId, isSubscriberOnly: true, status: "PUBLISHED" },
-          orderBy: { publishedAt: "desc" },
-          select: { id: true, title: true },
-        }),
-        prisma.event.findFirst({
-          where: {
-            templeId: authUser.templeId,
-            visibility: "SUBSCRIBERS_ONLY",
-            status: "PUBLISHED",
-            eventDate: { gte: now },
-          },
-          orderBy: { eventDate: "asc" },
-          select: { id: true, title: true, eventDate: true },
-        }),
-      ])
-    : null;
-
-  const upcomingParticipations = authUser.member
-    ? await prisma.eventParticipation.findMany({
-        where: {
-          memberId: authUser.member.id,
-          status: { in: ["APPLIED", "CONFIRMED"] },
-          event: { eventDate: { gte: now } },
-        },
-        include: {
-          event: { select: { id: true, title: true, eventDate: true, startTime: true, category: true } },
-        },
-        orderBy: { event: { eventDate: "asc" } },
-        take: 3,
-      })
-    : [];
-
-  // フォロー中寺院 + イベント + ブログ + 発見用お寺
-  const followedTempleIds: string[] = isFollower && authUser.member
+  const followedTempleIds: string[] = memberId
     ? await prisma.memberFavoriteTemple
-        .findMany({ where: { memberId: authUser.member.id }, select: { templeId: true } })
+        .findMany({ where: { memberId }, select: { templeId: true } })
         .then((favs) => favs.map((f) => f.templeId))
     : [];
 
-  const allFollowedTempleIds = isFollower
-    ? Array.from(new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds]))
-    : [];
+  const allTempleIds = Array.from(
+    new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
+  );
 
-  const goenEvents = isFollower && allFollowedTempleIds.length > 0 && authUser.member
-    ? await prisma.event.findMany({
-        where: {
-          templeId: { in: allFollowedTempleIds },
-          status: "PUBLISHED",
-          eventDate: { gte: now },
-          visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] },
-          participations: { none: { memberId: authUser.member.id, status: { notIn: ["CANCELLED"] } } },
-        },
-        select: {
-          id: true, title: true, eventDate: true, startTime: true, category: true, fee: true,
-          temple: { select: { name: true } },
-        },
-        orderBy: { eventDate: "asc" },
-        take: 5,
-      })
-    : [];
+  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples] =
+    await Promise.all([
+      memberId
+        ? prisma.eventParticipation.findMany({
+            where: {
+              memberId,
+              status: { in: ["APPLIED", "CONFIRMED"] },
+              event: { eventDate: { gte: now } },
+            },
+            include: {
+              event: { select: { id: true, title: true, eventDate: true, startTime: true, category: true } },
+            },
+            orderBy: { event: { eventDate: "asc" } },
+            take: 3,
+          })
+        : Promise.resolve([]),
 
-  const goenBlogPosts = isFollower && allFollowedTempleIds.length > 0
-    ? await prisma.blogPost.findMany({
-        where: {
-          templeId: { in: allFollowedTempleIds },
-          status: "PUBLISHED",
-          publishedAt: { lte: now },
-          isSubscriberOnly: false,
-        },
-        select: {
-          id: true, title: true, publishedAt: true,
-          temple: { select: { name: true } },
-        },
-        orderBy: { publishedAt: "desc" },
-        take: 3,
-      })
-    : [];
+      followedTempleIds.length > 0 && memberId
+        ? prisma.event.findMany({
+            where: {
+              templeId: { in: followedTempleIds },
+              status: "PUBLISHED",
+              eventDate: { gte: now },
+              visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] },
+              participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } },
+            },
+            select: {
+              id: true, title: true, eventDate: true, startTime: true, category: true, fee: true,
+              temple: { select: { name: true } },
+            },
+            orderBy: { eventDate: "asc" },
+            take: 5,
+          })
+        : Promise.resolve([]),
 
-  const discoveryTemples = isFollower && followedTempleIds.length === 0
-    ? await prisma.temple.findMany({
-        where: { isActive: true, ...(authUser.templeId ? { id: { not: authUser.templeId } } : {}) },
-        take: 4,
-        select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
-      })
-    : [];
+      authUser.templeId
+        ? prisma.event.findMany({
+            where: {
+              templeId: authUser.templeId,
+              status: "PUBLISHED",
+              eventDate: { gte: now },
+              visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] },
+              ...(memberId
+                ? { participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } } }
+                : {}),
+            },
+            orderBy: { eventDate: "asc" },
+            take: 3,
+          })
+        : Promise.resolve([]),
 
-  const featuredEvents = await prisma.event.findMany({
-    where: {
-      templeId: authUser.templeId,
-      status: "PUBLISHED",
-      eventDate: { gte: now },
-      visibility: hasMembership
-        ? { in: ["PUBLIC", "MEMBERS_ONLY", "MEMBERSHIP_REQUIRED", "DANKA_ONLY"] }
-        : { in: ["PUBLIC", "MEMBERS_ONLY"] },
-      ...(authUser.member
-        ? { participations: { none: { memberId: authUser.member.id, status: { notIn: ["CANCELLED"] } } } }
-        : {}),
-    },
-    orderBy: { eventDate: "asc" },
-    take: 3,
-  });
+      allTempleIds.length > 0
+        ? prisma.announcement.findMany({
+            where: {
+              templeId: { in: allTempleIds },
+              publishedAt: { not: null, lte: now },
+              memberId: null,
+            },
+            orderBy: { publishedAt: "desc" },
+            take: 3,
+            select: { id: true, title: true, publishedAt: true },
+          })
+        : Promise.resolve([]),
 
-  const allowedSegments: AnnouncementTarget[] = hasMembership
-    ? ["ALL", "MEMBERS", "DANKA"]
-    : ["ALL", "GOEN"];
-
-  const latestNews = await prisma.announcement.findMany({
-    where: {
-      templeId: authUser.templeId,
-      publishedAt: { not: null, lte: now },
-      OR: [
-        { targetSegment: { in: allowedSegments }, memberId: null },
-        ...(authUser.member ? [{ memberId: authUser.member.id }] : []),
-      ],
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-    select: { id: true, title: true, publishedAt: true },
-  });
+      followedTempleIds.length === 0
+        ? prisma.temple.findMany({
+            where: {
+              isActive: true,
+              ...(authUser.templeId ? { id: { not: authUser.templeId } } : {}),
+            },
+            take: 4,
+            select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
+          })
+        : Promise.resolve([]),
+    ]);
 
   const displayName = authUser.name;
-
-  const quickItems: QuickItem[] = hasMembership ? MEMBER_QUICK : FOLLOWER_QUICK;
-
-  const [exclusiveBlog, exclusiveEvent] = exclusivePreview ?? [null, null];
 
   return (
     <div className="pb-28 max-w-lg mx-auto">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-5">
-        {isFollower && isSubscribed && (
-          <p className="text-xs text-emerald-600 font-semibold mb-0.5">{hasSubscription.plan.name}</p>
-        )}
         <h1 className="text-2xl font-bold text-stone-800 tracking-tight">
           こんにちは、<span className="text-amber-800">{displayName}</span>さん
         </h1>
@@ -206,7 +131,7 @@ export default async function AppHomePage() {
       <div className="px-4 space-y-5">
         {/* クイックアクセス */}
         <div className="grid grid-cols-3 gap-2.5">
-          {quickItems.map((item) => {
+          {QUICK_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -223,8 +148,8 @@ export default async function AppHomePage() {
           })}
         </div>
 
-        {/* GOEN: フォロー0件 — お寺発見セクション */}
-        {isFollower && followedTempleIds.length === 0 && (
+        {/* フォロー0件 — お寺発見セクション */}
+        {followedTempleIds.length === 0 && (
           <section>
             <SectionHeader title="お寺を見つけよう" moreHref="/app/temples" moreLabel="すべて見る" />
             <Link
@@ -236,7 +161,7 @@ export default async function AppHomePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-stone-800">近くのお寺を探そう</p>
-                <p className="text-xs text-stone-500 mt-0.5">フォローするとイベントやブログが届きます</p>
+                <p className="text-xs text-stone-500 mt-0.5">フォローするとイベントやお知らせが届きます</p>
               </div>
               <span className="shrink-0 text-xs font-semibold text-teal-700 bg-white px-3 py-1.5 rounded-full border border-teal-200 shadow-sm whitespace-nowrap">
                 探す
@@ -272,12 +197,12 @@ export default async function AppHomePage() {
           </section>
         )}
 
-        {/* GOEN: フォロー中のお寺のイベント */}
-        {isFollower && goenEvents.length > 0 && (
+        {/* フォロー中のお寺のイベント */}
+        {followedEvents.length > 0 && (
           <section>
             <SectionHeader title="フォロー中のお寺のイベント" moreHref="/app/events" moreLabel="すべて" />
             <div className="space-y-2">
-              {goenEvents.map((e) => (
+              {followedEvents.map((e) => (
                 <Link
                   key={e.id}
                   href={`/app/events/${e.id}`}
@@ -310,96 +235,6 @@ export default async function AppHomePage() {
           </section>
         )}
 
-        {/* GOEN: 最新ブログ */}
-        {isFollower && goenBlogPosts.length > 0 && (
-          <section>
-            <SectionHeader title="最新ブログ" moreHref="/app/blog" moreLabel="すべて" />
-            <div className="space-y-2">
-              {goenBlogPosts.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/app/blog/${p.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-amber-200 hover:shadow-md transition-all"
-                >
-                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
-                    <Newspaper size={16} className="text-amber-700" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-stone-400">
-                      {p.publishedAt?.toLocaleDateString("ja-JP", { month: "long", day: "numeric" })}
-                      <span className="mx-1 text-stone-300">·</span>
-                      {p.temple.name}
-                    </p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{p.title}</p>
-                  </div>
-                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* GOEN 未加入: CTA バナー */}
-        {isFollower && !isSubscribed && <GoenCtaBanner />}
-
-        {/* GOEN 加入済み: 会員限定コンテンツ */}
-        {isFollower && isSubscribed && (exclusiveBlog || exclusiveEvent) && (
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-2xl p-4">
-            <p className="text-xs font-bold text-amber-800 mb-3 flex items-center gap-1.5">
-              <span className="w-4 h-4 bg-amber-700 text-white rounded-full flex items-center justify-center text-[9px]">✓</span>
-              会員限定コンテンツ
-            </p>
-            <div className="space-y-2">
-              {exclusiveBlog && (
-                <Link href={`/app/blog/${exclusiveBlog.id}`}
-                  className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2.5 hover:bg-white transition-colors">
-                  <Newspaper size={14} className="text-amber-700 shrink-0" />
-                  <span className="text-sm text-stone-700 truncate">{exclusiveBlog.title}</span>
-                  <ChevronRight size={14} className="text-stone-300 ml-auto shrink-0" />
-                </Link>
-              )}
-              {exclusiveEvent && (
-                <Link href={`/app/events/${exclusiveEvent.id}`}
-                  className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2.5 hover:bg-white transition-colors">
-                  <BookOpen size={14} className="text-amber-700 shrink-0" />
-                  <span className="text-sm text-stone-700 truncate">{exclusiveEvent.title}</span>
-                  <span className="text-xs text-stone-400 shrink-0 ml-auto">
-                    {exclusiveEvent.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
-                  </span>
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* GOEN 未加入: ロックコンテンツ */}
-        {isFollower && !isSubscribed && (exclusiveBlog || exclusiveEvent) && (
-          <div className="border border-stone-200 rounded-2xl p-4 bg-stone-50">
-            <p className="text-xs font-semibold text-stone-400 mb-3 flex items-center gap-1.5">
-              <Lock size={12} />
-              会員限定コンテンツ
-            </p>
-            <div className="space-y-2">
-              {exclusiveBlog && (
-                <div className="flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5">
-                  <Newspaper size={14} className="text-stone-300 shrink-0" />
-                  <span className="text-sm text-stone-300 truncate blur-sm select-none">{exclusiveBlog.title}</span>
-                </div>
-              )}
-              {exclusiveEvent && (
-                <div className="flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5">
-                  <BookOpen size={14} className="text-stone-300 shrink-0" />
-                  <span className="text-sm text-stone-300 truncate blur-sm select-none">{exclusiveEvent.title}</span>
-                </div>
-              )}
-            </div>
-            <Link href="/app/subscriptions"
-              className="mt-3 inline-block text-xs text-amber-700 font-semibold hover:underline">
-              会員登録で読める →
-            </Link>
-          </div>
-        )}
-
         {/* 参加予定のイベント */}
         {upcomingParticipations.length > 0 && (
           <section>
@@ -426,42 +261,10 @@ export default async function AppHomePage() {
           </section>
         )}
 
-        {/* GOEN: フォロー中お寺のイベントがなければ全体から表示 */}
-        {isFollower && goenEvents.length === 0 && featuredEvents.length > 0 && (
+        {/* フォロー中のイベントがなければ全体から表示 */}
+        {followedEvents.length === 0 && featuredEvents.length > 0 && (
           <section>
             <SectionHeader title="今後のイベント" moreHref="/app/events" moreLabel="すべて" />
-            <div className="space-y-2">
-              {featuredEvents.map((e) => (
-                <Link key={e.id} href={`/app/events/${e.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-teal-200 hover:shadow-md transition-all">
-                  <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
-                    <BookOpen size={16} className="text-teal-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-teal-700 font-medium">{getCategoryLabel(e.category)}</p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                      {e.startTime && ` ${e.startTime}`}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
-                    <span className="text-xs font-bold text-amber-700">
-                      {e.fee === 0 ? "無料" : `¥${e.fee.toLocaleString()}`}
-                    </span>
-                    <ChevronRight size={14} className="text-stone-300" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 次回の行事（会員のみ） */}
-        {hasMembership && featuredEvents.length > 0 && (
-          <section>
-            <SectionHeader title="次回の行事" moreHref="/app/events" moreLabel="すべて" />
-            {/* ヒーローカード：直近1件 */}
             <Link href={`/app/events/${featuredEvents[0].id}`}
               className="block bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
               <div className="flex items-start justify-between gap-2">
@@ -489,7 +292,6 @@ export default async function AppHomePage() {
                 </div>
               </div>
             </Link>
-            {/* 残りのイベント */}
             {featuredEvents.length > 1 && (
               <div className="space-y-2 mt-2">
                 {featuredEvents.slice(1).map((e) => (

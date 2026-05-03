@@ -4,21 +4,29 @@ import { useState, useEffect } from "react";
 
 interface Props {
   pushEnabled: boolean;
+  memberId: string | null;
+  notifyEvent: boolean;
+  notifyAnnouncement: boolean;
 }
 
-export default function NotificationsClient({ pushEnabled: initEnabled }: Props) {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [msg, setMsg] = useState<string | null>(null);
+export default function NotificationsClient({
+  pushEnabled: initEnabled,
+  memberId,
+  notifyEvent: initNotifyEvent,
+  notifyAnnouncement: initNotifyAnnouncement,
+}: Props) {
+  const [pushStatus, setPushStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(initEnabled);
   const [supported, setSupported] = useState(true);
+  const [notifyEvent, setNotifyEvent] = useState(initNotifyEvent);
+  const [notifyAnnouncement, setNotifyAnnouncement] = useState(initNotifyAnnouncement);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       setSupported(false);
       return;
     }
-
-    // 現在のブラウザサブスクリプション状態を確認
     navigator.serviceWorker.ready.then(async (reg) => {
       const sub = await reg.pushManager.getSubscription();
       setIsSubscribed(!!sub);
@@ -26,74 +34,50 @@ export default function NotificationsClient({ pushEnabled: initEnabled }: Props)
   }, []);
 
   async function handleEnable() {
-    setStatus("loading");
-    setMsg(null);
-
+    setPushStatus("loading");
+    setPushMsg(null);
     try {
-      // ブラウザの通知許可を要求
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        setMsg("通知が許可されていません。ブラウザの設定から許可してください。");
-        setStatus("error");
+        setPushMsg("通知が許可されていません。ブラウザの設定から許可してください。");
+        setPushStatus("error");
         return;
       }
-
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
-        setMsg("プッシュ通知の設定が完了していません。");
-        setStatus("error");
+        setPushMsg("プッシュ通知の設定が完了していません。");
+        setPushStatus("error");
         return;
       }
-
-      // ServiceWorker 登録を取得
       const reg = await navigator.serviceWorker.ready;
-
-      // 既存サブスクリプションがあれば削除（再登録）
       const existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
-
-      // VAPID 公開鍵を ArrayBuffer に変換してサブスクライブ
       const applicationServerKey = urlBase64ToArrayBuffer(vapidPublicKey);
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
-
+      const subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
       const json = subscription.toJSON();
       const keys = json.keys as { p256dh: string; auth: string };
-
-      // サーバーにサブスクリプションを登録
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: subscription.endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-        }),
+        body: JSON.stringify({ endpoint: subscription.endpoint, p256dh: keys.p256dh, auth: keys.auth }),
       });
-
       if (!res.ok) throw new Error("サーバーへの登録に失敗しました");
-
       setIsSubscribed(true);
-      setMsg("プッシュ通知を有効にしました");
-      setStatus("success");
-      setTimeout(() => setMsg(null), 2500);
+      setPushMsg("プッシュ通知を有効にしました");
+      setPushStatus("success");
+      setTimeout(() => setPushMsg(null), 2500);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "エラーが発生しました";
-      setMsg(message);
-      setStatus("error");
+      setPushMsg(err instanceof Error ? err.message : "エラーが発生しました");
+      setPushStatus("error");
     }
   }
 
   async function handleDisable() {
-    setStatus("loading");
-    setMsg(null);
-
+    setPushStatus("loading");
+    setPushMsg(null);
     try {
       const reg = await navigator.serviceWorker.ready;
       const subscription = await reg.pushManager.getSubscription();
-
       if (subscription) {
         await fetch("/api/push/unsubscribe", {
           method: "DELETE",
@@ -102,67 +86,117 @@ export default function NotificationsClient({ pushEnabled: initEnabled }: Props)
         });
         await subscription.unsubscribe();
       }
-
       setIsSubscribed(false);
-      setMsg("プッシュ通知を無効にしました");
-      setStatus("success");
-      setTimeout(() => setMsg(null), 2500);
+      setPushMsg("プッシュ通知を無効にしました");
+      setPushStatus("success");
+      setTimeout(() => setPushMsg(null), 2500);
     } catch {
-      setMsg("無効化に失敗しました");
-      setStatus("error");
+      setPushMsg("無効化に失敗しました");
+      setPushStatus("error");
     }
   }
 
-  if (!supported) {
-    return (
-      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 text-sm text-stone-500">
-        このブラウザはプッシュ通知に対応していません。
-      </div>
-    );
+  async function updateMemberSetting(key: "notifyEvent" | "notifyAnnouncement", value: boolean) {
+    if (!memberId) return;
+    if (key === "notifyEvent") setNotifyEvent(value);
+    else setNotifyAnnouncement(value);
+    await fetch("/api/me/member-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: value }),
+    });
   }
 
   return (
     <div className="space-y-4">
-      {msg && (
-        <div className={`p-3 border rounded-lg text-sm ${status === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-green-50 border-green-200 text-green-700"}`}>
-          {msg}
+      {pushMsg && (
+        <div className={`p-3 border rounded-lg text-sm ${pushStatus === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-green-50 border-green-200 text-green-700"}`}>
+          {pushMsg}
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-stone-100 p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-stone-700">プッシュ通知</p>
-            <p className="text-xs text-stone-400 mt-0.5">お知らせ・予約確認などを通知します</p>
+      {/* 通知種別 */}
+      {memberId && (
+        <div className="bg-white rounded-2xl border border-stone-100 divide-y divide-stone-50">
+          <div className="px-5 pt-4 pb-2">
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">通知種別</p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isSubscribed}
-            disabled={status === "loading"}
-            onClick={isSubscribed ? handleDisable : handleEnable}
-            className={`relative w-11 h-6 rounded-full transition-colors ${isSubscribed ? "bg-amber-700" : "bg-stone-200"} disabled:opacity-40`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isSubscribed ? "translate-x-5" : ""}`}
-            />
-          </button>
+          <ToggleRow
+            label="イベント通知"
+            description="新しいイベントや申込確認の通知"
+            checked={notifyEvent}
+            onChange={(v) => updateMemberSetting("notifyEvent", v)}
+          />
+          <ToggleRow
+            label="お知らせ通知"
+            description="お寺からのお知らせの通知"
+            checked={notifyAnnouncement}
+            onChange={(v) => updateMemberSetting("notifyAnnouncement", v)}
+          />
         </div>
-      </div>
+      )}
 
-      {!isSubscribed && (
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-          <p className="text-xs text-amber-800 leading-relaxed">
-            スイッチをオンにするとブラウザの通知許可が求められます。<br />
-            許可することでお知らせや予約確認をリアルタイムに受け取れます。
-          </p>
+      {/* プッシュ通知 */}
+      {supported ? (
+        <div className="bg-white rounded-2xl border border-stone-100 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-stone-700">プッシュ通知</p>
+              <p className="text-xs text-stone-400 mt-0.5">ブラウザへのリアルタイム通知</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isSubscribed}
+              disabled={pushStatus === "loading"}
+              onClick={isSubscribed ? handleDisable : handleEnable}
+              className={`relative w-11 h-6 rounded-full transition-colors ${isSubscribed ? "bg-amber-700" : "bg-stone-200"} disabled:opacity-40`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isSubscribed ? "translate-x-5" : ""}`} />
+            </button>
+          </div>
+          {!isSubscribed && (
+            <p className="text-xs text-stone-400 mt-3 leading-relaxed">
+              スイッチをオンにするとブラウザの通知許可が求められます。
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 text-sm text-stone-500">
+          このブラウザはプッシュ通知に対応していません。
         </div>
       )}
     </div>
   );
 }
 
-/** URL-safe Base64 を ArrayBuffer に変換（Web Push 標準） */
+function ToggleRow({
+  label, description, checked, onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-3.5">
+      <div>
+        <p className="text-sm font-semibold text-stone-700">{label}</p>
+        <p className="text-xs text-stone-400 mt-0.5">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ml-4 ${checked ? "bg-amber-700" : "bg-stone-200"}`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+      </button>
+    </div>
+  );
+}
+
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");

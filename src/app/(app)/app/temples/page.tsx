@@ -6,18 +6,31 @@ import NearbyTemplesClient from "./NearbyTemplesClient";
 export default async function TemplesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; denomination?: string; search?: string }>;
 }) {
-  const { tab } = await searchParams;
+  const { tab, denomination, search } = await searchParams;
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
   const myTempleId = authUser.member?.templeId ?? null;
   const memberId = authUser.member?.id ?? null;
 
-  const [temples, favorites] = await Promise.all([
+  const where = {
+    isActive: true,
+    ...(denomination ? { denomination } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const [temples, favorites, denominations] = await Promise.all([
     prisma.temple.findMany({
-      where: { isActive: true },
+      where,
       select: {
         id: true,
         name: true,
@@ -34,7 +47,14 @@ export default async function TemplesPage({
           where: { memberId },
           select: { templeId: true },
         })
-      : [],
+      : Promise.resolve([]),
+    // 宗派一覧（フィルタUI用）
+    prisma.temple.findMany({
+      where: { isActive: true, denomination: { not: null } },
+      select: { denomination: true },
+      distinct: ["denomination"],
+      orderBy: { denomination: "asc" },
+    }).then((rows) => rows.map((r) => r.denomination!).filter(Boolean)),
   ]);
 
   const favoriteIds = new Set(favorites.map((f) => f.templeId));
@@ -56,7 +76,7 @@ export default async function TemplesPage({
       <div className="px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お寺を探す</h1>
         <p className="text-xs text-stone-400 mt-0.5">
-          フォローするとイベント・ブログが届きます
+          フォローするとイベントやお知らせが届きます
         </p>
       </div>
 
@@ -65,6 +85,9 @@ export default async function TemplesPage({
           temples={templeItems}
           hasMember={!!memberId}
           initialTab={tab === "following" ? "following" : "all"}
+          denominations={denominations}
+          initialDenomination={denomination ?? ""}
+          initialSearch={search ?? ""}
         />
       </div>
     </div>

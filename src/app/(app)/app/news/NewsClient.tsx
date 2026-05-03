@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, User, ChevronRight, Trash2, CheckCheck } from "lucide-react";
+import { Bell, ChevronRight, Trash2, CheckCheck } from "lucide-react";
 
 interface AnnouncementItem {
   id: string;
   title: string;
-  targetSegment: string;
-  memberId: string | null;
   publishedAt: string;
   isRead: boolean;
 }
@@ -18,12 +16,6 @@ interface Props {
   announcements: AnnouncementItem[];
   hasMember: boolean;
 }
-
-const SEGMENT_LABELS: Record<string, string> = {
-  ALL: "全員",
-  DANKA: "檀家",
-  GOEN: "ご縁さん",
-};
 
 export default function NewsClient({ announcements: initial, hasMember }: Props) {
   const [items, setItems] = useState(initial);
@@ -98,13 +90,8 @@ export default function NewsClient({ announcements: initial, hasMember }: Props)
                   <span className="absolute top-3.5 right-10 w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                 )}
 
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  a.memberId ? "bg-blue-50" : "bg-amber-50"
-                }`}>
-                  {a.memberId
-                    ? <User size={15} className="text-blue-600" />
-                    : <Bell size={15} className="text-amber-600" />
-                  }
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-amber-50">
+                  <Bell size={15} className="text-amber-600" />
                 </div>
 
                 <Link
@@ -113,17 +100,6 @@ export default function NewsClient({ announcements: initial, hasMember }: Props)
                   className="flex-1 min-w-0 flex items-center gap-3"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      {a.memberId ? (
-                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
-                          あなた宛
-                        </span>
-                      ) : a.targetSegment !== "ALL" && (
-                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
-                          {SEGMENT_LABELS[a.targetSegment]}限定
-                        </span>
-                      )}
-                    </div>
                     <p className={`text-sm leading-snug truncate ${a.isRead ? "font-medium text-stone-700" : "font-bold text-stone-800"}`}>
                       {a.title}
                     </p>

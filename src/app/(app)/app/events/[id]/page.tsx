@@ -3,11 +3,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasActiveSubscription } from "@/lib/subscription";
 import CancelButton from "./CancelButton";
 import ShareButton from "@/components/shared/ShareButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
-import { MapPin, Clock, Users, Coins, ChevronLeft, CheckCircle, Globe, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Users, Coins, ChevronLeft, CheckCircle, Globe, ExternalLink, Heart, Lock } from "lucide-react";
+import FollowButton from "@/app/(app)/app/temples/[id]/FollowButton";
 
 const PARTICIPATION_STATUS_LABELS: Record<string, string> = {
   APPLIED: "申込済み（確認待ち）",
@@ -26,7 +26,6 @@ export default async function AppEventDetailPage({
   if (!authUser) redirect("/");
 
   const { id } = await params;
-  const isDanka = authUser.member?.type === "DANKA";
 
   const event = await prisma.event.findFirst({
     where: { id, status: "PUBLISHED" },
@@ -40,15 +39,82 @@ export default async function AppEventDetailPage({
 
   if (!event) notFound();
 
-  if (event.visibility === "DANKA_ONLY") {
-    const isMyTempleDanka = isDanka && authUser.member?.templeId === event.templeId;
-    if (!isMyTempleDanka) redirect("/app/events");
-  }
+  // フォロワー限定イベントの制御
+  if ((event.visibility as string) === "FOLLOWERS_ONLY") {
+    const memberId = authUser.member?.id;
+    const isFollowing = memberId
+      ? !!(await prisma.memberFavoriteTemple.findUnique({
+          where: { memberId_templeId: { memberId, templeId: event.templeId } },
+        }))
+      : false;
+    const isMyTemple = authUser.member?.templeId === event.templeId;
 
-  if (event.visibility === "SUBSCRIBERS_ONLY") {
-    if (!authUser.member) redirect("/app/events");
-    const isSubscriber = await hasActiveSubscription(authUser.member.id, event.templeId);
-    if (!isSubscriber) redirect("/app/subscriptions");
+    if (!isFollowing && !isMyTemple) {
+      // フォロー促進画面
+      return (
+        <div className="max-w-lg mx-auto pb-28">
+          <div className="h-24 bg-gradient-to-b from-amber-50 to-stone-50 relative flex items-center px-4">
+            <Link
+              href="/app/events"
+              className="flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
+            >
+              <ChevronLeft size={16} />
+              イベント一覧
+            </Link>
+          </div>
+
+          <div className="px-4 pt-4 space-y-4">
+            <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 text-center">
+              <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Lock size={24} className="text-rose-400" />
+              </div>
+              <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full inline-block mb-4">
+                フォロワー限定
+              </p>
+              <h1 className="text-lg font-bold text-stone-800 mb-1">{event.title}</h1>
+              <p className="text-sm text-stone-500 mb-1">
+                {event.eventDate.toLocaleDateString("ja-JP", {
+                  year: "numeric", month: "long", day: "numeric", weekday: "short",
+                })}
+                {event.startTime && ` ${event.startTime}〜`}
+              </p>
+              <Link
+                href={`/app/temples/${event.temple.id}`}
+                className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline mb-5"
+              >
+                <MapPin size={11} />
+                {event.temple.name}
+                {event.temple.denomination && `（${event.temple.denomination}）`}
+              </Link>
+
+              <div className="border-t border-stone-100 pt-5 mt-1">
+                <p className="text-sm font-semibold text-stone-700 mb-1">
+                  このイベントは <span className="text-amber-800">{event.temple.name}</span> のフォロワー限定です
+                </p>
+                <p className="text-xs text-stone-400 mb-5">
+                  フォローすると限定イベントやお知らせが届きます
+                </p>
+                {authUser.member ? (
+                  <FollowButton
+                    templeId={event.temple.id}
+                    initialFollowing={false}
+                    redirectAfter={`/app/events/${id}`}
+                  />
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-6 py-3 rounded-2xl shadow-sm transition-colors"
+                  >
+                    <Heart size={15} />
+                    ログインしてフォローする
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   let myParticipation = null;
@@ -63,13 +129,14 @@ export default async function AppEventDetailPage({
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
   const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
 
+  const isFollowersOnly = (event.visibility as string) === "FOLLOWERS_ONLY";
+
   return (
     <div className="max-w-lg mx-auto pb-28">
       {/* カバー画像 */}
       {event.imageUrl ? (
         <div className="relative h-52 bg-stone-200 overflow-hidden">
           <Image src={event.imageUrl} alt={event.title} fill className="object-cover" />
-          {/* オーバーレイヘッダー */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
             <Link
               href="/app/events"
@@ -79,19 +146,13 @@ export default async function AppEventDetailPage({
             </Link>
             <ShareButton title={event.title} />
           </div>
-          {/* バッジ */}
           <div className="absolute bottom-3 left-4 flex gap-1.5">
             <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
               {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
             </span>
-            {event.visibility === "DANKA_ONLY" && (
-              <span className="bg-amber-700/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                檀家限定
-              </span>
-            )}
-            {event.visibility === "SUBSCRIBERS_ONLY" && (
-              <span className="bg-emerald-700/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                会員限定
+            {isFollowersOnly && (
+              <span className="bg-rose-600/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                フォロワー限定
               </span>
             )}
           </div>
@@ -117,9 +178,9 @@ export default async function AppEventDetailPage({
               <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">
                 {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
               </span>
-              {event.visibility === "DANKA_ONLY" && (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium">
-                  檀家限定
+              {isFollowersOnly && (
+                <span className="text-xs bg-rose-50 text-rose-600 px-2.5 py-0.5 rounded-full font-medium">
+                  フォロワー限定
                 </span>
               )}
             </div>

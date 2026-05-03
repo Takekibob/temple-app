@@ -3,10 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { EventVisibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import { getCategoryLabel, getCategoryIcon, STANDARD_CATEGORY_KEYS } from "@/lib/eventCategories";
-import { MapPin, Clock, Users, CheckCircle, Heart, Sparkles } from "lucide-react";
+import { MapPin, Clock, Users, CheckCircle, Heart, Lock } from "lucide-react";
 import { Suspense } from "react";
 import SearchBar from "@/components/app/SearchBar";
 
@@ -21,15 +20,14 @@ function EventCard({
   event,
   showTemple,
   myStatus,
-  recommended,
 }: {
   event: EventRow;
   showTemple: boolean;
   myStatus?: string;
-  recommended?: boolean;
 }) {
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
   const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
+  const isFollowersOnly = (event.visibility as string) === "FOLLOWERS_ONLY";
 
   return (
     <Link
@@ -39,19 +37,13 @@ function EventCard({
       {event.imageUrl && (
         <div className="relative h-40 overflow-hidden bg-stone-100">
           <Image src={event.imageUrl} alt={event.title} fill className="object-cover" />
-          {/* オーバーレイバッジ */}
           <div className="absolute top-3 left-3 flex gap-1.5">
             <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
               {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
             </span>
-            {event.visibility === "DANKA_ONLY" && (
-              <span className="bg-amber-700/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                檀家限定
-              </span>
-            )}
-            {recommended && (
-              <span className="bg-amber-500/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-                <Sparkles size={10} />おすすめ
+            {isFollowersOnly && (
+              <span className="bg-rose-600/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                <Lock size={9} />フォロワー限定
               </span>
             )}
           </div>
@@ -64,14 +56,9 @@ function EventCard({
             <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full">
               {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
             </span>
-            {event.visibility === "DANKA_ONLY" && (
-              <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full font-medium">
-                檀家限定
-              </span>
-            )}
-            {recommended && (
-              <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Sparkles size={10} />おすすめ
+            {isFollowersOnly && (
+              <span className="text-xs text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
+                <Lock size={9} />フォロワー限定
               </span>
             )}
           </div>
@@ -140,10 +127,8 @@ export default async function AppEventsPage({
   if (!authUser) redirect("/");
 
   const { category, denomination, search } = await searchParams;
-  const isDanka = authUser.member?.type === "DANKA";
-  const myTempleId = authUser.member?.templeId ?? null;
+  const memberId = authUser.member?.id ?? null;
   const today = new Date(new Date().toDateString());
-  const interestTags: string[] = (authUser.member as { interestTags?: string[] } | null)?.interestTags ?? [];
 
   const STANDARD_NON_OTHER = STANDARD_CATEGORY_KEYS.filter((k) => k !== "OTHER");
   const categoryFilter: Prisma.EventWhereInput =
@@ -171,78 +156,52 @@ export default async function AppEventsPage({
     ...(denomination ? { temple: { denomination } } : {}),
   };
 
-  const PUBLIC_VISIBILITY: EventVisibility[] = ["PUBLIC", "MEMBERS_ONLY"];
-
+  // フォロー中寺院IDを取得
   let favoriteTempleIds: string[] = [];
-  if (authUser.member && !isDanka) {
+  if (memberId) {
     const favs = await prisma.memberFavoriteTemple.findMany({
-      where: { memberId: authUser.member.id },
+      where: { memberId },
       select: { templeId: true },
     });
     favoriteTempleIds = favs.map((f) => f.templeId);
   }
 
-  let myTempleEvents: EventRow[] = [];
-  let otherEvents: EventRow[] = [];
-  let favoriteEvents: EventRow[] = [];
+  // フォロワーにはフォロー中寺院の FOLLOWERS_ONLY も表示
+  const publicVisibility: Prisma.EventWhereInput["visibility"] = { in: ["PUBLIC", "MEMBERS_ONLY"] };
 
-  if (isDanka && myTempleId) {
-    [myTempleEvents, otherEvents] = await Promise.all([
+  let favoriteEvents: EventRow[] = [];
+  let otherEvents: EventRow[] = [];
+
+  if (favoriteTempleIds.length > 0) {
+    [favoriteEvents, otherEvents] = await Promise.all([
       prisma.event.findMany({
-        where: {
-          ...baseWhere,
-          templeId: myTempleId,
-          visibility: { in: ["PUBLIC", "MEMBERS_ONLY", "DANKA_ONLY"] as EventVisibility[] },
-        },
+        where: { ...baseWhere, templeId: { in: favoriteTempleIds }, visibility: publicVisibility },
         include: INCLUDE,
         orderBy: { eventDate: "asc" },
         take: 20,
       }),
       prisma.event.findMany({
-        where: {
-          ...baseWhere,
-          templeId: { not: myTempleId },
-          visibility: { in: PUBLIC_VISIBILITY },
-        },
+        where: { ...baseWhere, templeId: { notIn: favoriteTempleIds }, visibility: publicVisibility },
         include: INCLUDE,
         orderBy: { eventDate: "asc" },
         take: 20,
       }),
     ]);
   } else {
-    const publicWhere: Prisma.EventWhereInput = { ...baseWhere, visibility: { in: PUBLIC_VISIBILITY } };
-
-    if (favoriteTempleIds.length > 0) {
-      [favoriteEvents, otherEvents] = await Promise.all([
-        prisma.event.findMany({
-          where: { ...publicWhere, templeId: { in: favoriteTempleIds } },
-          include: INCLUDE,
-          orderBy: { eventDate: "asc" },
-          take: 20,
-        }),
-        prisma.event.findMany({
-          where: { ...publicWhere, templeId: { notIn: favoriteTempleIds } },
-          include: INCLUDE,
-          orderBy: { eventDate: "asc" },
-          take: 20,
-        }),
-      ]);
-    } else {
-      otherEvents = await prisma.event.findMany({
-        where: publicWhere,
-        include: INCLUDE,
-        orderBy: { eventDate: "asc" },
-        take: 40,
-      });
-    }
+    otherEvents = await prisma.event.findMany({
+      where: { ...baseWhere, visibility: publicVisibility },
+      include: INCLUDE,
+      orderBy: { eventDate: "asc" },
+      take: 40,
+    });
   }
 
-  const allEventIds = [...myTempleEvents, ...favoriteEvents, ...otherEvents].map((e) => e.id);
+  const allEventIds = [...favoriteEvents, ...otherEvents].map((e) => e.id);
   const myParticipationMap: Record<string, string> = {};
-  if (authUser.member && allEventIds.length > 0) {
+  if (memberId && allEventIds.length > 0) {
     const myParts = await prisma.eventParticipation.findMany({
       where: {
-        memberId: authUser.member.id,
+        memberId,
         eventId: { in: allEventIds },
         status: { not: "CANCELLED" },
       },
@@ -252,8 +211,7 @@ export default async function AppEventsPage({
   }
 
   const categories = ["ZAZEN", "SHAKYO", "YOGA", "MINDFULNESS", "LECTURE", "SEASONAL", "OTHER"];
-  const hasAnyEvents =
-    myTempleEvents.length > 0 || favoriteEvents.length > 0 || otherEvents.length > 0;
+  const hasAnyEvents = favoriteEvents.length > 0 || otherEvents.length > 0;
 
   return (
     <div className="max-w-lg mx-auto pb-28">
@@ -310,24 +268,8 @@ export default async function AppEventsPage({
           </div>
         )}
 
-        {/* 檀家: 自寺院イベント */}
-        {isDanka && myTempleEvents.length > 0 && (
-          <section>
-            <SectionLabel>
-              {myTempleEvents[0].temple.name}のイベント
-            </SectionLabel>
-            <div className="space-y-3">
-              {myTempleEvents.map((event) => (
-                <EventCard key={event.id} event={event} showTemple={false}
-                  myStatus={myParticipationMap[event.id]}
-                  recommended={!category && !search && interestTags.includes(event.category)} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ご縁さん: フォロー0件の誘導バナー */}
-        {!isDanka && favoriteTempleIds.length === 0 && (
+        {/* フォロー0件の誘導バナー */}
+        {favoriteTempleIds.length === 0 && (
           <Link
             href="/app/temples"
             className="flex items-center gap-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-2xl border border-rose-100 px-4 py-4 hover:shadow-md transition-all"
@@ -348,33 +290,28 @@ export default async function AppEventsPage({
         )}
 
         {/* フォロー中のお寺のイベント */}
-        {!isDanka && favoriteEvents.length > 0 && (
+        {favoriteEvents.length > 0 && (
           <section>
             <SectionLabel>フォロー中のお寺のイベント</SectionLabel>
             <div className="space-y-3">
               {favoriteEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}
-                  myStatus={myParticipationMap[event.id]}
-                  recommended={!category && !search && interestTags.includes(event.category)} />
+                  myStatus={myParticipationMap[event.id]} />
               ))}
             </div>
           </section>
         )}
 
-        {/* その他 */}
+        {/* その他のイベント */}
         {otherEvents.length > 0 && (
           <section>
-            {isDanka && myTempleId && (
-              <SectionLabel>他のお寺のイベント</SectionLabel>
-            )}
-            {!isDanka && favoriteEvents.length > 0 && (
+            {favoriteEvents.length > 0 && (
               <SectionLabel>すべてのお寺のイベント</SectionLabel>
             )}
             <div className="space-y-3">
               {otherEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}
-                  myStatus={myParticipationMap[event.id]}
-                  recommended={!category && !search && interestTags.includes(event.category)} />
+                  myStatus={myParticipationMap[event.id]} />
               ))}
             </div>
           </section>

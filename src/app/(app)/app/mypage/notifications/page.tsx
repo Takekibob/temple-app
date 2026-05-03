@@ -11,7 +11,16 @@ export default async function NotificationsPage() {
 
   const user = await prisma.user.findUnique({
     where: { email: authUser.email! },
-    select: { pushEnabled: true },
+    select: {
+      pushEnabled: true,
+      member: {
+        select: {
+          id: true,
+          notifyEvent: true,
+          notifyAnnouncement: true,
+        },
+      },
+    },
   });
   if (!user) redirect("/");
 
@@ -22,7 +31,12 @@ export default async function NotificationsPage() {
         <h1 className="text-base font-bold text-stone-800">通知設定</h1>
       </header>
       <div className="max-w-lg mx-auto px-4 py-6">
-        <NotificationsClient pushEnabled={user.pushEnabled} />
+        <NotificationsClient
+          pushEnabled={user.pushEnabled}
+          memberId={user.member?.id ?? null}
+          notifyEvent={user.member?.notifyEvent ?? true}
+          notifyAnnouncement={user.member?.notifyAnnouncement ?? true}
+        />
       </div>
     </div>
   );
