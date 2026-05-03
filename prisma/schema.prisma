@@ -30,8 +30,9 @@ model Temple {
   lineOfficialUrl String?  // LINE公式アカウントURL
   youtubeUrl      String?  // YouTubeチャンネルURL
   latitude        Decimal? // 緯度（将来の地図表示用）
-  longitude     Decimal? // 経度（将来の地図表示用）
-  isActive      Boolean  @default(true)
+  longitude          Decimal? // 経度（将来の地図表示用）
+  membershipEnabled  Boolean  @default(false) // 関わり方機能の ON/OFF
+  isActive           Boolean  @default(true)
 
   // 予約設定
   bookingStartTime   String  @default("09:00")

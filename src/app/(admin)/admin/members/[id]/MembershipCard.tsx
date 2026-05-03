@@ -85,7 +85,7 @@ export default function MembershipCard({ memberId, initialMemberships, available
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <Layers size={14} className="text-stone-500" />
-          <h2 className="font-semibold text-stone-800 text-sm">メンバーシップ</h2>
+          <h2 className="font-semibold text-stone-800 text-sm">関わり方</h2>
         </div>
         {unassignedTypes.length > 0 && (
           <button

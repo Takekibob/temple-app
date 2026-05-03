@@ -27,6 +27,7 @@ interface SearchParams {
   page?: string;
   tag?: string;
   membershipTypeId?: string;
+  enrollment?: string; // "enrolled" | "not_enrolled"
 }
 
 export default async function MembersPage({
@@ -38,23 +39,33 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, search = "", page: pageStr = "1", tag, membershipTypeId } = await searchParams;
+  const { type, search = "", page: pageStr = "1", tag, membershipTypeId, enrollment } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
 
   if (tag) void logFeature(authUser.templeId, authUser.id, "tag_filter", tag);
 
-  const [membershipTypes] = await Promise.all([
+  const [membershipTypes, temple] = await Promise.all([
     prisma.membershipType.findMany({
       where: { templeId: authUser.templeId },
       select: { id: true, name: true },
       orderBy: { sortOrder: "asc" },
     }),
+    prisma.temple.findUnique({
+      where: { id: authUser.templeId },
+      select: { membershipEnabled: true },
+    }),
   ]);
 
-  const membershipFilter = membershipTypeId
-    ? { memberships: { some: { membershipTypeId, status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
-    : type === "DANKA" || type === "GOEN"
-    ? { type: type as "DANKA" | "GOEN" }
+  const membershipEnabled = temple?.membershipEnabled ?? false;
+
+  const membershipFilter = membershipEnabled
+    ? membershipTypeId
+      ? { memberships: { some: { membershipTypeId, status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
+      : enrollment === "enrolled"
+      ? { memberships: { some: { status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
+      : enrollment === "not_enrolled"
+      ? { memberships: { none: { status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
+      : {}
     : {};
 
   const searchFilter = search
@@ -91,7 +102,7 @@ export default async function MembersPage({
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">会員管理</h1>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">メンバー管理</h1>
           <p className="text-sm text-stone-400 mt-0.5">{total.toLocaleString()} 名</p>
         </div>
         {isAdmin && (
@@ -115,16 +126,17 @@ export default async function MembersPage({
           currentSearch={search}
           currentTag={tag}
           currentMembershipTypeId={membershipTypeId}
-          membershipTypes={membershipTypes}
+          currentEnrollment={enrollment}
+          membershipTypes={membershipEnabled ? membershipTypes : []}
+          membershipEnabled={membershipEnabled}
         />
       </Suspense>
-
 
       {/* リスト */}
       <div className="mt-4 space-y-2">
         {members.length === 0 ? (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-14 text-center">
-            <p className="text-stone-400 text-sm">該当する会員が見つかりません</p>
+            <p className="text-stone-400 text-sm">該当するメンバーが見つかりません</p>
           </div>
         ) : (
           members.map((member) => (
@@ -134,11 +146,7 @@ export default async function MembersPage({
               className="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm px-5 py-4 hover:border-amber-200 hover:shadow-md transition-all"
             >
               {/* アバター */}
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white font-bold text-base shrink-0 ${
-                member.type === "DANKA"
-                  ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                  : "bg-gradient-to-br from-teal-500 to-teal-700"
-              }`}>
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-stone-500 to-stone-700 flex items-center justify-center text-white font-bold text-base shrink-0">
                 {member.user.name.charAt(0)}
               </div>
 
@@ -149,13 +157,6 @@ export default async function MembersPage({
                   {member.familyName && (
                     <span className="text-xs text-stone-400">{member.familyName}家</span>
                   )}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    member.type === "DANKA"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-teal-100 text-teal-800"
-                  }`}>
-                    {member.type === "DANKA" ? "檀家" : "ご縁さん"}
-                  </span>
                 </div>
                 {member.summaryNote && (
                   <p className="text-xs text-stone-400 mt-1 truncate">{member.summaryNote}</p>

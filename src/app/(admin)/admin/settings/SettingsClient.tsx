@@ -26,9 +26,10 @@ interface TempleSettings {
   reminderDayOfTime: string;
   reminderMeinichi: boolean;
   customEventCategories: string[];
+  membershipEnabled: boolean;
 }
 
-type Tab = "basic" | "booking" | "notification" | "category" | "export";
+type Tab = "basic" | "booking" | "notification" | "category" | "features" | "export";
 
 const DEFAULT_CATEGORIES = ["坐禅", "写経", "ヨガ", "マインドフルネス", "仏事講座", "季節行事", "その他"];
 
@@ -190,6 +191,22 @@ export default function SettingsClient({
     });
   }
 
+  // ── Feature toggles ──────────────────────────────
+  const [membershipEnabled, setMembershipEnabled] = useState(initialSettings.membershipEnabled);
+  const [featuresSaving, startFeatures] = useTransition();
+
+  function handleFeaturesSave(e: React.FormEvent) {
+    e.preventDefault();
+    startFeatures(async () => {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membershipEnabled }),
+      });
+      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("features"); }
+    });
+  }
+
   // ── Custom categories ─────────────────────────────
   const [categories, setCategories] = useState<string[]>(initialSettings.customEventCategories);
   const [newCat, setNewCat] = useState("");
@@ -236,6 +253,7 @@ export default function SettingsClient({
     { key: "booking", label: "予約設定" },
     { key: "notification", label: "通知設定" },
     { key: "category", label: "カテゴリ" },
+    { key: "features", label: "機能設定" },
     { key: "export", label: "データ出力" },
   ];
 
@@ -573,6 +591,34 @@ export default function SettingsClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── 機能設定 ──────────────────────────────── */}
+      {tab === "features" && (
+        <form onSubmit={handleFeaturesSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-5">
+          <h2 className="text-sm font-semibold text-stone-700 mb-1">機能のON/OFF</h2>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-stone-700">関わり方の設計</p>
+              <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
+                {membershipEnabled
+                  ? "月額サポーター、写経会員など、お寺独自の関わり方を会員ごとに設定できます。OFFにするとUIから非表示になりますが、データは保持されます。"
+                  : "月額サポーター、写経会員など、お寺独自の関わり方を設計できます。ONにすると、メンバー管理に「関わり方」の設定UIが追加されます。"}
+              </p>
+            </div>
+            <Toggle
+              value={membershipEnabled}
+              onChange={(v) => isAdmin && setMembershipEnabled(v)}
+            />
+          </div>
+
+          {isAdmin && (
+            <div className="flex justify-end pt-2">
+              <SaveButton saving={featuresSaving} />
+            </div>
+          )}
+        </form>
       )}
 
       {/* ── データ出力 ────────────────────────────── */}

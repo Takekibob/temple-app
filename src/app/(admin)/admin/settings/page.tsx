@@ -41,6 +41,7 @@ export default async function AdminSettingsPage() {
     reminderDayOfTime: temple.reminderDayOfTime,
     reminderMeinichi: temple.reminderMeinichi,
     customEventCategories: (temple.customEventCategories as string[]) ?? [],
+    membershipEnabled: temple.membershipEnabled,
   };
 
   return <SettingsClient initialSettings={initialSettings} isAdmin={isAdmin} />;

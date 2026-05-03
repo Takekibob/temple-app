@@ -45,21 +45,29 @@ export default async function MemberDetailPage({
 
   if (!member) notFound();
 
-  const [activeMemberships, membershipTypes] = await Promise.all([
-    prisma.membership.findMany({
-      where: { memberId: id, templeId: authUser.templeId, status: "ACTIVE" },
-      include: {
-        membershipType: { select: { id: true, name: true, pricingModel: true, priceJpy: true } },
-        currentStage: { select: { id: true, name: true } },
-      },
-      orderBy: { joinedAt: "asc" },
-    }),
-    prisma.membershipType.findMany({
-      where: { templeId: authUser.templeId },
-      select: { id: true, name: true, pricingModel: true, priceJpy: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-  ]);
+  const templeSettings = await prisma.temple.findUnique({
+    where: { id: authUser.templeId },
+    select: { membershipEnabled: true },
+  });
+  const membershipEnabled = templeSettings?.membershipEnabled ?? false;
+
+  const [activeMemberships, membershipTypes] = membershipEnabled
+    ? await Promise.all([
+        prisma.membership.findMany({
+          where: { memberId: id, templeId: authUser.templeId, status: "ACTIVE" },
+          include: {
+            membershipType: { select: { id: true, name: true, pricingModel: true, priceJpy: true } },
+            currentStage: { select: { id: true, name: true } },
+          },
+          orderBy: { joinedAt: "asc" },
+        }),
+        prisma.membershipType.findMany({
+          where: { templeId: authUser.templeId },
+          select: { id: true, name: true, pricingModel: true, priceJpy: true },
+          orderBy: { sortOrder: "asc" },
+        }),
+      ])
+    : [[], []] as [never[], never[]];
 
   const interestTags = Array.isArray(member.interestTags) ? (member.interestTags as string[]) : [];
   const isDanka = member.type === "DANKA";
@@ -103,10 +111,8 @@ export default async function MemberDetailPage({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-stone-800">{member.user.name}</h1>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  isDanka ? "bg-amber-100 text-amber-800" : "bg-teal-100 text-teal-800"
-                }`}>
-                  {isDanka ? "檀家" : "ご縁さん"}
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600">
+                  メンバー
                 </span>
               </div>
               {member.familyName && (
@@ -269,17 +275,19 @@ export default async function MemberDetailPage({
 
         {/* 右カラム */}
         <div className="space-y-4">
-          {/* メンバーシップ */}
-          <MembershipCard
-            memberId={id}
-            initialMemberships={activeMemberships.map((m) => ({
-              id: m.id,
-              membershipType: m.membershipType,
-              stage: m.currentStage,
-              joinedAt: m.joinedAt.toISOString(),
-            }))}
-            availableTypes={membershipTypes}
-          />
+          {/* 関わり方 */}
+          {membershipEnabled && (
+            <MembershipCard
+              memberId={id}
+              initialMemberships={activeMemberships.map((m) => ({
+                id: m.id,
+                membershipType: m.membershipType,
+                stage: m.currentStage,
+                joinedAt: m.joinedAt.toISOString(),
+              }))}
+              availableTypes={membershipTypes}
+            />
+          )}
 
           {/* LINE連携 */}
           <Card title="LINE連携" icon={<MessageCircle size={14} className="text-stone-500" />}>

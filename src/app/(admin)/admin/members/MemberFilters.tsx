@@ -13,7 +13,9 @@ interface Props {
   currentSearch: string;
   currentTag?: string;
   currentMembershipTypeId?: string;
+  currentEnrollment?: string;
   membershipTypes?: MembershipType[];
+  membershipEnabled?: boolean;
 }
 
 const PRESET_TAGS = ["要フォロー", "要注意", "VIP", "体調注意", "遠方", "一人暮らし", "跡継ぎ不在"];
@@ -29,11 +31,12 @@ const TAG_COLORS: Record<string, string> = {
 };
 
 export default function MemberFilters({
-  currentType,
   currentSearch,
   currentTag,
   currentMembershipTypeId,
+  currentEnrollment,
   membershipTypes = [],
+  membershipEnabled = false,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,52 +54,57 @@ export default function MemberFilters({
     [router, searchParams]
   );
 
+  const isNeutral = !currentMembershipTypeId && !currentEnrollment;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* メンバーシップ / タイプフィルター */}
-        <div className="flex flex-wrap gap-1 bg-white border border-stone-200 rounded-lg p-1">
-          <button
-            onClick={() => updateParams({ membershipTypeId: "", type: "" })}
-            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-              !currentMembershipTypeId && !currentType
-                ? "bg-amber-700 text-white font-medium"
-                : "text-stone-600 hover:bg-stone-100"
-            }`}
-          >
-            全員
-          </button>
-          {membershipTypes.length > 0
-            ? membershipTypes.map((mt) => (
-                <button
-                  key={mt.id}
-                  onClick={() => updateParams({ membershipTypeId: mt.id, type: "" })}
-                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    currentMembershipTypeId === mt.id
-                      ? "bg-amber-700 text-white font-medium"
-                      : "text-stone-600 hover:bg-stone-100"
-                  }`}
-                >
-                  {mt.name}
-                </button>
-              ))
-            : [
-                { value: "DANKA", label: "檀家" },
-                { value: "GOEN", label: "ご縁さん" },
-              ].map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => updateParams({ type: f.value, membershipTypeId: "" })}
-                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    currentType === f.value
-                      ? "bg-amber-700 text-white font-medium"
-                      : "text-stone-600 hover:bg-stone-100"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-        </div>
+        {/* メンバーシップフィルター（membershipEnabled=true のみ） */}
+        {membershipEnabled && (
+          <div className="flex flex-wrap gap-1 bg-white border border-stone-200 rounded-lg p-1">
+            <button
+              onClick={() => updateParams({ membershipTypeId: "", enrollment: "" })}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                isNeutral ? "bg-amber-700 text-white font-medium" : "text-stone-600 hover:bg-stone-100"
+              }`}
+            >
+              全員
+            </button>
+            <button
+              onClick={() => updateParams({ enrollment: "enrolled", membershipTypeId: "" })}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                currentEnrollment === "enrolled"
+                  ? "bg-teal-600 text-white font-medium"
+                  : "text-stone-600 hover:bg-stone-100"
+              }`}
+            >
+              関わり方あり
+            </button>
+            <button
+              onClick={() => updateParams({ enrollment: "not_enrolled", membershipTypeId: "" })}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                currentEnrollment === "not_enrolled"
+                  ? "bg-stone-600 text-white font-medium"
+                  : "text-stone-600 hover:bg-stone-100"
+              }`}
+            >
+              未設定
+            </button>
+            {membershipTypes.map((mt) => (
+              <button
+                key={mt.id}
+                onClick={() => updateParams({ membershipTypeId: mt.id, enrollment: "" })}
+                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  currentMembershipTypeId === mt.id
+                    ? "bg-amber-700 text-white font-medium"
+                    : "text-stone-600 hover:bg-stone-100"
+                }`}
+              >
+                {mt.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 氏名検索 */}
         <input

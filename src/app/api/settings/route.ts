@@ -11,8 +11,7 @@ const ALLOWED_FIELDS = [
   "bookingStartTime", "bookingEndTime", "bookingDuration", "bookingMaxSlots", "bookingAdvanceDays",
   "reminderDayBefore", "reminderDayBeforeTime", "reminderDayOf", "reminderDayOfTime",
   "reminderMeinichi", "customEventCategories",
-  // v2追加：ステージ閾値・目標
-  "thresholdGoen", "thresholdProspect", "thresholdCandidate", "dankaGoalAnnual",
+  "membershipEnabled",
 ] as const;
 
 // GET /api/settings
@@ -33,7 +32,7 @@ export async function GET() {
         bookingMaxSlots: true, bookingAdvanceDays: true,
         reminderDayBefore: true, reminderDayBeforeTime: true,
         reminderDayOf: true, reminderDayOfTime: true, reminderMeinichi: true,
-        customEventCategories: true,
+        customEventCategories: true, membershipEnabled: true,
       },
     });
 

@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const [temple, pendingChangeRequests] = await Promise.all([
     prisma.temple.findUnique({
       where: { id: authUser.templeId! },
-      select: { name: true, planStatus: true },
+      select: { name: true, planStatus: true, membershipEnabled: true },
     }),
     prisma.memberChangeRequest.count({
       where: { templeId: authUser.templeId!, status: "PENDING" },
@@ -33,6 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         isAdmin={isAdmin}
         planStatus={planStatus}
         pendingChangeRequests={pendingChangeRequests}
+        membershipEnabled={temple?.membershipEnabled ?? false}
       />
       <main className="flex-1 min-w-0 pt-14 lg:pt-0 relative">
         {/* CANCELLED / SUSPENDED: コンテンツ上に課金ゲートをオーバーレイ */}

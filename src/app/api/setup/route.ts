@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // ── 4. Prisma members レコードを作成（住職も檀家の一人） ──────────
+    // ── 4. Prisma members レコードを作成（住職も会員の一人） ──────────
     await prisma.member.create({
       data: {
         templeId: temple.id,

@@ -65,9 +65,9 @@ export default function MembershipTypeNewPage() {
   return (
     <div className="p-4 sm:p-6 max-w-2xl">
       <Link href="/admin/memberships" className="text-sm text-stone-400 hover:text-stone-600 mb-4 inline-block">
-        ← メンバーシップ設計に戻る
+        ← 関わり方の設計に戻る
       </Link>
-      <h1 className="text-xl font-bold text-stone-800 mb-6">メンバーシップ種別を追加</h1>
+      <h1 className="text-xl font-bold text-stone-800 mb-6">関わり方を追加</h1>
 
       {errorMsg && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{errorMsg}</div>

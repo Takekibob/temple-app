@@ -22,6 +22,7 @@ interface NavItem {
   activePrefix?: string;
   badgeKey?: "changeRequests";
   premiumOnly?: boolean; // TRIAL / ACTIVE が必要な機能
+  membershipOnly?: boolean; // membershipEnabled === true のときのみ表示
 }
 
 interface NavSection {
@@ -35,6 +36,7 @@ interface SidebarProps {
   isAdmin: boolean;
   planStatus?: string;
   pendingChangeRequests?: number;
+  membershipEnabled?: boolean;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -45,7 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "会員・法要",
     items: [
       { icon: Users, label: "会員一覧", href: "/admin/members", excludePrefix: "/admin/memberships" },
-      { icon: Layers, label: "メンバーシップ設計", href: "/admin/memberships", adminOnly: true },
+      { icon: Layers, label: "関わり方の設計", href: "/admin/memberships", adminOnly: true, membershipOnly: true },
       { icon: FilePen, label: "情報変更の申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
       // 法要予約・過去帳は Step3 (DANKA移行) 完了後に復活予定
     ],
@@ -85,13 +87,16 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export default function Sidebar({ templeName, userName, isAdmin, planStatus, pendingChangeRequests = 0 }: SidebarProps) {
+export default function Sidebar({ templeName, userName, isAdmin, planStatus, pendingChangeRequests = 0, membershipEnabled = false }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const visibleSections = NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => !item.adminOnly || isAdmin),
+    items: section.items.filter((item) =>
+      (!item.adminOnly || isAdmin) &&
+      (!item.membershipOnly || membershipEnabled)
+    ),
   })).filter((section) => section.items.length > 0);
 
   const isActive = (item: NavItem) => {

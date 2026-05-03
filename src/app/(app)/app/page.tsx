@@ -195,12 +195,9 @@ export default async function AppHomePage() {
     <div className="pb-28 max-w-lg mx-auto">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-5">
-        <p className="text-xs text-stone-400 font-medium mb-0.5">
-          {hasMembership ? "会員" : "ご縁さん"}
-          {isFollower && isSubscribed && (
-            <span className="ml-1.5 text-emerald-600 font-semibold">{hasSubscription.plan.name}</span>
-          )}
-        </p>
+        {isFollower && isSubscribed && (
+          <p className="text-xs text-emerald-600 font-semibold mb-0.5">{hasSubscription.plan.name}</p>
+        )}
         <h1 className="text-2xl font-bold text-stone-800 tracking-tight">
           こんにちは、<span className="text-amber-800">{displayName}</span>さん
         </h1>

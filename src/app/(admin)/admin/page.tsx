@@ -226,7 +226,7 @@ export default async function AdminDashboardPage() {
           icon={Users}
           iconBg="bg-teal-50"
           iconColor="text-teal-700"
-          label="ご縁さん"
+          label="メンバー"
           value={goenCount}
           unit="名"
           valueColor="text-teal-700"
