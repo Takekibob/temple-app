@@ -22,15 +22,11 @@ export async function GET(
     if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const isAdmin = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
-    const isDanka = authUser.member?.type === "DANKA";
 
     // Visibility check for non-admins
     if (!isAdmin) {
       if (event.status !== "PUBLISHED") {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
-      }
-      if (event.visibility === "DANKA_ONLY" && !isDanka) {
-        return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
       }
     }
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const VALID_VISIBILITIES = ["PUBLIC", "FOLLOWERS_ONLY"] as const;
+
 export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth();
@@ -12,15 +14,11 @@ export async function GET(request: NextRequest) {
     const PAGE_SIZE = 20;
     const myEvents = searchParams.get("my") === "1";
 
-    // Visibility filter based on member type
-    const isDanka = authUser.member?.type === "DANKA";
     const isAdmin = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
     const visibilityFilter = isAdmin
       ? undefined
-      : isDanka
-      ? { visibility: { in: ["PUBLIC", "MEMBERS_ONLY", "DANKA_ONLY"] as const } }
-      : { visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] as const } };
+      : { visibility: { in: ["PUBLIC", "MEMBERS_ONLY", "FOLLOWERS_ONLY"] as const } };
 
     const where: Record<string, unknown> = {
       templeId: authUser.templeId,
@@ -56,7 +54,6 @@ export async function GET(request: NextRequest) {
       prisma.event.count({ where }),
     ]);
 
-    // Add my participation status if member
     let participationMap: Record<string, string> = {};
     if (authUser.member) {
       const myParts = await prisma.eventParticipation.findMany({
@@ -64,7 +61,7 @@ export async function GET(request: NextRequest) {
           memberId: authUser.member.id,
           eventId: { in: events.map((e) => e.id) },
         },
-        select: { eventId: true, status: true, id: true },
+        select: { eventId: true, status: true },
       });
       participationMap = Object.fromEntries(myParts.map((p) => [p.eventId, p.status]));
     }
@@ -104,12 +101,34 @@ export async function POST(request: NextRequest) {
       capacity,
       fee = 0,
       visibility = "PUBLIC",
+      eventType = "GROUP",
       imageUrl,
       status = "DRAFT",
     } = body;
 
     if (!title || !category || !eventDate || !startTime || !endTime) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
+    }
+
+    // visibility は PUBLIC / FOLLOWERS_ONLY のみ受け付ける
+    const safeVisibility = VALID_VISIBILITIES.includes(visibility) ? visibility : "PUBLIC";
+
+    // 有料イベント × Stripe Connect 未完了 チェック
+    const parsedFee = parseInt(fee) || 0;
+    if (parsedFee > 0) {
+      const temple = await prisma.temple.findUnique({
+        where: { id: authUser.templeId },
+        select: { stripeConnectOnboarded: true },
+      });
+      if (temple && !temple.stripeConnectOnboarded) {
+        return NextResponse.json(
+          {
+            error: "有料イベントを作成するには決済設定（Stripe Connect）のセットアップが必要です。設定 > 決済設定 から完了してください。",
+            code: "STRIPE_CONNECT_REQUIRED",
+          },
+          { status: 422 }
+        );
+      }
     }
 
     const event = await prisma.event.create({
@@ -123,8 +142,8 @@ export async function POST(request: NextRequest) {
         endTime,
         location: location || null,
         capacity: capacity ? parseInt(capacity) : null,
-        fee: parseInt(fee) || 0,
-        visibility,
+        fee: parsedFee,
+        visibility: safeVisibility,
         imageUrl: imageUrl || null,
         status,
       },

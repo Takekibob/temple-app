@@ -5,7 +5,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 // POST /api/setup — 初期セットアップ（寺院 + 管理者アカウント作成）
 export async function POST(request: NextRequest) {
   try {
-    const { templeName, denomination, address, phone, adminName, email, password } =
+    const { templeName, denomination, address, phone, prefecture, adminName, email, password } =
       await request.json();
 
     if (!templeName || !address || !phone || !adminName || !email || !password) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase(),
       password,
-      email_confirm: true, // 招待メール不要・即時有効化
+      email_confirm: true,
     });
 
     if (authError || !authData.user) {
@@ -40,17 +40,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 2. 寺院レコードを新規作成 ──────────────────────────────────────
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
-
     const temple = await prisma.temple.create({
       data: {
         name: templeName.trim(),
         denomination: denomination?.trim() || null,
         address: address.trim(),
         phone: phone.trim(),
-        planStatus: "TRIAL",
-        trialEndsAt,
+        ...(prefecture?.trim() ? { prefecture: prefecture.trim() } : {}),
       },
     });
 

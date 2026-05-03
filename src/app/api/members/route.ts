@@ -10,13 +10,11 @@ export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAdminOrStaff();
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type"); // DANKA | GOEN
     const search = searchParams.get("search") ?? "";
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
 
     const where = {
       templeId: authUser.templeId,
-      ...(type === "DANKA" || type === "GOEN" ? { type: type as "DANKA" | "GOEN" } : {}),
       ...(search
         ? {
             OR: [

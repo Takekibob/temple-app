@@ -7,11 +7,8 @@ import { validatePhone } from "@/lib/memberValidation";
 const ALLOWED_FIELDS = [
   "name", "denomination", "address", "phone", "email",
   "websiteUrl", "instagramUrl", "lineOfficialUrl", "youtubeUrl",
-  "description",
-  "bookingStartTime", "bookingEndTime", "bookingDuration", "bookingMaxSlots", "bookingAdvanceDays",
-  "reminderDayBefore", "reminderDayBeforeTime", "reminderDayOf", "reminderDayOfTime",
-  "reminderMeinichi", "customEventCategories",
-  "membershipEnabled",
+  "description", "customEventCategories",
+  "prefecture", "onlinePaymentEnabled",
 ] as const;
 
 // GET /api/settings
@@ -27,12 +24,8 @@ export async function GET() {
       select: {
         id: true, name: true, denomination: true, address: true, phone: true,
         email: true, websiteUrl: true, instagramUrl: true, lineOfficialUrl: true, youtubeUrl: true,
-        logoUrl: true, description: true,
-        bookingStartTime: true, bookingEndTime: true, bookingDuration: true,
-        bookingMaxSlots: true, bookingAdvanceDays: true,
-        reminderDayBefore: true, reminderDayBeforeTime: true,
-        reminderDayOf: true, reminderDayOfTime: true, reminderMeinichi: true,
-        customEventCategories: true, membershipEnabled: true,
+        logoUrl: true, description: true, customEventCategories: true,
+        stripeConnectAccountId: true, stripeConnectOnboarded: true,
       },
     });
 
@@ -71,7 +64,7 @@ export async function PATCH(request: NextRequest) {
       data,
     });
 
-    await logActivity({
+    logActivity({
       templeId: authUser.templeId,
       userId: authUser.id,
       action: "update",

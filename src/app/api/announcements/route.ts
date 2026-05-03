@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLog";
-import type { AnnouncementTarget } from "@/generated/prisma/enums";
 import { sendPushNotification } from "@/lib/push";
 import { sendLineNotification } from "@/lib/line";
 
-// GET /api/announcements — 会員向け: 自分のセグメントに合ったお知らせ一覧
+// GET /api/announcements — 会員向け: ブロードキャストお知らせ一覧
 export async function GET() {
   try {
     const authUser = await getAuthUser();
@@ -14,63 +13,38 @@ export async function GET() {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const memberType = authUser.member?.type ?? null;
-
-    // セグメントフィルタ: ALL は全員、DANKA/GOEN は該当会員のみ
-    const allowedSegments: AnnouncementTarget[] = memberType === "DANKA"
-      ? ["ALL", "DANKA"]
-      : memberType === "GOEN"
-      ? ["ALL", "GOEN"]
-      : ["ALL"];
-
     const memberId = authUser.member?.id ?? null;
     const announcements = await prisma.announcement.findMany({
       where: {
         templeId: authUser.templeId,
         publishedAt: { not: null, lte: new Date() },
-        OR: [
-          { targetSegment: { in: allowedSegments }, memberId: null },
-          ...(memberId ? [{ memberId }] : []),
-        ],
+        memberId: null,
       },
       orderBy: { publishedAt: "desc" },
       select: {
         id: true,
         title: true,
-        targetSegment: true,
-        memberId: true,
         publishedAt: true,
         createdAt: true,
       },
     });
 
-    return NextResponse.json({ announcements });
+    return NextResponse.json({ announcements, memberId });
   } catch {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
 
-// POST /api/announcements — 管理者: お知らせ作成
+// POST /api/announcements — 管理者: お知らせ作成（ブロードキャストのみ）
 export async function POST(request: NextRequest) {
   try {
     const authUser = await requireAdminOrStaff();
 
     const body = await request.json();
-    const { title, body: content, targetSegment, memberId, publish, sendPush, sendLine } = body;
+    const { title, body: content, publish, sendPush, sendLine } = body;
 
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: "タイトルと本文は必須です" }, { status: 400 });
-    }
-
-    const validSegments = ["ALL", "DANKA", "GOEN"];
-    if (targetSegment && !validSegments.includes(targetSegment)) {
-      return NextResponse.json({ error: "不正なセグメント値です" }, { status: 400 });
-    }
-
-    // Validate individual member if specified
-    if (memberId) {
-      const member = await prisma.member.findFirst({ where: { id: memberId, templeId: authUser.templeId } });
-      if (!member) return NextResponse.json({ error: "会員が見つかりません" }, { status: 404 });
     }
 
     const announcement = await prisma.announcement.create({
@@ -78,8 +52,8 @@ export async function POST(request: NextRequest) {
         templeId: authUser.templeId,
         title: title.trim(),
         body: content.trim(),
-        targetSegment: targetSegment ?? "ALL",
-        memberId: memberId || null,
+        targetSegment: "ALL",
+        memberId: null,
         publishedAt: publish ? new Date() : null,
         pushSent: false,
       },
@@ -87,20 +61,10 @@ export async function POST(request: NextRequest) {
 
     // プッシュ通知送信
     if (publish && sendPush) {
-      const seg: AnnouncementTarget = targetSegment ?? "ALL";
-
-      const memberTypeFilter =
-        seg === "DANKA" ? { type: "DANKA" as const } :
-        seg === "GOEN"  ? { type: "GOEN" as const } :
-        undefined;
-
       const subscriptions = await prisma.pushSubscription.findMany({
         where: {
           templeId: authUser.templeId,
-          user: {
-            pushEnabled: true,
-            ...(memberTypeFilter ? { member: memberTypeFilter } : {}),
-          },
+          user: { pushEnabled: true },
         },
       });
 
@@ -130,20 +94,12 @@ export async function POST(request: NextRequest) {
 
     // LINE通知送信
     if (publish && sendLine) {
-      const seg: AnnouncementTarget = targetSegment ?? "ALL";
-
-      const memberTypeFilter =
-        seg === "DANKA" ? { type: "DANKA" as const } :
-        seg === "GOEN"  ? { type: "GOEN" as const } :
-        undefined;
-
       const lineMembers = await prisma.member.findMany({
         where: {
           templeId: authUser.templeId,
           lineNotifyEnabled: true,
           lineUserId: { not: null },
           notifyAnnouncement: true,
-          ...(memberTypeFilter ?? {}),
         },
         select: { id: true },
       });
@@ -161,7 +117,7 @@ export async function POST(request: NextRequest) {
       targetType: "announcement",
       targetId: announcement.id,
       targetName: title.trim(),
-      detail: { targetSegment: targetSegment ?? "ALL", published: !!publish },
+      detail: { published: !!publish },
     });
 
     return NextResponse.json({ announcement }, { status: 201 });
