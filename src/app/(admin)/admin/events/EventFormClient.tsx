@@ -20,6 +20,7 @@ interface EventData {
   capacity?: number | null;
   fee?: number;
   visibility?: string;
+  eventType?: string;
   imageUrl?: string;
   status?: string;
 }
@@ -28,16 +29,20 @@ interface Props {
   initialData?: EventData;
   isEdit?: boolean;
   customCategories?: string[];
-  hasActivePlan?: boolean;
+  stripeConnectOnboarded?: boolean;
 }
 
 const VISIBILITIES = [
   { value: "PUBLIC", label: "公開（誰でも）" },
-  { value: "DANKA_ONLY", label: "檀家限定" },
-  { value: "SUBSCRIBERS_ONLY", label: "会員プラン加入者限定" },
+  { value: "FOLLOWERS_ONLY", label: "フォロワー限定" },
 ];
 
-export default function EventFormClient({ initialData, isEdit, customCategories = [], hasActivePlan = false }: Props) {
+const EVENT_TYPES = [
+  { value: "GROUP", label: "グループ参加（参加者リスト表示）" },
+  { value: "BOOKING", label: "予約型（時間枠ごとに1件ずつ作成）" },
+];
+
+export default function EventFormClient({ initialData, isEdit, customCategories = [], stripeConnectOnboarded = false }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -45,6 +50,9 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [feeValue, setFeeValue] = useState(String(initialData?.fee ?? 0));
+
+  const showStripeWarning = parseInt(feeValue) > 0 && !stripeConnectOnboarded;
 
   // Convert eventDate from Date string to YYYY-MM-DD
   const initialDate = initialData?.eventDate
@@ -106,6 +114,7 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
       capacity: form.get("capacity") || null,
       fee: form.get("fee"),
       visibility: form.get("visibility"),
+      eventType: form.get("eventType"),
       imageUrl: imageUrl || null,
       status: publishStatus ?? (isEdit ? undefined : "DRAFT"),
     };
@@ -139,6 +148,14 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
       {errorMsg && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {errorMsg}
+        </div>
+      )}
+
+      {showStripeWarning && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+          オンライン決済を使うには Stripe 設定が必要です。
+          <Link href="/admin/settings" className="underline font-semibold ml-1">設定 › 決済設定</Link>
+          から完了してください。
         </div>
       )}
 
@@ -202,25 +219,24 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 {VISIBILITIES.map((v) => (
-                  <option
-                    key={v.value}
-                    value={v.value}
-                    disabled={v.value === "SUBSCRIBERS_ONLY" && !hasActivePlan}
-                  >
-                    {v.value === "SUBSCRIBERS_ONLY" && !hasActivePlan
-                      ? `${v.label}（要：会員プラン設定）`
-                      : v.label}
-                  </option>
+                  <option key={v.value} value={v.value}>{v.label}</option>
                 ))}
               </select>
-              {!hasActivePlan && (
-                <p className="text-xs text-amber-700 mt-1">
-                  「会員プラン加入者限定」を使うには
-                  <Link href="/admin/plans" className="underline font-semibold ml-1">会員プランの設定</Link>
-                  が必要です。
-                </p>
-              )}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="eventType" className="text-stone-700">イベントタイプ</Label>
+            <select
+              id="eventType"
+              name="eventType"
+              defaultValue={initialData?.eventType ?? "GROUP"}
+              className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              {EVENT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -293,7 +309,8 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
                 name="fee"
                 type="number"
                 min={0}
-                defaultValue={initialData?.fee ?? 0}
+                value={feeValue}
+                onChange={(e) => setFeeValue(e.target.value)}
                 placeholder="0=無料"
               />
             </div>

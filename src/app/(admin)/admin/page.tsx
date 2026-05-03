@@ -25,7 +25,7 @@ export default async function AdminDashboardPage() {
     followerCount,
     memberCount,
     monthlyEventSignups,
-    recentMembers,
+    recentFollowers,
     recentEventSignups,
     upcomingEvents,
     upcomingFollowups,
@@ -39,7 +39,7 @@ export default async function AdminDashboardPage() {
         createdAt: { gte: firstOfMonth },
       },
     }),
-    prisma.member.findMany({
+    prisma.memberFavoriteTemple.findMany({
       where: { templeId: authUser.templeId, createdAt: { gte: sixMonthsAgo } },
       select: { createdAt: true },
     }),
@@ -88,10 +88,10 @@ export default async function AdminDashboardPage() {
   const toMonthKey = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-  const membersByMonth: Record<string, number> = {};
-  for (const m of recentMembers) {
-    const key = toMonthKey(m.createdAt);
-    membersByMonth[key] = (membersByMonth[key] ?? 0) + 1;
+  const followersByMonth: Record<string, number> = {};
+  for (const f of recentFollowers) {
+    const key = toMonthKey(f.createdAt);
+    followersByMonth[key] = (followersByMonth[key] ?? 0) + 1;
   }
 
   const eventsByMonth: Record<string, number> = {};
@@ -102,8 +102,7 @@ export default async function AdminDashboardPage() {
 
   const chartData: ChartDataPoint[] = monthKeys.map((key) => ({
     month: key.slice(5).replace(/^0/, "") + "月",
-    danka: 0,
-    goen: membersByMonth[key] ?? 0,
+    followers: followersByMonth[key] ?? 0,
     events: eventsByMonth[key] ?? 0,
   }));
 

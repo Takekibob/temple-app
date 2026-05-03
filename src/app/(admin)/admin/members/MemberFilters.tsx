@@ -3,19 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-interface MembershipType {
-  id: string;
-  name: string;
-}
-
 interface Props {
-  currentType?: string;
   currentSearch: string;
   currentTag?: string;
-  currentMembershipTypeId?: string;
-  currentEnrollment?: string;
-  membershipTypes?: MembershipType[];
-  membershipEnabled?: boolean;
 }
 
 const PRESET_TAGS = ["要フォロー", "要注意", "VIP", "体調注意", "遠方", "一人暮らし", "跡継ぎ不在"];
@@ -30,14 +20,7 @@ const TAG_COLORS: Record<string, string> = {
   跡継ぎ不在: "bg-stone-100 text-stone-600",
 };
 
-export default function MemberFilters({
-  currentSearch,
-  currentTag,
-  currentMembershipTypeId,
-  currentEnrollment,
-  membershipTypes = [],
-  membershipEnabled = false,
-}: Props) {
+export default function MemberFilters({ currentSearch, currentTag }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -54,74 +37,23 @@ export default function MemberFilters({
     [router, searchParams]
   );
 
-  const isNeutral = !currentMembershipTypeId && !currentEnrollment;
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* メンバーシップフィルター（membershipEnabled=true のみ） */}
-        {membershipEnabled && (
-          <div className="flex flex-wrap gap-1 bg-white border border-stone-200 rounded-lg p-1">
-            <button
-              onClick={() => updateParams({ membershipTypeId: "", enrollment: "" })}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                isNeutral ? "bg-amber-700 text-white font-medium" : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              全員
-            </button>
-            <button
-              onClick={() => updateParams({ enrollment: "enrolled", membershipTypeId: "" })}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                currentEnrollment === "enrolled"
-                  ? "bg-teal-600 text-white font-medium"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              関わり方あり
-            </button>
-            <button
-              onClick={() => updateParams({ enrollment: "not_enrolled", membershipTypeId: "" })}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                currentEnrollment === "not_enrolled"
-                  ? "bg-stone-600 text-white font-medium"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              未設定
-            </button>
-            {membershipTypes.map((mt) => (
-              <button
-                key={mt.id}
-                onClick={() => updateParams({ membershipTypeId: mt.id, enrollment: "" })}
-                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  currentMembershipTypeId === mt.id
-                    ? "bg-amber-700 text-white font-medium"
-                    : "text-stone-600 hover:bg-stone-100"
-                }`}
-              >
-                {mt.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 氏名検索 */}
-        <input
-          type="search"
-          defaultValue={currentSearch}
-          placeholder="氏名・家名で検索"
-          className="flex-1 max-w-xs px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-          onChange={(e) => {
-            const v = e.target.value;
-            clearTimeout((window as Window & { _searchTimer?: number })._searchTimer);
-            (window as Window & { _searchTimer?: number })._searchTimer = window.setTimeout(
-              () => updateParams({ search: v }),
-              400
-            );
-          }}
-        />
-      </div>
+      {/* 氏名検索 */}
+      <input
+        type="search"
+        defaultValue={currentSearch}
+        placeholder="氏名・家名で検索"
+        className="max-w-xs px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+        onChange={(e) => {
+          const v = e.target.value;
+          clearTimeout((window as Window & { _searchTimer?: number })._searchTimer);
+          (window as Window & { _searchTimer?: number })._searchTimer = window.setTimeout(
+            () => updateParams({ search: v }),
+            400
+          );
+        }}
+      />
 
       {/* タグフィルター */}
       <div className="flex flex-wrap gap-1.5">

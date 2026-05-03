@@ -30,18 +30,9 @@ export default async function AdminSettingsPage() {
     youtubeUrl: temple.youtubeUrl,
     logoUrl: temple.logoUrl,
     description: temple.description,
-    bookingStartTime: temple.bookingStartTime,
-    bookingEndTime: temple.bookingEndTime,
-    bookingDuration: temple.bookingDuration,
-    bookingMaxSlots: temple.bookingMaxSlots,
-    bookingAdvanceDays: temple.bookingAdvanceDays,
-    reminderDayBefore: temple.reminderDayBefore,
-    reminderDayBeforeTime: temple.reminderDayBeforeTime,
-    reminderDayOf: temple.reminderDayOf,
-    reminderDayOfTime: temple.reminderDayOfTime,
-    reminderMeinichi: temple.reminderMeinichi,
     customEventCategories: (temple.customEventCategories as string[]) ?? [],
-    membershipEnabled: temple.membershipEnabled,
+    stripeConnectAccountId: temple.stripeConnectAccountId,
+    stripeConnectOnboarded: temple.stripeConnectOnboarded,
   };
 
   return <SettingsClient initialSettings={initialSettings} isAdmin={isAdmin} />;

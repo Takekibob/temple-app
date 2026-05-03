@@ -15,23 +15,24 @@ interface TempleSettings {
   youtubeUrl: string | null;
   logoUrl: string | null;
   description: string | null;
-  bookingStartTime: string;
-  bookingEndTime: string;
-  bookingDuration: number;
-  bookingMaxSlots: number;
-  bookingAdvanceDays: number;
-  reminderDayBefore: boolean;
-  reminderDayBeforeTime: string;
-  reminderDayOf: boolean;
-  reminderDayOfTime: string;
-  reminderMeinichi: boolean;
   customEventCategories: string[];
-  membershipEnabled: boolean;
+  stripeConnectAccountId: string | null;
+  stripeConnectOnboarded: boolean;
 }
 
-type Tab = "basic" | "booking" | "notification" | "category" | "features" | "export";
+type Tab = "basic" | "notification" | "category" | "payment" | "export";
 
 const DEFAULT_CATEGORIES = ["坐禅", "写経", "ヨガ", "マインドフルネス", "仏事講座", "季節行事", "その他"];
+
+const PREFECTURES = [
+  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+];
 
 function Toggle({
   value,
@@ -81,12 +82,9 @@ export default function SettingsClient({
     address: initialSettings.address ?? "",
     phone: initialSettings.phone ?? "",
     email: initialSettings.email ?? "",
-    websiteUrl: initialSettings.websiteUrl ?? "",
-    instagramUrl: initialSettings.instagramUrl ?? "",
-    lineOfficialUrl: initialSettings.lineOfficialUrl ?? "",
-    youtubeUrl: initialSettings.youtubeUrl ?? "",
     description: initialSettings.description ?? "",
   });
+  const [prefecture, setPrefecture] = useState("");
   const [basicSaving, startBasic] = useTransition();
 
   function handleBasicSave(e: React.FormEvent) {
@@ -101,11 +99,34 @@ export default function SettingsClient({
           address: basic.address || null,
           phone: basic.phone || null,
           email: basic.email || null,
-          websiteUrl: basic.websiteUrl || null,
-          instagramUrl: basic.instagramUrl || null,
-          lineOfficialUrl: basic.lineOfficialUrl || null,
-          youtubeUrl: basic.youtubeUrl || null,
           description: basic.description || null,
+          ...(prefecture ? { prefecture } : {}),
+        }),
+      });
+      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("basic"); }
+    });
+  }
+
+  // ── SNS links ──────────────────────────────────────
+  const [sns, setSns] = useState({
+    websiteUrl: initialSettings.websiteUrl ?? "",
+    instagramUrl: initialSettings.instagramUrl ?? "",
+    lineOfficialUrl: initialSettings.lineOfficialUrl ?? "",
+    youtubeUrl: initialSettings.youtubeUrl ?? "",
+  });
+  const [snsSaving, startSns] = useTransition();
+
+  function handleSnsSave(e: React.FormEvent) {
+    e.preventDefault();
+    startSns(async () => {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          websiteUrl: sns.websiteUrl || null,
+          instagramUrl: sns.instagramUrl || null,
+          lineOfficialUrl: sns.lineOfficialUrl || null,
+          youtubeUrl: sns.youtubeUrl || null,
         }),
       });
       if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("basic"); }
@@ -141,71 +162,8 @@ export default function SettingsClient({
     }
   }
 
-  // ── Booking settings ──────────────────────────────
-  const [booking, setBooking] = useState({
-    bookingStartTime: initialSettings.bookingStartTime,
-    bookingEndTime: initialSettings.bookingEndTime,
-    bookingDuration: String(initialSettings.bookingDuration),
-    bookingMaxSlots: String(initialSettings.bookingMaxSlots),
-    bookingAdvanceDays: String(initialSettings.bookingAdvanceDays),
-  });
-  const [bookingSaving, startBooking] = useTransition();
-
-  function handleBookingSave(e: React.FormEvent) {
-    e.preventDefault();
-    startBooking(async () => {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingStartTime: booking.bookingStartTime,
-          bookingEndTime: booking.bookingEndTime,
-          bookingDuration: Number(booking.bookingDuration),
-          bookingMaxSlots: Number(booking.bookingMaxSlots),
-          bookingAdvanceDays: Number(booking.bookingAdvanceDays),
-        }),
-      });
-      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("booking"); }
-    });
-  }
-
   // ── Notification settings ─────────────────────────
-  const [notif, setNotif] = useState({
-    reminderDayBefore: initialSettings.reminderDayBefore,
-    reminderDayBeforeTime: initialSettings.reminderDayBeforeTime,
-    reminderDayOf: initialSettings.reminderDayOf,
-    reminderDayOfTime: initialSettings.reminderDayOfTime,
-    reminderMeinichi: initialSettings.reminderMeinichi,
-  });
-  const [notifSaving, startNotif] = useTransition();
-
-  function handleNotifSave(e: React.FormEvent) {
-    e.preventDefault();
-    startNotif(async () => {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(notif),
-      });
-      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("notification"); }
-    });
-  }
-
-  // ── Feature toggles ──────────────────────────────
-  const [membershipEnabled, setMembershipEnabled] = useState(initialSettings.membershipEnabled);
-  const [featuresSaving, startFeatures] = useTransition();
-
-  function handleFeaturesSave(e: React.FormEvent) {
-    e.preventDefault();
-    startFeatures(async () => {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipEnabled }),
-      });
-      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("features"); }
-    });
-  }
+  const [notifMsg, setNotifMsg] = useState("");
 
   // ── Custom categories ─────────────────────────────
   const [categories, setCategories] = useState<string[]>(initialSettings.customEventCategories);
@@ -220,7 +178,6 @@ export default function SettingsClient({
   }
 
   async function handleRemoveClick(cat: string) {
-    // 使用件数を確認してから警告表示
     const res = await fetch(`/api/settings/category-usage?name=${encodeURIComponent(cat)}`);
     const { count } = await res.json() as { count: number };
     if (count > 0) {
@@ -248,12 +205,47 @@ export default function SettingsClient({
     });
   }
 
+  // ── Payment (Stripe Connect) ──────────────────────
+  const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(false);
+  const [paymentSaving, startPayment] = useTransition();
+  const [paymentMsg, setPaymentMsg] = useState("");
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
+
+  function handlePaymentSave(e: React.FormEvent) {
+    e.preventDefault();
+    startPayment(async () => {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onlinePaymentEnabled }),
+      });
+      if (res.ok) { const d = await res.json(); setSettings((s) => ({ ...s, ...d })); setSaved("payment"); }
+    });
+  }
+
+  async function handleStripeOnboard() {
+    setOnboardingLoading(true);
+    setPaymentMsg("");
+    try {
+      const res = await fetch("/api/stripe-connect/onboard", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        setPaymentMsg(data.error ?? "オンボーディングURLの取得に失敗しました");
+      }
+    } catch {
+      setPaymentMsg("通信エラーが発生しました");
+    } finally {
+      setOnboardingLoading(false);
+    }
+  }
+
   const TABS: { key: Tab; label: string }[] = [
     { key: "basic", label: "基本情報" },
-    { key: "booking", label: "予約設定" },
     { key: "notification", label: "通知設定" },
     { key: "category", label: "カテゴリ" },
-    { key: "features", label: "機能設定" },
+    { key: "payment", label: "決済設定" },
     { key: "export", label: "データ出力" },
   ];
 
@@ -313,7 +305,7 @@ export default function SettingsClient({
             </div>
           </div>
 
-          {/* フォーム */}
+          {/* 寺院基本情報フォーム */}
           <form onSubmit={handleBasicSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-stone-700 mb-1">寺院基本情報</h2>
             {[
@@ -322,10 +314,6 @@ export default function SettingsClient({
               { key: "address", label: "住所", placeholder: "東京都〇〇区..." },
               { key: "phone", label: "電話番号", placeholder: "03-xxxx-xxxx" },
               { key: "email", label: "メールアドレス", placeholder: "info@example.com" },
-              { key: "websiteUrl", label: "公式サイトURL", placeholder: "https://example.com" },
-              { key: "instagramUrl", label: "Instagram URL", placeholder: "https://www.instagram.com/..." },
-              { key: "lineOfficialUrl", label: "LINE公式アカウントURL", placeholder: "https://lin.ee/..." },
-              { key: "youtubeUrl", label: "YouTube チャンネルURL", placeholder: "https://www.youtube.com/@..." },
             ].map(({ key, label, required, placeholder }) => (
               <div key={key}>
                 <label className="block text-xs font-medium text-stone-600 mb-1">
@@ -341,6 +329,22 @@ export default function SettingsClient({
                 />
               </div>
             ))}
+
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">都道府県</label>
+              <select
+                value={prefecture}
+                onChange={(e) => setPrefecture(e.target.value)}
+                disabled={!isAdmin}
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
+              >
+                <option value="">選択してください</option>
+                {PREFECTURES.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">寺院紹介文</label>
               <textarea
@@ -348,7 +352,7 @@ export default function SettingsClient({
                 onChange={(e) => setBasic((b) => ({ ...b, description: e.target.value }))}
                 rows={4}
                 disabled={!isAdmin}
-                placeholder="ご縁さんのホーム画面「このお寺について」に表示されます"
+                placeholder="利用者のホーム画面「このお寺について」に表示されます"
                 className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50 disabled:text-stone-500"
               />
             </div>
@@ -358,152 +362,63 @@ export default function SettingsClient({
               </div>
             )}
           </form>
-        </div>
-      )}
 
-      {/* ── 予約設定 ─────────────────────────────── */}
-      {tab === "booking" && (
-        <form onSubmit={handleBookingSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-stone-700 mb-1">予約受付設定</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">受付開始時刻</label>
-              <input
-                type="time"
-                value={booking.bookingStartTime}
-                onChange={(e) => setBooking((b) => ({ ...b, bookingStartTime: e.target.value }))}
-                disabled={!isAdmin}
-                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">受付終了時刻</label>
-              <input
-                type="time"
-                value={booking.bookingEndTime}
-                onChange={(e) => setBooking((b) => ({ ...b, bookingEndTime: e.target.value }))}
-                disabled={!isAdmin}
-                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">1枠の所要時間（分）</label>
-            <select
-              value={booking.bookingDuration}
-              onChange={(e) => setBooking((b) => ({ ...b, bookingDuration: e.target.value }))}
-              disabled={!isAdmin}
-              className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-            >
-              {[30, 45, 60, 90, 120].map((v) => (
-                <option key={v} value={v}>{v}分</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">同時予約可能数</label>
-            <select
-              value={booking.bookingMaxSlots}
-              onChange={(e) => setBooking((b) => ({ ...b, bookingMaxSlots: e.target.value }))}
-              disabled={!isAdmin}
-              className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-            >
-              {[1, 2, 3, 5, 10].map((v) => (
-                <option key={v} value={v}>{v}件</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">予約受付期限（何日前まで）</label>
-            <select
-              value={booking.bookingAdvanceDays}
-              onChange={(e) => setBooking((b) => ({ ...b, bookingAdvanceDays: e.target.value }))}
-              disabled={!isAdmin}
-              className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-            >
-              {[0, 1, 2, 3, 7, 14].map((v) => (
-                <option key={v} value={v}>{v === 0 ? "当日まで" : `${v}日前まで`}</option>
-              ))}
-            </select>
-          </div>
-          {isAdmin && (
-            <div className="flex justify-end pt-2">
-              <SaveButton saving={bookingSaving} />
-            </div>
-          )}
-        </form>
+          {/* SNSリンクフォーム */}
+          <form onSubmit={handleSnsSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-stone-700 mb-1">SNS・外部リンク</h2>
+            {[
+              { key: "websiteUrl", label: "公式サイトURL", placeholder: "https://example.com" },
+              { key: "instagramUrl", label: "Instagram URL", placeholder: "https://www.instagram.com/..." },
+              { key: "lineOfficialUrl", label: "LINE公式アカウントURL", placeholder: "https://lin.ee/..." },
+              { key: "youtubeUrl", label: "YouTube チャンネルURL", placeholder: "https://www.youtube.com/@..." },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label className="block text-xs font-medium text-stone-600 mb-1">{label}</label>
+                <input
+                  type="text"
+                  value={sns[key as keyof typeof sns]}
+                  onChange={(e) => setSns((s) => ({ ...s, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  disabled={!isAdmin}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50 disabled:text-stone-500"
+                />
+              </div>
+            ))}
+            {isAdmin && (
+              <div className="flex justify-end pt-2">
+                <SaveButton saving={snsSaving} />
+              </div>
+            )}
+          </form>
+        </div>
       )}
 
       {/* ── 通知設定 ─────────────────────────────── */}
       {tab === "notification" && (
-        <form onSubmit={handleNotifSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-1">リマインダー設定</h2>
-
-          {/* 前日通知 */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-stone-700">前日通知</p>
-                <p className="text-xs text-stone-400">法要予約の前日にリマインダーを送信</p>
-              </div>
-              <Toggle value={notif.reminderDayBefore} onChange={(v) => isAdmin && setNotif((n) => ({ ...n, reminderDayBefore: v }))} />
-            </div>
-            {notif.reminderDayBefore && (
-              <div className="ml-4">
-                <label className="block text-xs font-medium text-stone-600 mb-1">送信時刻</label>
-                <input
-                  type="time"
-                  value={notif.reminderDayBeforeTime}
-                  onChange={(e) => setNotif((n) => ({ ...n, reminderDayBeforeTime: e.target.value }))}
-                  disabled={!isAdmin}
-                  className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-                />
-              </div>
-            )}
-          </div>
-
-          <hr className="border-stone-100" />
-
-          {/* 当日通知 */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-stone-700">当日通知</p>
-                <p className="text-xs text-stone-400">法要予約の当日朝にリマインダーを送信</p>
-              </div>
-              <Toggle value={notif.reminderDayOf} onChange={(v) => isAdmin && setNotif((n) => ({ ...n, reminderDayOf: v }))} />
-            </div>
-            {notif.reminderDayOf && (
-              <div className="ml-4">
-                <label className="block text-xs font-medium text-stone-600 mb-1">送信時刻</label>
-                <input
-                  type="time"
-                  value={notif.reminderDayOfTime}
-                  onChange={(e) => setNotif((n) => ({ ...n, reminderDayOfTime: e.target.value }))}
-                  disabled={!isAdmin}
-                  className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-stone-50"
-                />
-              </div>
-            )}
-          </div>
-
-          <hr className="border-stone-100" />
-
-          {/* 命日リマインダー */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-stone-700">命日リマインダー</p>
-              <p className="text-xs text-stone-400">ご命日の前月に法要提案を送信</p>
-            </div>
-            <Toggle value={notif.reminderMeinichi} onChange={(v) => isAdmin && setNotif((n) => ({ ...n, reminderMeinichi: v }))} />
-          </div>
-
-          {isAdmin && (
-            <div className="flex justify-end pt-2">
-              <SaveButton saving={notifSaving} />
-            </div>
+        <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-5">
+          <h2 className="text-sm font-semibold text-stone-700 mb-1">イベントリマインダー</h2>
+          <p className="text-sm text-stone-600 leading-relaxed">
+            イベントに参加登録しているフォロワーへ、以下のタイミングで自動リマインダーが送信されます：
+          </p>
+          <ul className="space-y-2 text-sm text-stone-700">
+            {[
+              { time: "前日 18:00", desc: "「明日のイベントのお知らせ」を送信" },
+              { time: "当日 09:00", desc: "「本日のイベントのお知らせ」を送信" },
+            ].map((r) => (
+              <li key={r.time} className="flex items-start gap-2">
+                <span className="font-medium text-amber-700 shrink-0 w-20">{r.time}</span>
+                <span className="text-stone-500">{r.desc}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-stone-400">
+            通知はプッシュ通知 + LINE（連携済みフォロワーのみ）で送信されます。
+            フォロワーは各自で通知のON/OFFを設定できます。
+          </p>
+          {notifMsg && (
+            <p className="text-sm text-teal-700">{notifMsg}</p>
           )}
-        </form>
+        </div>
       )}
 
       {/* ── カテゴリ設定 ─────────────────────────── */}
@@ -573,19 +488,12 @@ export default function SettingsClient({
             </p>
             <p className="text-xs text-stone-400 mb-5">
               削除してもイベントのカテゴリは変更されず、そのまま残ります。
-              アプリ側では「その他」として表示されます。
             </p>
             <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setRemoveConfirm(null)}
-                className="px-4 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
-              >
+              <button onClick={() => setRemoveConfirm(null)} className="px-4 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50">
                 キャンセル
               </button>
-              <button
-                onClick={confirmRemove}
-                className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700"
-              >
+              <button onClick={confirmRemove} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700">
                 削除する
               </button>
             </div>
@@ -593,32 +501,62 @@ export default function SettingsClient({
         </div>
       )}
 
-      {/* ── 機能設定 ──────────────────────────────── */}
-      {tab === "features" && (
-        <form onSubmit={handleFeaturesSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-1">機能のON/OFF</h2>
-
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-stone-700">関わり方の設計</p>
-              <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
-                {membershipEnabled
-                  ? "月額サポーター、写経会員など、お寺独自の関わり方を会員ごとに設定できます。OFFにするとUIから非表示になりますが、データは保持されます。"
-                  : "月額サポーター、写経会員など、お寺独自の関わり方を設計できます。ONにすると、メンバー管理に「関わり方」の設定UIが追加されます。"}
-              </p>
+      {/* ── 決済設定 ──────────────────────────────── */}
+      {tab === "payment" && (
+        <div className="space-y-4">
+          {/* オンライン決済トグル */}
+          <form onSubmit={handlePaymentSave} className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-stone-700 mb-1">オンライン決済</h2>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-stone-700">有料イベントを作成する</p>
+                <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
+                  ONにすると参加費を設定したイベントでオンライン決済が使えます。
+                  Stripe Connect の設定が必要です。
+                </p>
+              </div>
+              <Toggle value={onlinePaymentEnabled} onChange={(v) => isAdmin && setOnlinePaymentEnabled(v)} />
             </div>
-            <Toggle
-              value={membershipEnabled}
-              onChange={(v) => isAdmin && setMembershipEnabled(v)}
-            />
+            {isAdmin && (
+              <div className="flex justify-end pt-2">
+                <SaveButton saving={paymentSaving} />
+              </div>
+            )}
+          </form>
+
+          {/* Stripe Connect */}
+          <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-stone-700 mb-1">Stripe Connect（決済受け取り）</h2>
+
+            {settings.stripeConnectOnboarded ? (
+              <div className="flex items-center gap-2 py-2 px-3 bg-teal-50 rounded-lg border border-teal-100">
+                <span className="text-teal-600 text-sm font-semibold">✓ セットアップ完了</span>
+                {settings.stripeConnectAccountId && (
+                  <span className="text-xs text-stone-400 ml-auto">{settings.stripeConnectAccountId}</span>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-stone-600">
+                  参加費付きイベントの売上を受け取るには Stripe Connect のセットアップが必要です。
+                </p>
+                {paymentMsg && (
+                  <p className="text-sm text-red-600">{paymentMsg}</p>
+                )}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={handleStripeOnboard}
+                    disabled={onboardingLoading}
+                    className="px-4 py-2 bg-amber-700 text-white text-sm font-medium rounded-lg hover:bg-amber-800 disabled:opacity-50"
+                  >
+                    {onboardingLoading ? "準備中…" : "Stripe 設定を開始"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-
-          {isAdmin && (
-            <div className="flex justify-end pt-2">
-              <SaveButton saving={featuresSaving} />
-            </div>
-          )}
-        </form>
+        </div>
       )}
 
       {/* ── データ出力 ────────────────────────────── */}
@@ -628,9 +566,8 @@ export default function SettingsClient({
           <p className="text-xs text-stone-500">ダウンロードされるCSVはExcel対応のUTF-8（BOM付き）形式です。</p>
 
           {[
-            { href: "/api/export/members", label: "会員一覧", desc: "氏名・種別・住所・エンゲージメントスコアなど" },
-            { href: "/api/export/ofuse", label: "お布施一覧", desc: "種別・金額・支払方法・日付など" },
-            { href: "/api/export/events", label: "イベント参加履歴", desc: "イベント名・参加者・ステータス・評価スコアなど" },
+            { href: "/api/export/members", label: "フォロワー一覧", desc: "氏名・住所・登録日など" },
+            { href: "/api/export/events", label: "イベント参加履歴", desc: "イベント名・参加者・ステータスなど" },
           ].map(({ href, label, desc }) => (
             <div key={href} className="flex items-center justify-between py-3 border-b border-stone-50 last:border-0">
               <div>

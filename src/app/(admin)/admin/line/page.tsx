@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { requireAdminOrStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MessageCircle, Send, GitBranch, ChevronRight, Plus } from "lucide-react";
+import { MessageCircle, Send, ChevronRight, Plus } from "lucide-react";
 
 export default async function LineDashboardPage() {
   const authUser = await requireAdminOrStaff();
   const templeId = authUser.templeId;
 
-  const [totalMessages, sentMessages, activeSequences, pendingQueues] = await Promise.all([
+  const [totalMessages, sentMessages] = await Promise.all([
     prisma.lineMessage.count({ where: { templeId } }),
     prisma.lineMessage.count({ where: { templeId, status: "SENT" } }),
-    prisma.lineStepSequence.count({ where: { templeId, isActive: true } }),
-    prisma.lineStepQueue.count({ where: { templeId, status: "PENDING" } }),
   ]);
 
   const recentMessages = await prisma.lineMessage.findMany({
@@ -24,7 +22,6 @@ export default async function LineDashboardPage() {
     BROADCAST: "一斉配信",
     SEGMENT: "セグメント配信",
     INDIVIDUAL: "個別配信",
-    STEP: "ステップ配信",
     REMINDER: "リマインダー",
     THANKYOU: "お礼",
   };
@@ -48,13 +45,13 @@ export default async function LineDashboardPage() {
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-0.5">
           <MessageCircle size={18} className="text-[#06C755]" />
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">LINE配信管理</h1>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">LINE通知管理</h1>
         </div>
-        <p className="text-sm text-stone-400">メッセージ配信・ステップ配信の管理</p>
+        <p className="text-sm text-stone-400">メッセージ配信の管理</p>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <Send size={13} className="text-stone-400" />
@@ -65,44 +62,28 @@ export default async function LineDashboardPage() {
         </div>
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
-            <GitBranch size={13} className="text-stone-400" />
-            <p className="text-xs text-stone-500 font-medium">有効シーケンス</p>
+            <MessageCircle size={13} className="text-stone-400" />
+            <p className="text-xs text-stone-500 font-medium">通知種別</p>
           </div>
-          <p className="text-2xl font-bold text-stone-800">{activeSequences}</p>
-          <p className="text-xs text-stone-400 mt-0.5">シーケンス</p>
-        </div>
-        <div className={`rounded-2xl border shadow-sm p-4 ${pendingQueues > 0 ? "bg-amber-50 border-amber-200" : "bg-white border-stone-100"}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <MessageCircle size={13} className={pendingQueues > 0 ? "text-amber-500" : "text-stone-400"} />
-            <p className={`text-xs font-medium ${pendingQueues > 0 ? "text-amber-700" : "text-stone-500"}`}>配信待ち</p>
+          <div className="space-y-0.5 mt-1">
+            {["イベント参加確定", "イベント前日", "イベント当日", "お知らせ配信"].map((t) => (
+              <p key={t} className="text-xs text-stone-500">• {t}</p>
+            ))}
           </div>
-          <p className={`text-2xl font-bold ${pendingQueues > 0 ? "text-amber-700" : "text-stone-800"}`}>{pendingQueues}</p>
-          <p className="text-xs text-stone-400 mt-0.5">件</p>
         </div>
       </div>
 
       {/* アクションカード */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+      <div className="mb-6">
         <Link href="/admin/line/messages/new"
-          className="bg-[#06C755] text-white rounded-2xl p-5 hover:brightness-95 transition-all shadow-sm">
+          className="bg-[#06C755] text-white rounded-2xl p-5 hover:brightness-95 transition-all shadow-sm block">
           <div className="flex items-center gap-2 mb-2">
             <Send size={18} />
             <h2 className="font-bold text-lg">メッセージを送る</h2>
           </div>
-          <p className="text-green-100 text-sm">一斉・セグメント・個別配信を作成</p>
+          <p className="text-green-100 text-sm">一斉・個別配信を作成</p>
           <div className="flex items-center gap-1 mt-3 text-sm font-semibold">
             <Plus size={14} />新規作成
-          </div>
-        </Link>
-        <Link href="/admin/line/sequences"
-          className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 hover:border-green-300 hover:shadow-md transition-all">
-          <div className="flex items-center gap-2 mb-2">
-            <GitBranch size={18} className="text-stone-600" />
-            <h2 className="font-bold text-stone-800 text-lg">ステップ配信</h2>
-          </div>
-          <p className="text-stone-500 text-sm">自動配信シーケンスの管理</p>
-          <div className="flex items-center gap-1 mt-3 text-sm font-semibold text-stone-600">
-            シーケンスを管理 <ChevronRight size={14} />
           </div>
         </Link>
       </div>
@@ -138,6 +119,7 @@ export default async function LineDashboardPage() {
                 <span className="text-xs text-stone-400 shrink-0">
                   {new Date(m.createdAt).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                 </span>
+                <ChevronRight size={12} className="text-stone-300 shrink-0" />
               </div>
             ))}
           </div>

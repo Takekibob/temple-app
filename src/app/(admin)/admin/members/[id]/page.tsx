@@ -3,11 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import NotesClient from "./NotesClient";
-import MembershipCard from "./MembershipCard";
 import { logFeature } from "@/lib/featureLog";
 import {
-  ChevronLeft, Pencil, GitBranch, Phone, MapPin, CalendarDays,
-  BookOpen, Coins, Heart, MessageCircle, CheckCircle2, XCircle,
+  ChevronLeft, Pencil, Phone, MapPin, CalendarDays,
+  BookOpen, MessageCircle, CheckCircle2, XCircle,
 } from "lucide-react";
 
 export default async function MemberDetailPage({
@@ -25,16 +24,10 @@ export default async function MemberDetailPage({
     where: { id, templeId: authUser.templeId },
     include: {
       user: { select: { name: true, email: true, phone: true, createdAt: true } },
-      deceasedPersons: { orderBy: { deathDate: "desc" } },
       eventParticipations: {
         include: { event: { select: { title: true, eventDate: true, category: true } } },
         orderBy: { createdAt: "desc" },
         take: 10,
-      },
-      gojikaiPayments: {
-        orderBy: { fiscalYear: "desc" },
-        take: 5,
-        select: { id: true, fiscalYear: true, amount: true, status: true, paidAt: true },
       },
       memberNotes: {
         include: { author: { select: { name: true } } },
@@ -44,33 +37,6 @@ export default async function MemberDetailPage({
   });
 
   if (!member) notFound();
-
-  const templeSettings = await prisma.temple.findUnique({
-    where: { id: authUser.templeId },
-    select: { membershipEnabled: true },
-  });
-  const membershipEnabled = templeSettings?.membershipEnabled ?? false;
-
-  const [activeMemberships, membershipTypes] = membershipEnabled
-    ? await Promise.all([
-        prisma.membership.findMany({
-          where: { memberId: id, templeId: authUser.templeId, status: "ACTIVE" },
-          include: {
-            membershipType: { select: { id: true, name: true, pricingModel: true, priceJpy: true } },
-            currentStage: { select: { id: true, name: true } },
-          },
-          orderBy: { joinedAt: "asc" },
-        }),
-        prisma.membershipType.findMany({
-          where: { templeId: authUser.templeId },
-          select: { id: true, name: true, pricingModel: true, priceJpy: true },
-          orderBy: { sortOrder: "asc" },
-        }),
-      ])
-    : [[], []] as [never[], never[]];
-
-  const interestTags = Array.isArray(member.interestTags) ? (member.interestTags as string[]) : [];
-  const isDanka = member.type === "DANKA";
 
   const serializedNotes = member.memberNotes.map((n) => ({
     ...n,
@@ -94,17 +60,13 @@ export default async function MemberDetailPage({
       {/* パンくず + ヘッダー */}
       <div className="mb-5">
         <Link href="/admin/members" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 mb-3 transition-colors">
-          <ChevronLeft size={14} />会員一覧
+          <ChevronLeft size={14} />フォロワー一覧
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex items-center gap-4">
             {/* アバター */}
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 ${
-              isDanka
-                ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                : "bg-gradient-to-br from-teal-500 to-teal-700"
-            }`}>
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-stone-500 to-stone-700 flex items-center justify-center text-white font-bold text-xl shrink-0">
               {member.user.name.charAt(0)}
             </div>
 
@@ -112,7 +74,7 @@ export default async function MemberDetailPage({
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-stone-800">{member.user.name}</h1>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600">
-                  メンバー
+                  フォロワー
                 </span>
               </div>
               {member.familyName && (
@@ -123,12 +85,6 @@ export default async function MemberDetailPage({
 
           {/* アクション */}
           <div className="flex gap-2 shrink-0">
-            {isDanka && (
-              <Link href={`/admin/members/${id}/family-tree`}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white border border-stone-200 text-stone-600 text-sm rounded-xl hover:bg-stone-50 transition-colors">
-                <GitBranch size={14} />家系図
-              </Link>
-            )}
             <Link href={`/admin/members/${id}/edit`}
               className="flex items-center gap-1.5 px-4 py-2 bg-amber-700 text-white text-sm rounded-xl hover:bg-amber-800 transition-colors font-medium">
               <Pencil size={14} />編集
@@ -177,74 +133,6 @@ export default async function MemberDetailPage({
             )}
           </Card>
 
-          {/* 過去帳（檀家） */}
-          {isDanka && (
-            <Card
-              title={`過去帳（${member.deceasedPersons.length}件）`}
-              icon={<BookOpen size={14} className="text-stone-500" />}
-              action={<Link href={`/admin/deceased?memberId=${id}`} className="text-xs text-amber-700 hover:text-amber-900 font-medium">すべて見る →</Link>}
-            >
-              {member.deceasedPersons.length === 0 ? (
-                <p className="text-sm text-stone-400">登録なし</p>
-              ) : (
-                <div className="space-y-2">
-                  {member.deceasedPersons.slice(0, 3).map((p) => (
-                    <div key={p.id} className="flex justify-between items-center py-1.5 border-b border-stone-50 last:border-0">
-                      <span className="text-sm font-medium text-stone-800">{p.name}</span>
-                      <span className="text-xs text-stone-400">
-                        {p.deathDate ? p.deathDate.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" }) : "—"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* 護持会費（檀家） */}
-          {isDanka && (
-            <Card
-              title="護持会費"
-              icon={<Coins size={14} className="text-stone-500" />}
-              action={<Link href="/admin/gojikai" className="text-xs text-amber-700 hover:text-amber-900 font-medium">一覧へ →</Link>}
-            >
-              {member.gojikaiPayments.length === 0 ? (
-                <p className="text-sm text-stone-400">支払い記録なし</p>
-              ) : (
-                <div className="space-y-2">
-                  {member.gojikaiPayments.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-stone-50 last:border-0">
-                      <span className="text-sm font-semibold text-stone-800">{p.fiscalYear}年度</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-stone-700">¥{p.amount.toLocaleString()}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          p.status === "PAID" ? "bg-teal-100 text-teal-800" :
-                          p.status === "EXEMPT" ? "bg-stone-100 text-stone-500" :
-                          "bg-red-100 text-red-700"
-                        }`}>
-                          {p.status === "PAID" ? "納付済" : p.status === "EXEMPT" ? "免除" : "未納"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* 興味・関心（ご縁さん） */}
-          {!isDanka && interestTags.length > 0 && (
-            <Card title="興味・関心" icon={<Heart size={14} className="text-stone-500" />}>
-              <div className="flex flex-wrap gap-2">
-                {interestTags.map((tag) => (
-                  <span key={tag} className="px-2.5 py-1 bg-teal-50 text-teal-700 text-xs rounded-full font-medium border border-teal-100">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          )}
-
           {/* メモ・対応履歴 */}
           <Card
             title={`メモ・対応履歴（${member.memberNotes.length}件）`}
@@ -275,20 +163,6 @@ export default async function MemberDetailPage({
 
         {/* 右カラム */}
         <div className="space-y-4">
-          {/* 関わり方 */}
-          {membershipEnabled && (
-            <MembershipCard
-              memberId={id}
-              initialMemberships={activeMemberships.map((m) => ({
-                id: m.id,
-                membershipType: m.membershipType,
-                stage: m.currentStage,
-                joinedAt: m.joinedAt.toISOString(),
-              }))}
-              availableTypes={membershipTypes}
-            />
-          )}
-
           {/* LINE連携 */}
           <Card title="LINE連携" icon={<MessageCircle size={14} className="text-stone-500" />}>
             <div className="flex items-center gap-2 mb-2">
@@ -304,9 +178,7 @@ export default async function MemberDetailPage({
             {member.lineUserId && (
               <div className="space-y-1.5 mt-2">
                 {[
-                  { label: "予約通知", value: member.notifyReservation },
                   { label: "イベント通知", value: member.notifyEvent },
-                  { label: "命日通知", value: member.notifyAnniversary },
                   { label: "お知らせ通知", value: member.notifyAnnouncement },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-center text-xs">
@@ -324,7 +196,6 @@ export default async function MemberDetailPage({
               </p>
             )}
           </Card>
-
         </div>
       </div>
     </div>

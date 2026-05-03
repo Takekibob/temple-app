@@ -37,7 +37,6 @@ export default async function EditAnnouncementPage({
           id: announcement.id,
           title: announcement.title,
           body: announcement.body,
-          targetSegment: announcement.targetSegment as "ALL" | "DANKA" | "GOEN",
           publishedAt: announcement.publishedAt?.toISOString() ?? null,
         }}
       />

@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MembershipStatus } from "@/generated/prisma/enums";
 import MemberFilters from "./MemberFilters";
 import ExportButton from "@/components/admin/ExportButton";
 import { logFeature } from "@/lib/featureLog";
@@ -22,12 +21,9 @@ const TAG_COLORS: Record<string, string> = {
 };
 
 interface SearchParams {
-  type?: string;
   search?: string;
   page?: string;
   tag?: string;
-  membershipTypeId?: string;
-  enrollment?: string; // "enrolled" | "not_enrolled"
 }
 
 export default async function MembersPage({
@@ -39,34 +35,10 @@ export default async function MembersPage({
   if (!authUser || authUser.role === "MEMBER") redirect("/app");
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
-  const { type, search = "", page: pageStr = "1", tag, membershipTypeId, enrollment } = await searchParams;
+  const { search = "", page: pageStr = "1", tag } = await searchParams;
   const page = Math.max(1, parseInt(pageStr));
 
   if (tag) void logFeature(authUser.templeId, authUser.id, "tag_filter", tag);
-
-  const [membershipTypes, temple] = await Promise.all([
-    prisma.membershipType.findMany({
-      where: { templeId: authUser.templeId },
-      select: { id: true, name: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-    prisma.temple.findUnique({
-      where: { id: authUser.templeId },
-      select: { membershipEnabled: true },
-    }),
-  ]);
-
-  const membershipEnabled = temple?.membershipEnabled ?? false;
-
-  const membershipFilter = membershipEnabled
-    ? membershipTypeId
-      ? { memberships: { some: { membershipTypeId, status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
-      : enrollment === "enrolled"
-      ? { memberships: { some: { status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
-      : enrollment === "not_enrolled"
-      ? { memberships: { none: { status: MembershipStatus.ACTIVE, templeId: authUser.templeId } } }
-      : {}
-    : {};
 
   const searchFilter = search
     ? {
@@ -79,7 +51,6 @@ export default async function MembersPage({
 
   const where = {
     templeId: authUser.templeId,
-    ...membershipFilter,
     ...(tag ? { priorityTags: { has: tag } } : {}),
     ...searchFilter,
   };
@@ -102,7 +73,7 @@ export default async function MembersPage({
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">メンバー管理</h1>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">フォロワー管理</h1>
           <p className="text-sm text-stone-400 mt-0.5">{total.toLocaleString()} 名</p>
         </div>
         {isAdmin && (
@@ -122,13 +93,8 @@ export default async function MembersPage({
       {/* フィルター */}
       <Suspense fallback={<div className="h-12" />}>
         <MemberFilters
-          currentType={type}
           currentSearch={search}
           currentTag={tag}
-          currentMembershipTypeId={membershipTypeId}
-          currentEnrollment={enrollment}
-          membershipTypes={membershipEnabled ? membershipTypes : []}
-          membershipEnabled={membershipEnabled}
         />
       </Suspense>
 
@@ -136,7 +102,7 @@ export default async function MembersPage({
       <div className="mt-4 space-y-2">
         {members.length === 0 ? (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-14 text-center">
-            <p className="text-stone-400 text-sm">該当するメンバーが見つかりません</p>
+            <p className="text-stone-400 text-sm">該当するフォロワーが見つかりません</p>
           </div>
         ) : (
           members.map((member) => (
@@ -195,7 +161,7 @@ export default async function MembersPage({
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page - 1}`}
+                href={`/admin/members?search=${search}&page=${page - 1}`}
                 className="px-4 py-2 text-sm border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
               >
                 ← 前へ
@@ -203,7 +169,7 @@ export default async function MembersPage({
             )}
             {page < totalPages && (
               <Link
-                href={`/admin/members?type=${type ?? ""}&search=${search}&page=${page + 1}`}
+                href={`/admin/members?search=${search}&page=${page + 1}`}
                 className="px-4 py-2 text-sm bg-amber-700 text-white rounded-xl hover:bg-amber-800 transition-colors"
               >
                 次へ →

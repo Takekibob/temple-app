@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ParticipantsClient from "./ParticipantsClient";
+import DuplicateEventButton from "./DuplicateEventButton";
 
 import { getCategoryLabel } from "@/lib/eventCategories";
 
@@ -64,12 +65,15 @@ export default async function AdminEventParticipantsPage({
             {event.capacity ? ` / ${event.capacity}名` : ""}
           </p>
         </div>
-        <Link
-          href={`/admin/events/${id}/edit`}
-          className="text-sm text-amber-700 hover:underline"
-        >
-          イベントを編集
-        </Link>
+        <div className="flex items-center gap-3">
+          <DuplicateEventButton eventId={id} />
+          <Link
+            href={`/admin/events/${id}/edit`}
+            className="text-sm text-amber-700 hover:underline"
+          >
+            イベントを編集
+          </Link>
+        </div>
       </div>
 
       <ParticipantsClient

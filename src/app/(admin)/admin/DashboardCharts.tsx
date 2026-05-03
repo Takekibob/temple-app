@@ -15,17 +15,16 @@ import {
 
 export interface ChartDataPoint {
   month: string;
-  danka: number;
-  goen: number;
+  followers: number;
   events: number;
 }
 
 export default function DashboardCharts({ data }: { data: ChartDataPoint[] }) {
   return (
     <div className="grid lg:grid-cols-2 gap-6 mt-6">
-      {/* 会員登録推移 */}
+      {/* フォロワー推移 */}
       <div className="bg-white rounded-xl border border-stone-200 p-5">
-        <h2 className="font-semibold text-stone-800 mb-4 text-sm">会員登録推移（過去6ヶ月）</h2>
+        <h2 className="font-semibold text-stone-800 mb-4 text-sm">フォロワー推移（過去6ヶ月）</h2>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
@@ -35,8 +34,7 @@ export default function DashboardCharts({ data }: { data: ChartDataPoint[] }) {
               contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#e7e5e4" }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="danka" name="檀家" fill="#b45309" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="goen" name="ご縁さん" fill="#0d9488" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="followers" name="新規フォロワー" fill="#0d9488" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

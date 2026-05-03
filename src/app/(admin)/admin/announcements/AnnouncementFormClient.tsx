@@ -7,33 +7,18 @@ interface AnnouncementData {
   id?: string;
   title: string;
   body: string;
-  targetSegment: "ALL" | "DANKA" | "GOEN";
   publishedAt: string | null;
-  memberId?: string | null;
-}
-
-interface TemplateMember {
-  id: string;
-  name: string;
-  familyName: string;
 }
 
 export default function AnnouncementFormClient({
   initial,
-  allMembers = [],
 }: {
   initial?: AnnouncementData;
-  allMembers?: TemplateMember[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [body, setBody] = useState(initial?.body ?? "");
-  const [targetSegment, setTargetSegment] = useState<"ALL" | "DANKA" | "GOEN">(
-    initial?.targetSegment ?? "ALL"
-  );
-  const [isIndividual, setIsIndividual] = useState(!!initial?.memberId);
-  const [memberId, setMemberId] = useState(initial?.memberId ?? "");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sendPush, setSendPush] = useState(false);
   const [sendLine, setSendLine] = useState(false);
@@ -55,8 +40,6 @@ export default function AnnouncementFormClient({
         body: JSON.stringify({
           title,
           body,
-          targetSegment: isIndividual ? "ALL" : targetSegment,
-          memberId: isIndividual ? memberId : null,
           publish,
           unpublish,
           sendPush: publish && sendPush,
@@ -99,64 +82,10 @@ export default function AnnouncementFormClient({
       )}
 
       <div className="bg-white rounded-xl border border-stone-200 p-6 space-y-5">
-        {/* 配信対象 */}
-        <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">配信対象</label>
-          <div className="flex flex-wrap gap-3 mb-2">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="targetMode"
-                checked={!isIndividual}
-                onChange={() => setIsIndividual(false)}
-                className="accent-amber-700"
-              />
-              <span className="text-sm text-stone-700">セグメント配信</span>
-            </label>
-            {allMembers.length > 0 && (
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="targetMode"
-                  checked={isIndividual}
-                  onChange={() => setIsIndividual(true)}
-                  className="accent-amber-700"
-                />
-                <span className="text-sm text-stone-700">特定会員宛</span>
-              </label>
-            )}
-          </div>
-          {!isIndividual && (
-            <div className="flex gap-3 pl-1">
-              {(["ALL", "DANKA", "GOEN"] as const).map((seg) => (
-                <label key={seg} className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="segment"
-                    value={seg}
-                    checked={targetSegment === seg}
-                    onChange={() => setTargetSegment(seg)}
-                    className="accent-amber-700"
-                  />
-                  <span className="text-sm text-stone-700">
-                    {seg === "ALL" ? "全員" : seg === "DANKA" ? "檀家のみ" : "ご縁さんのみ"}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-          {isIndividual && (
-            <select
-              value={memberId}
-              onChange={(e) => setMemberId(e.target.value)}
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            >
-              <option value="">会員を選択してください</option>
-              {allMembers.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}（{m.familyName}家）</option>
-              ))}
-            </select>
-          )}
+        {/* 配信対象（固定：フォロワー全員） */}
+        <div className="flex items-center gap-2 py-2 px-3 bg-stone-50 rounded-lg">
+          <span className="text-xs font-medium text-stone-500">配信対象：</span>
+          <span className="text-sm font-semibold text-stone-700">フォロワー全員</span>
         </div>
 
         {/* タイトル */}
