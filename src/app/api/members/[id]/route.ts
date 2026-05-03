@@ -16,13 +16,11 @@ export async function GET(
       where: { id, templeId: authUser.templeId },
       include: {
         user: { select: { name: true, email: true, phone: true, createdAt: true } },
-        deceasedPersons: { orderBy: { deathDate: "desc" } },
         eventParticipations: {
           include: { event: { select: { title: true, eventDate: true, category: true } } },
           orderBy: { createdAt: "desc" },
           take: 10,
         },
-        gojikaiPayments: { orderBy: { createdAt: "desc" }, take: 5 },
       },
     });
 

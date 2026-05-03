@@ -23,17 +23,13 @@ export async function PATCH(
     const body = await request.json();
     const {
       lineNotifyEnabled,
-      notifyReservation,
       notifyEvent,
-      notifyAnniversary,
       notifyAnnouncement,
     } = body;
 
     const data: Record<string, boolean> = {};
     if (typeof lineNotifyEnabled === "boolean") data.lineNotifyEnabled = lineNotifyEnabled;
-    if (typeof notifyReservation === "boolean") data.notifyReservation = notifyReservation;
     if (typeof notifyEvent === "boolean") data.notifyEvent = notifyEvent;
-    if (typeof notifyAnniversary === "boolean") data.notifyAnniversary = notifyAnniversary;
     if (typeof notifyAnnouncement === "boolean") data.notifyAnnouncement = notifyAnnouncement;
 
     const member = await prisma.member.update({
@@ -41,9 +37,7 @@ export async function PATCH(
       data,
       select: {
         lineNotifyEnabled: true,
-        notifyReservation: true,
         notifyEvent: true,
-        notifyAnniversary: true,
         notifyAnnouncement: true,
       },
     });

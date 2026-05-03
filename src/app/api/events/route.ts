@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const visibilityFilter = isAdmin
       ? undefined
-      : { visibility: { in: ["PUBLIC", "MEMBERS_ONLY", "FOLLOWERS_ONLY"] as const } };
+      : { visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] as const } };
 
     const where: Record<string, unknown> = {
       templeId: authUser.templeId,

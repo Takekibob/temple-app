@@ -7,9 +7,7 @@ interface Props {
   memberId: string;
   lineLinked: boolean;
   lineNotifyEnabled: boolean;
-  notifyReservation: boolean;
   notifyEvent: boolean;
-  notifyAnniversary: boolean;
   notifyAnnouncement: boolean;
   existingCode: string | null;
   codeExpiresAt: string | null;
@@ -17,16 +15,12 @@ interface Props {
 
 interface NotifyState {
   lineNotifyEnabled: boolean;
-  notifyReservation: boolean;
   notifyEvent: boolean;
-  notifyAnniversary: boolean;
   notifyAnnouncement: boolean;
 }
 
 const NOTIFY_ITEMS: { key: keyof Omit<NotifyState, "lineNotifyEnabled">; label: string }[] = [
-  { key: "notifyReservation", label: "予約確認・変更" },
   { key: "notifyEvent", label: "イベントのご案内" },
-  { key: "notifyAnniversary", label: "法事・記念日のお知らせ" },
   { key: "notifyAnnouncement", label: "お寺からのお知らせ" },
 ];
 
@@ -34,9 +28,7 @@ export default function LineSettingsClient({
   memberId,
   lineLinked: initLinked,
   lineNotifyEnabled: initNotifyEnabled,
-  notifyReservation: initRes,
   notifyEvent: initEv,
-  notifyAnniversary: initAnni,
   notifyAnnouncement: initAnn,
   existingCode: initCode,
   codeExpiresAt: initExpiresAt,
@@ -44,9 +36,7 @@ export default function LineSettingsClient({
   const [lineLinked] = useState(initLinked);
   const [notify, setNotify] = useState<NotifyState>({
     lineNotifyEnabled: initNotifyEnabled,
-    notifyReservation: initRes,
     notifyEvent: initEv,
-    notifyAnniversary: initAnni,
     notifyAnnouncement: initAnn,
   });
   const [saving, setSaving] = useState<string | null>(null);

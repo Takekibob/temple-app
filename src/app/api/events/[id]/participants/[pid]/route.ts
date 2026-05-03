@@ -88,10 +88,8 @@ export async function PATCH(
         await prisma.announcement.create({
           data: {
             templeId: authUser.templeId,
-            memberId: full.memberId,
             title: `「${full.event.title}」への参加が確定しました`,
             body: `${eventDateStr} ${full.event.startTime}〜${full.event.endTime} に開催される「${full.event.title}」への参加が確定しました。\n\n当日のご参加をお待ちしております。`,
-            targetSegment: "ALL",
             publishedAt: new Date(),
           },
         });

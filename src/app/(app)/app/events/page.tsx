@@ -167,7 +167,7 @@ export default async function AppEventsPage({
   }
 
   // フォロワーにはフォロー中寺院の FOLLOWERS_ONLY も表示
-  const publicVisibility: Prisma.EventWhereInput["visibility"] = { in: ["PUBLIC", "MEMBERS_ONLY"] };
+  const publicVisibility: Prisma.EventWhereInput["visibility"] = { in: ["PUBLIC", "FOLLOWERS_ONLY"] };
 
   let favoriteEvents: EventRow[] = [];
   let otherEvents: EventRow[] = [];

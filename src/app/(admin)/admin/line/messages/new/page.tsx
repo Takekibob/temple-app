@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 export default function NewMessagePage() {
   const router = useRouter();
   const [messageType, setMessageType] = useState("BROADCAST");
-  const [targetStage, setTargetStage] = useState("");
   const [text, setText] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [saving, setSaving] = useState(false);
@@ -20,7 +19,6 @@ export default function NewMessagePage() {
 
     const content = { type: "text", text };
     const body: Record<string, unknown> = { messageType, content };
-    if (messageType === "SEGMENT" && targetStage) body.targetStage = targetStage;
     if (scheduledAt) body.scheduledAt = scheduledAt;
 
     const res = await fetch("/api/line/messages", {
@@ -52,26 +50,9 @@ export default function NewMessagePage() {
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm"
           >
             <option value="BROADCAST">一斉配信（全フォロワー）</option>
-            <option value="SEGMENT">セグメント配信（ステージ別）</option>
+            <option value="INDIVIDUAL">個別配信</option>
           </select>
         </div>
-
-        {messageType === "SEGMENT" && (
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">対象ステージ</label>
-            <select
-              value={targetStage}
-              onChange={(e) => setTargetStage(e.target.value)}
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">選択してください</option>
-              <option value="GOEN">ご縁さん</option>
-              <option value="PROSPECT">見込み</option>
-              <option value="DANKA_CANDIDATE">檀家候補</option>
-              <option value="DANKA">檀家</option>
-            </select>
-          </div>
-        )}
 
         <div>
           <label className="block text-sm font-medium text-stone-700 mb-1">メッセージ本文</label>

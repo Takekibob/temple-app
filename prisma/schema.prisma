@@ -22,76 +22,38 @@ model Temple {
   email        String?
   logoUrl      String?
   description  String? // 寺院紹介文
+  prefecture   String? // 都道府県
 
-  // マルチテンプル対応（追加フィールド）
-  coverImageUrl String? // カバー画像URL
+  // マルチテンプル対応
+  coverImageUrl   String?  // カバー画像URL
   websiteUrl      String?  // 公式サイトURL
   instagramUrl    String?  // Instagram公式アカウントURL
   lineOfficialUrl String?  // LINE公式アカウントURL
   youtubeUrl      String?  // YouTubeチャンネルURL
   latitude        Decimal? // 緯度（将来の地図表示用）
-  longitude          Decimal? // 経度（将来の地図表示用）
-  membershipEnabled  Boolean  @default(false) // 関わり方機能の ON/OFF
-  isActive           Boolean  @default(true)
-
-  // 予約設定
-  bookingStartTime   String  @default("09:00")
-  bookingEndTime     String  @default("17:00")
-  bookingDuration    Int     @default(60)
-  bookingMaxSlots    Int     @default(1)
-  bookingAdvanceDays Int     @default(1)
-
-  // 通知設定
-  reminderDayBefore     Boolean @default(true)
-  reminderDayBeforeTime String  @default("18:00")
-  reminderDayOf         Boolean @default(true)
-  reminderDayOfTime     String  @default("09:00")
-  reminderMeinichi      Boolean @default(true)
+  longitude       Decimal? // 経度（将来の地図表示用）
+  isActive        Boolean  @default(true)
 
   // カスタムカテゴリ
-  customEventCategories Json    @default("[]")
+  customEventCategories Json @default("[]")
 
-  // サブスクリプション管理
-  planStatus           PlanStatus @default(TRIAL)
-  trialEndsAt          DateTime?
-  stripeCustomerId     String?    @unique
-  stripeSubscriptionId String?    @unique
+  // オンライン決済（イベント参加費）
+  onlinePaymentEnabled    Boolean @default(false)
+  stripeConnectAccountId  String? @unique
+  stripeConnectOnboarded  Boolean @default(false)
 
-  // Stripe Connect（各寺院への寄付受け取り）
-  stripeConnectAccountId  String?  @unique
-  stripeConnectOnboarded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // メンバーシップ目標（任意）
-  membershipGoalAnnual Int?  // 年間メンバーシップ加入目標
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  users        User[]
-  members      Member[]
-  reservations Reservation[]
-  events       Event[]
-  ofuse        Ofuse[]
-  announcements Announcement[]
-  annualEvents AnnualEvent[]
-  gojikaiRules GojikaiRule[]
+  users             User[]
+  members           Member[]
+  events            Event[]
+  announcements     Announcement[]
   pushSubscriptions PushSubscription[]
   favoriteByMembers MemberFavoriteTemple[]
-  blogPosts    BlogPost[]
-  reservationBlocks ReservationBlock[]
-  activityLogs ActivityLog[]
-  membershipPlans    MembershipPlan[]
-  membershipTypes    MembershipType[]
-  memberships        Membership[]
-  donations          Donation[]
-  lineMessages       LineMessage[]
-  lineStepSequences  LineStepSequence[]
-  ocrRequests        OcrRequest[]
-  onboardingPacks    OnboardingPack[]
-  analyticsSnapshots AnalyticsSnapshot[]
-  memberNotes        MemberNote[]
-  memberChangeRequests MemberChangeRequest[]
-  templeVisits         TempleVisit[]
+  activityLogs      ActivityLog[]
+  lineMessages      LineMessage[]
+  templeVisits      TempleVisit[]
 
   @@map("temples")
 }
@@ -100,34 +62,32 @@ model Temple {
 // ユーザー（認証アカウント）
 // ==========================================
 model User {
-  id           String   @id @default(uuid())
-  templeId     String?  // NULL = SUPER_ADMIN（特定のお寺に属さない）
-  role         Role     @default(MEMBER)
+  id           String       @id @default(uuid())
+  templeId     String?      // NULL = SUPER_ADMIN（特定のお寺に属さない）
+  role         Role         @default(MEMBER)
   name         String
-  email        String   @unique
+  email        String       @unique
   phone        String?
   authProvider AuthProvider @default(EMAIL)
-  pushEnabled  Boolean  @default(true)
-  isActive     Boolean  @default(true)
+  pushEnabled  Boolean      @default(true)
+  isActive     Boolean      @default(true)
   lastLoginAt  DateTime?
 
-  // --- v2追加：表示設定（高齢者対策） ---
+  // 表示設定（高齢者対策）
   displayMode  DisplayMode @default(STANDARD)
   fontSize     FontSize    @default(MEDIUM)
   highContrast Boolean     @default(false)
 
-  avatarUrl    String?
+  avatarUrl String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  temple  Temple?  @relation(fields: [templeId], references: [id])
-  member  Member?
+  temple            Temple?            @relation(fields: [templeId], references: [id])
+  member            Member?
   pushSubscriptions PushSubscription[]
-  activityLogs ActivityLog[]
-  proxyMembers Member[] @relation("ProxyMembers")
-  memberNotes  MemberNote[]
-  reviewedChangeRequests MemberChangeRequest[]
+  activityLogs      ActivityLog[]
+  proxyMembers      Member[]           @relation("ProxyMembers")
 
   @@map("users")
 }
@@ -166,33 +126,33 @@ enum AuthProvider {
 }
 
 // ==========================================
-// 会員（MembershipTypeで役割を柔軟設計）
+// 会員
 // NOTE: type フィールドはSupabase RLSポリシーが依存するため残存（@deprecated）
 // ==========================================
 model Member {
-  id               String     @id @default(uuid())
-  templeId         String?    // NULL可: フォロー中のメインお寺（任意）
-  userId           String     @unique
-  // @deprecated — RLSポリシー依存のため削除不可。新規コードでは memberships を使用すること
-  type             MemberType @default(GOEN)
-  promotedAt       DateTime?  // @deprecated
-  familyName       String
-  address          String?
-  postalCode       String?
-  phone            String?
-  email            String?
-  joinedDate       DateTime   @default(now())
-  engagementScore  Int        @default(0)  // エンゲージメントスコア
-  interestTags     Json?      // ["zazen","shakyo","yoga"]
-  referralSource   ReferralSource?
-  notes            String?
-  summaryNote      String?    // 一行概要メモ（一覧表示用）
-  priorityTags     String[]   @default([]) // ["要フォロー","VIP","要注意"]
-  lastContactAt    DateTime?  // 最終接触日（離脱検知用）— INTERACTION メモ・予約・お布施で更新
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  id             String         @id @default(uuid())
+  templeId       String?        // NULL可: フォロー中のメインお寺（任意）
+  userId         String         @unique
+  // @deprecated — RLSポリシー依存のため削除不可。新規コードでは参照しないこと
+  type           MemberType     @default(GOEN)
+  promotedAt     DateTime?      // @deprecated
+  familyName     String
+  address        String?
+  postalCode     String?
+  phone          String?
+  email          String?
+  joinedDate     DateTime       @default(now())
+  engagementScore Int           @default(0)
+  interestTags    Json?         // ["zazen","shakyo","yoga"]
+  referralSource  ReferralSource?
+  notes           String?
+  summaryNote     String?       // 一行概要メモ（一覧表示用）
+  priorityTags    String[]      @default([]) // ["要フォロー","VIP","要注意"]
+  lastContactAt   DateTime?     // 最終接触日
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  // --- v2追加：代理アカウント（高齢者対策） ---
+  // 代理アカウント（高齢者対策）
   proxyUserId   String?
   proxyRelation String?  // 'child', 'grandchild', 'spouse', 'other'
   sourceDetail  String?  // 流入経路の補足（紹介者名等）
@@ -201,36 +161,22 @@ model Member {
   lineNotifyEnabled   Boolean   @default(false)
   lineCode            String?   // 連携コード（一時保存）
   lineCodeExpiresAt   DateTime? // 連携コード有効期限
-  notifyReservation   Boolean   @default(true)
   notifyEvent         Boolean   @default(true)
-  notifyAnniversary   Boolean   @default(true)
   notifyAnnouncement  Boolean   @default(true)
 
-  temple           Temple?    @relation(fields: [templeId], references: [id])
-  user             User       @relation(fields: [userId], references: [id])
-  proxyUser        User?      @relation("ProxyMembers", fields: [proxyUserId], references: [id])
-  deceasedPersons  DeceasedPerson[]
-  reservations     Reservation[]
-  ofuse            Ofuse[]
-  gojikaiPayments  GojikaiPayment[]
+  temple              Temple?                @relation(fields: [templeId], references: [id])
+  user                User                   @relation(fields: [userId], references: [id])
+  proxyUser           User?                  @relation("ProxyMembers", fields: [proxyUserId], references: [id])
   eventParticipations EventParticipation[]
-  favoriteTemples  MemberFavoriteTemple[]
-  subscriptions    MemberSubscription[]
-  memberships      Membership[]
-  donations        Donation[]
-  lineStepQueues   LineStepQueue[]
-  memberNotes      MemberNote[]
-  announcements    Announcement[]
-  announcementReads AnnouncementRead[]
-  changeRequests   MemberChangeRequest[]
-  blogLikes        BlogLike[]
-  templeVisits     TempleVisit[]
+  favoriteTemples     MemberFavoriteTemple[]
+  announcementReads   AnnouncementRead[]
+  templeVisits        TempleVisit[]
 
   @@map("members")
 }
 
 // @deprecated — Supabase RLS ポリシーが依存するため削除不可
-// 新規コードでは Membership モデルを使用すること
+// 新規コードでは参照しないこと
 enum MemberType {
   DANKA // @deprecated
   GOEN  // @deprecated
@@ -258,143 +204,57 @@ model MemberFavoriteTemple {
   templeId  String
   createdAt DateTime @default(now())
 
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  temple Temple @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, templeId])
   @@map("member_favorite_temples")
 }
 
 // ==========================================
-// 故人（過去帳）
-// ==========================================
-model DeceasedPerson {
-  id            String    @id @default(uuid())
-  memberId      String
-  name          String    // 俗名
-  kaimyo        String?   // 戒名
-  deathDate     DateTime?
-  birthDate     DateTime?
-  age           Int?      // 享年
-  relationship  String?   // 続柄
-  notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  member        Member    @relation(fields: [memberId], references: [id])
-  reservations  Reservation[]
-
-  @@map("deceased_persons")
-}
-
-// ==========================================
-// 予約（法要・供養）
-// ==========================================
-model Reservation {
-  id                String            @id @default(uuid())
-  templeId          String
-  memberId          String
-  type              ReservationType
-  scheduledAt       DateTime
-  durationMin       Int               @default(60)
-  deceasedPersonId  String?
-  status            ReservationStatus @default(PENDING)
-  notes             String?
-  // 参加人数・オプション
-  attendees         Int?
-  purificationRequired Boolean        @default(false)
-  flowerOrder       Boolean           @default(false)
-  flowerDetail      String?
-  cateringOrder     Boolean           @default(false)
-  cateringCount     Int?
-  cateringDetail    String?
-  memberEditedAt    DateTime?         // 利用者が内容変更した最終日時
-  isAdminCreated    Boolean           @default(false) // 管理者代理入力
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  temple          Temple          @relation(fields: [templeId], references: [id])
-  member          Member          @relation(fields: [memberId], references: [id])
-  deceasedPerson  DeceasedPerson? @relation(fields: [deceasedPersonId], references: [id])
-  ofuse           Ofuse[]
-
-  @@map("reservations")
-}
-
-// ==========================================
-// 予約不可ブロック
-// ==========================================
-model ReservationBlock {
-  id        String   @id @default(uuid())
-  templeId  String
-  date      String   // YYYY-MM-DD
-  startTime String?  // HH:MM (null = 全日)
-  endTime   String?  // HH:MM (null = 全日)
-  reason    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  temple Temple @relation(fields: [templeId], references: [id])
-
-  @@map("reservation_blocks")
-}
-
-enum ReservationType {
-  ANNUAL_MEMORIAL  // 年忌法要
-  MONTHLY_MEMORIAL // 月命日
-  NIBON            // 新盆
-  KUYO             // 供養
-  FUNERAL          // 葬儀
-  OTHER
-
-  @@map("reservation_type")
-}
-
-enum ReservationStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-
-  @@map("reservation_status")
-}
-
-// ==========================================
 // イベント
 // ==========================================
 model Event {
-  id          String        @id @default(uuid())
+  id          String          @id @default(uuid())
   templeId    String
   title       String
   description String?
-  category    String        // 標準: ZAZEN/SHAKYO/YOGA/MINDFULNESS/LECTURE/SEASONAL/OTHER、カスタム: 日本語名
+  category    String          // 標準: ZAZEN/SHAKYO/YOGA/MINDFULNESS/LECTURE/SEASONAL/OTHER、カスタム: 日本語名
+  eventType   EventType       @default(GROUP)
   eventDate   DateTime
-  startTime   String        // HH:MM
-  endTime     String        // HH:MM
+  startTime   String          // HH:MM
+  endTime     String          // HH:MM
   location    String?
-  capacity    Int?          // NULL = 無制限
-  fee         Int           @default(0)
+  capacity    Int?            // NULL = 無制限
+  fee         Int             @default(0)
   visibility  EventVisibility @default(PUBLIC)
   imageUrl    String?
   shareUrl    String?
-  status      EventStatus   @default(DRAFT)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  status      EventStatus     @default(DRAFT)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  temple        Temple       @relation(fields: [templeId], references: [id])
+  temple         Temple               @relation(fields: [templeId], references: [id])
   participations EventParticipation[]
 
   @@map("events")
 }
 
+enum EventType {
+  GROUP   // グループイベント（定員制・一斉開催）
+  BOOKING // 予約型（個別日程）
+
+  @@map("event_type")
+}
 
 enum EventVisibility {
-  PUBLIC              // 誰でも
-  MEMBERS_ONLY        // 廃止予定（既存データ互換性のために残存）→ PUBLIC と同等に扱う
-  MEMBERSHIP_REQUIRED // いずれかのMembershipTypeに加入済みの会員のみ
-  SUBSCRIBERS_ONLY    // 会員プラン加入者限定（Stripe課金）
-  // 後方互換性のため残存（UI では MEMBERSHIP_REQUIRED を使用すること）
-  DANKA_ONLY          // @deprecated — 旧「檀家限定」（廃止予定）
+  PUBLIC         // 誰でも
+  FOLLOWERS_ONLY // フォロワー限定
+  // @deprecated — 後方互換性のため残存（DBのRLSポリシーが依存）。新規コードでは使用しないこと
+  MEMBERS_ONLY        // @deprecated
+  MEMBERSHIP_REQUIRED // @deprecated
+  SUBSCRIBERS_ONLY    // @deprecated
+  DANKA_ONLY          // @deprecated
 
   @@map("event_visibility")
 }
@@ -413,33 +273,33 @@ enum EventStatus {
 // イベント参加申込
 // ==========================================
 model EventParticipation {
-  id              String            @id @default(uuid())
-  eventId         String
-  memberId        String
-  numGuests       Int               @default(1)
-  status          ParticipationStatus @default(APPLIED)
-  paymentStatus   PaymentStatus     @default(NOT_REQUIRED)
-  paymentAmount         Int               @default(0)
+  id                    String              @id @default(uuid())
+  eventId               String
+  memberId              String
+  numGuests             Int                 @default(1)
+  status                ParticipationStatus @default(APPLIED)
+  paymentStatus         PaymentStatus       @default(NOT_REQUIRED)
+  paymentAmount         Int                 @default(0)
   stripeSessionId       String?
   stripePaymentIntentId String?
-  feedbackScore   Int?              // 1-5
-  feedbackComment String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  feedbackScore         Int?                // 1-5
+  feedbackComment       String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 
-  event   Event  @relation(fields: [eventId], references: [id])
-  member  Member @relation(fields: [memberId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
 
   @@unique([eventId, memberId])
   @@map("event_participations")
 }
 
 enum ParticipationStatus {
-  APPLIED      // 申込
-  CONFIRMED    // 確定
-  WAITLISTED   // キャンセル待ち
-  ATTENDED     // 参加済
-  NO_SHOW      // 不参加
+  APPLIED    // 申込
+  CONFIRMED  // 確定
+  WAITLISTED // キャンセル待ち
+  ATTENDED   // 参加済
+  NO_SHOW    // 不参加
   CANCELLED
 
   @@map("participation_status")
@@ -455,103 +315,20 @@ enum PaymentStatus {
 }
 
 // ==========================================
-// お布施
-// ==========================================
-model Ofuse {
-  id              String        @id @default(uuid())
-  templeId        String
-  memberId        String
-  reservationId   String?
-  type            OfuseType
-  amount          Int
-  paidAt          DateTime
-  paymentMethod   PaymentMethod @default(CASH)
-  receiptIssued   Boolean       @default(false)
-  notes           String?
-  createdAt       DateTime      @default(now())
-
-  temple      Temple       @relation(fields: [templeId], references: [id])
-  member      Member       @relation(fields: [memberId], references: [id])
-  reservation Reservation? @relation(fields: [reservationId], references: [id])
-
-  @@map("ofuse")
-}
-
-enum OfuseType {
-  HOUYO      // 法要
-  GOJIKAI    // 護持会費
-  KIFU       // 寄付
-  EVENT_FEE  // イベント参加費
-  OTHER
-
-  @@map("ofuse_type")
-}
-
-enum PaymentMethod {
-  CASH
-  TRANSFER
-  ONLINE
-
-  @@map("payment_method")
-}
-
-// ==========================================
-// 護持会費
-// ==========================================
-model GojikaiRule {
-  id         String   @id @default(uuid())
-  templeId   String
-  amount     Int
-  dueMonth   Int      @default(3) // 毎年何月に請求
-  createdAt  DateTime @default(now())
-
-  temple   Temple           @relation(fields: [templeId], references: [id])
-
-  @@map("gojikai_rules")
-}
-
-model GojikaiPayment {
-  id          String        @id @default(uuid())
-  memberId    String
-  fiscalYear  Int
-  amount      Int
-  status      GojikaiStatus @default(UNPAID)
-  paidAt      DateTime?
-  dueDate     DateTime?
-  createdAt   DateTime      @default(now())
-
-  member  Member @relation(fields: [memberId], references: [id])
-
-  @@unique([memberId, fiscalYear])
-  @@map("gojikai_payments")
-}
-
-enum GojikaiStatus {
-  UNPAID
-  PAID
-  EXEMPT
-
-  @@map("gojikai_status")
-}
-
-// ==========================================
 // お知らせ
 // ==========================================
 model Announcement {
-  id            String           @id @default(uuid())
-  templeId      String
-  memberId      String?          // 個人宛通知の場合に設定（nullは全体向け）
-  title         String
-  body          String
-  targetSegment AnnouncementTarget @default(ALL)
-  publishedAt   DateTime?
-  pushSent      Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id          String    @id @default(uuid())
+  templeId    String
+  title       String
+  body        String
+  publishedAt DateTime?
+  pushSent    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  temple  Temple  @relation(fields: [templeId], references: [id])
-  member  Member? @relation(fields: [memberId], references: [id])
-  reads   AnnouncementRead[]
+  temple Temple             @relation(fields: [templeId], references: [id])
+  reads  AnnouncementRead[]
 
   @@map("announcements")
 }
@@ -570,37 +347,6 @@ model AnnouncementRead {
   @@map("announcement_reads")
 }
 
-enum AnnouncementTarget {
-  ALL      // 全員
-  MEMBERS  // いずれかのMembershipTypeに加入済みの会員
-  // 後方互換性のため残存（UI では MEMBERS/ALL を使用すること）
-  DANKA    // @deprecated — 旧「檀家」セグメント（廃止予定）
-  GOEN     // @deprecated — 旧「ご縁さん」セグメント（廃止予定）
-
-  @@map("announcement_target")
-}
-
-// ==========================================
-// 年中行事
-// ==========================================
-model AnnualEvent {
-  id             String   @id @default(uuid())
-  templeId       String
-  name           String
-  month          Int
-  day            Int
-  endDay         Int?     // 複数日イベントの最終日（同月内）
-  description    String?
-  isRecurring    Boolean  @default(true)
-  showOnCalendar Boolean  @default(true)
-  notes          String?
-  createdAt      DateTime @default(now())
-
-  temple  Temple @relation(fields: [templeId], references: [id])
-
-  @@map("annual_events")
-}
-
 // ==========================================
 // SUPER_ADMIN 操作ログ
 // ==========================================
@@ -615,20 +361,6 @@ model SuperAdminLog {
 
   @@index([adminId, createdAt])
   @@map("super_admin_logs")
-}
-
-// ==========================================
-// プランステータス
-// ==========================================
-enum PlanStatus {
-  FREE        // 無料プラン（永久）
-  TRIAL       // トライアル中
-  ACTIVE      // 有効（課金中）
-  PAST_DUE    // 支払い遅延
-  CANCELLED   // 解約済み
-  SUSPENDED   // 停止（管理者による強制停止）
-
-  @@map("plan_status")
 }
 
 // ==========================================
@@ -658,12 +390,10 @@ model ActivityLog {
   templeId   String
   userId     String?  // NULL = システム自動処理
   action     String
-  // 'create' | 'update' | 'delete' | 'export' | 'import' | 'login' | 'logout' | 'view_sensitive'
   targetType String?
-  // 'member' | 'event' | 'reservation' | 'ofuse' | 'settings' | 'gojikai' | 'announcement'
   targetId   String?
-  targetName String?  // 人間が読める対象名（例: 「山田 太郎」）
-  detail     Json?    // 変更前後の値など
+  targetName String?
+  detail     Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
 
@@ -673,123 +403,6 @@ model ActivityLog {
   @@index([templeId, createdAt(sort: Desc)])
   @@index([templeId, targetType, targetId])
   @@map("activity_logs")
-}
-
-// ==========================================
-// 会員プラン（サブスクリプション定義）
-// ==========================================
-model MembershipPlan {
-  id              String               @id @default(uuid())
-  templeId        String
-  temple          Temple               @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  templateKey     String?              // 定義済みテンプレートキー（BASIC / MONTHLY_SUPPORT / PREMIUM）
-
-  name            String
-  description     String?
-  price           Int
-  interval        SubscriptionInterval @default(MONTHLY)
-  benefits        Json?
-  maxMembers      Int?
-
-  stripePriceId   String?
-  stripeProductId String?
-
-  isActive        Boolean              @default(true)
-  sortOrder       Int                  @default(0)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-
-  subscriptions   MemberSubscription[]
-
-  @@map("membership_plans")
-}
-
-enum SubscriptionInterval {
-  MONTHLY
-  YEARLY
-  ONE_TIME
-
-  @@map("subscription_interval")
-}
-
-// ==========================================
-// 会員サブスクリプション（加入状態）
-// ==========================================
-model MemberSubscription {
-  id                   String                   @id @default(uuid())
-  memberId             String
-  member               Member                   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  planId               String
-  plan                 MembershipPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
-  templeId             String
-
-  stripeSubscriptionId String?
-  stripeCustomerId     String?
-
-  status               MemberSubscriptionStatus @default(ACTIVE)
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  canceledAt           DateTime?
-  cancelReason         String?
-
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
-
-  @@index([memberId, status])
-  @@index([templeId, status])
-  @@map("member_subscriptions")
-}
-
-enum MemberSubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  PAUSED
-
-  @@map("member_subscription_status")
-}
-
-// ==========================================
-// 寄付
-// ==========================================
-model Donation {
-  id              String          @id @default(uuid())
-  templeId        String
-  temple          Temple          @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  memberId        String?
-  member          Member?         @relation(fields: [memberId], references: [id], onDelete: SetNull)
-
-  amount          Int
-  purpose         DonationPurpose @default(GENERAL)
-  purposeDetail   String?
-
-  paymentMethod   PaymentMethod
-
-  stripePaymentIntentId String?
-
-  donorName       String?
-  donorEmail      String?
-
-  thankyouSent    Boolean         @default(false)
-  thankyouSentAt  DateTime?
-
-  notes           String?
-  donatedAt       DateTime        @default(now())
-  createdAt       DateTime        @default(now())
-
-  @@index([templeId, donatedAt(sort: Desc)])
-  @@map("donations")
-}
-
-enum DonationPurpose {
-  GENERAL
-  REPAIR
-  CEREMONY
-  CROWDFUNDING
-  OTHER
-
-  @@map("donation_purpose")
 }
 
 // ==========================================
@@ -821,12 +434,13 @@ model LineMessage {
 }
 
 enum LineMessageType {
-  BROADCAST
-  SEGMENT
-  INDIVIDUAL
-  STEP
-  REMINDER
-  THANKYOU
+  BROADCAST  // 一斉配信
+  INDIVIDUAL // 個別配信
+  REMINDER   // リマインダー
+  // @deprecated — 後方互換性のため残存。新規コードでは使用しないこと
+  SEGMENT  // @deprecated
+  STEP     // @deprecated
+  THANKYOU // @deprecated
 
   @@map("line_message_type")
 }
@@ -842,317 +456,14 @@ enum LineMessageStatus {
 }
 
 // ==========================================
-// LINEステップ配信シーケンス
-// ==========================================
-model LineStepSequence {
-  id        String          @id @default(uuid())
-  templeId  String
-  temple    Temple          @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  name      String
-  trigger   LineStepTrigger
-
-  steps     Json
-
-  isActive  Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  queues    LineStepQueue[]
-
-  @@map("line_step_sequences")
-}
-
-enum LineStepTrigger {
-  FIRST_EVENT_ATTEND
-  LINE_REGISTER
-  DONATION_FIRST
-  MEMBERSHIP_JOIN           // メンバーシップ加入時
-  // 後方互換性のため残存
-  STAGE_CHANGE_PROSPECT     // @deprecated
-  STAGE_CHANGE_CANDIDATE    // @deprecated
-
-  @@map("line_step_trigger")
-}
-
-// ==========================================
-// LINEステップ配信キュー
-// ==========================================
-model LineStepQueue {
-  id          String          @id @default(uuid())
-  sequenceId  String
-  sequence    LineStepSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  memberId    String
-  member      Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  templeId    String
-
-  currentStep Int             @default(0)
-  nextSendAt  DateTime
-  status      StepQueueStatus @default(PENDING)
-
-  startedAt   DateTime        @default(now())
-  completedAt DateTime?
-
-  @@index([nextSendAt, status])
-  @@map("line_step_queues")
-}
-
-enum StepQueueStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-
-  @@map("step_queue_status")
-}
-
-// ==========================================
-// OCR取り込みリクエスト
-// ==========================================
-model OcrRequest {
-  id            String           @id @default(uuid())
-  templeId      String
-  temple        Temple           @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  requestType   OcrRequestType
-  fileUrls      String[]
-  status        OcrRequestStatus @default(SUBMITTED)
-  extractedData Json?
-  importedCount Int              @default(0)
-
-  notes         String?
-  submittedBy   String?
-  processedBy   String?
-
-  submittedAt   DateTime         @default(now())
-  completedAt   DateTime?
-
-  @@index([templeId, submittedAt(sort: Desc)])
-  @@map("ocr_requests")
-}
-
-enum OcrRequestStatus {
-  SUBMITTED
-  PROCESSING
-  REVIEW
-  COMPLETED
-  FAILED
-
-  @@map("ocr_request_status")
-}
-
-enum OcrRequestType {
-  KAKOCHO
-  MEIBO
-  OTHER
-
-  @@map("ocr_request_type")
-}
-
-// ==========================================
-// 導入おまかせパック
-// ==========================================
-model OnboardingPack {
-  id        String               @id @default(uuid())
-  templeId  String
-  temple    Temple               @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  status    OnboardingPackStatus @default(REQUESTED)
-
-  hearingDone   Boolean   @default(false)
-  hearingDate   DateTime?
-  hearingNotes  String?
-
-  dataEntryDone  Boolean  @default(false)
-  dataEntryCount Int      @default(0)
-
-  lineSetupDone  Boolean  @default(false)
-  trainingDone   Boolean  @default(false)
-  trainingDate   DateTime?
-
-  supportEndsAt  DateTime?
-
-  stripePaymentIntentId String?
-  paidAmount     Int?
-  paidAt         DateTime?
-
-  notes          String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  @@map("onboarding_packs")
-}
-
-enum OnboardingPackStatus {
-  REQUESTED
-  IN_PROGRESS
-  DATA_ENTRY
-  LINE_SETUP
-  TRAINING
-  SUPPORT_PERIOD
-  COMPLETED
-
-  @@map("onboarding_pack_status")
-}
-
-
-// ==========================================
-// 分析スナップショット（日次集計）
-// ==========================================
-model AnalyticsSnapshot {
-  id           String   @id @default(uuid())
-  templeId     String
-  temple       Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  snapshotDate DateTime @db.Date
-  periodType   String
-
-  metrics      Json
-
-  @@unique([templeId, snapshotDate, periodType])
-  @@index([templeId, snapshotDate(sort: Desc)])
-  @@map("analytics_snapshots")
-}
-
-// ==========================================
-// 檀家メモ・対応履歴
-// ==========================================
-model MemberNote {
-  id        String   @id @default(uuid())
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  templeId  String
-  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-
-  noteType  NoteType @default(MEMO)
-  title     String?               // 対応履歴・フォローの見出し
-  content   String                // 本文
-  tags      String[] @default([]) // ["要フォロー","VIP","要注意","体調注意","遠方","一人暮らし","跡継ぎ不在"]
-
-  followupDate DateTime? @db.Date // フォロー予定日
-  isResolved   Boolean   @default(false) // フォロー完了
-  isPinned     Boolean   @default(false) // ピン留め
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([memberId])
-  @@index([templeId])
-  @@index([followupDate])
-  @@map("member_notes")
-}
-
-enum NoteType {
-  MEMO        // 一般メモ
-  INTERACTION // 対応履歴
-  FOLLOWUP    // フォロー予定
-
-  @@map("note_type")
-}
-
-
-// ==========================================
-// 機能利用ログ
-// ==========================================
-model FeatureLog {
-  id        String   @id @default(uuid())
-  templeId  String
-  userId    String
-  feature   String   // "member_notes", "tag_filter", "dashboard_widget" など
-  action    String   // "create", "edit", "delete", "pin", "view", "click" など
-
-  createdAt DateTime @default(now())
-
-  @@index([templeId])
-  @@index([feature])
-  @@index([createdAt])
-  @@map("feature_logs")
-}
-
-// ==========================================
-// ブログ記事
-// ==========================================
-model BlogPost {
-  id               String    @id @default(uuid())
-  templeId         String
-  temple           Temple    @relation(fields: [templeId], references: [id], onDelete: Cascade)
-
-  title            String
-  body             String    // プレーンテキスト or Markdown
-  coverImageUrl    String?
-  isSubscriberOnly Boolean   @default(false)  // true = 会員プラン加入者のみ閲覧可
-  status           BlogPostStatus @default(DRAFT)
-  publishedAt      DateTime?
-
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  likes            BlogLike[]
-
-  @@index([templeId, status, publishedAt])
-  @@map("blog_posts")
-}
-
-model BlogLike {
-  id        String   @id @default(uuid())
-  postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([postId, memberId])
-  @@map("blog_likes")
-}
-
-enum BlogPostStatus {
-  DRAFT
-  PUBLISHED
-
-  @@map("blog_post_status")
-}
-
-// ==========================================
-// 檀家情報変更申請
-// ==========================================
-model MemberChangeRequest {
-  id             String              @id @default(uuid())
-  memberId       String
-  templeId       String
-  status         ChangeRequestStatus @default(PENDING)
-  requestData    Json                // { familyName?, address?, postalCode?, phone?, email? }
-  reviewedBy     String?
-  reviewedAt     DateTime?
-  rejectedReason String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-
-  member   Member @relation(fields: [memberId], references: [id])
-  temple   Temple @relation(fields: [templeId], references: [id])
-  reviewer User?  @relation(fields: [reviewedBy], references: [id])
-
-  @@index([templeId, status])
-  @@map("member_change_requests")
-}
-
-enum ChangeRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-
-  @@map("change_request_status")
-}
-
-// ==========================================
 // 参拝記録（ジャーナリング）
 // ==========================================
 model TempleVisit {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
   templeId  String
-  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  temple    Temple      @relation(fields: [templeId], references: [id], onDelete: Cascade)
   memo      String      @default("")
   source    VisitSource @default(SELF_REPORT)
   photoUrl  String?
@@ -1162,101 +473,28 @@ model TempleVisit {
   @@map("temple_visits")
 }
 
-// ==========================================
-// メンバーシップ種別（お寺が自由に設計）
-// ==========================================
-model MembershipType {
-  id            String       @id @default(uuid())
-  templeId      String
-  temple        Temple       @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  name          String       // 例: "ご縁さん" "月額サポーター" "檀家" "巡礼会員"
-  description   String?
-  pricingModel  PricingModel @default(FREE)
-  priceJpy      Int?         // pricingModel が FREE の場合は NULL
-  billingCycle  BillingCycle? // MONTHLY / YEARLY（SUBSCRIPTION の場合）
-  isPublic      Boolean      @default(true)  // 利用者画面に公開するか
-  sortOrder     Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  stages        MembershipStage[]
-  memberships   Membership[]
-
-  @@index([templeId])
-  @@map("membership_types")
-}
-
-// ==========================================
-// メンバーシップステージ（加入後の進行段階）
-// ==========================================
-model MembershipStage {
-  id               String         @id @default(uuid())
-  membershipTypeId String
-  membershipType   MembershipType @relation(fields: [membershipTypeId], references: [id], onDelete: Cascade)
-  name             String         // 例: "新規" "アクティブ" "コア"
-  order            Int
-  autoPromoteRules Json?          // 自動昇格条件（将来拡張用）
-  createdAt        DateTime       @default(now())
-
-  memberships      Membership[]   @relation("CurrentStage")
-
-  @@map("membership_stages")
-}
-
-// ==========================================
-// メンバーシップ（会員と種別の紐付け）
-// ==========================================
-model Membership {
-  id               String          @id @default(uuid())
-  memberId         String
-  member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  membershipTypeId String
-  membershipType   MembershipType  @relation(fields: [membershipTypeId], references: [id])
-  templeId         String          // クエリ効率化のための非正規化
-  temple           Temple          @relation(fields: [templeId], references: [id])
-  currentStageId   String?
-  currentStage     MembershipStage? @relation("CurrentStage", fields: [currentStageId], references: [id])
-  status           MembershipStatus @default(ACTIVE)
-  joinedAt         DateTime        @default(now())
-  stripeSubId      String?         // Stripe サブスクリプション ID
-  metadata         Json?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  @@unique([memberId, membershipTypeId])
-  @@index([memberId, status])
-  @@index([templeId, status])
-  @@map("memberships")
-}
-
-enum PricingModel {
-  FREE
-  ONE_TIME
-  SUBSCRIPTION
-  DONATION
-
-  @@map("pricing_model")
-}
-
-enum BillingCycle {
-  MONTHLY
-  YEARLY
-
-  @@map("billing_cycle")
-}
-
-enum MembershipStatus {
-  ACTIVE
-  PAUSED
-  CHURNED
-
-  @@map("membership_status")
-}
-
 enum VisitSource {
   SELF_REPORT    // 参加者自己申告
   TEMPLE_RECORD  // お寺が記録
   EVENT_CHECKIN  // イベントチェックイン
 
   @@map("visit_source")
+}
+
+// ==========================================
+// 機能利用ログ
+// ==========================================
+model FeatureLog {
+  id       String @id @default(uuid())
+  templeId String
+  userId   String
+  feature  String // "member_notes", "tag_filter", "dashboard_widget" など
+  action   String // "create", "edit", "delete", "pin", "view", "click" など
+
+  createdAt DateTime @default(now())
+
+  @@index([templeId])
+  @@index([feature])
+  @@index([createdAt])
+  @@map("feature_logs")
 }

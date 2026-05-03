@@ -16,11 +16,8 @@ type LineMessage = {
 
 const TYPE_LABELS: Record<string, string> = {
   BROADCAST: "一斉",
-  SEGMENT: "セグメント",
   INDIVIDUAL: "個別",
-  STEP: "ステップ",
   REMINDER: "リマインダー",
-  THANKYOU: "お礼",
 };
 
 const STATUS_STYLES: Record<string, string> = {

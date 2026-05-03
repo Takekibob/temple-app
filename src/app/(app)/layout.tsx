@@ -21,7 +21,6 @@ export default async function AppLayout({
       where: {
         templeId: authUser.templeId,
         publishedAt: { not: null, lte: new Date() },
-        memberId: null,
         reads: { none: { memberId } },
       },
     });

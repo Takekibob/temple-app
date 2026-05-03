@@ -17,7 +17,7 @@ export async function generateMetadata({
     include: { temple: { select: { name: true } } },
   });
 
-  if (!event || event.visibility === "DANKA_ONLY") {
+  if (!event) {
     return { title: "てらログ" };
   }
 
@@ -68,22 +68,6 @@ export default async function PublicEventPage({
   });
 
   if (!event) notFound();
-
-  // 檀家限定イベントは非公開メッセージを表示
-  if (event.visibility === "DANKA_ONLY") {
-    return (
-      <div className="text-center py-20">
-        <p className="text-5xl mb-4">🔒</p>
-        <h1 className="text-xl font-bold text-stone-800 mb-2">檀家限定イベント</h1>
-        <p className="text-sm text-stone-500">
-          このイベントは寺院の檀家の方のみご参加いただけます。
-        </p>
-        <Link href="/" className="mt-6 inline-block text-sm text-amber-700 hover:underline">
-          ホームへ戻る
-        </Link>
-      </div>
-    );
-  }
 
   const participantCount = event._count.participations;
   const isFull = event.capacity != null && participantCount >= event.capacity;

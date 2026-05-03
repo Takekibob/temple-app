@@ -18,7 +18,6 @@ export async function GET() {
       where: {
         templeId: authUser.templeId,
         publishedAt: { not: null, lte: new Date() },
-        memberId: null,
       },
       orderBy: { publishedAt: "desc" },
       select: {
@@ -52,8 +51,6 @@ export async function POST(request: NextRequest) {
         templeId: authUser.templeId,
         title: title.trim(),
         body: content.trim(),
-        targetSegment: "ALL",
-        memberId: null,
         publishedAt: publish ? new Date() : null,
         pushSent: false,
       },

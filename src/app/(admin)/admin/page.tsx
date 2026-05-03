@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardCharts, { ChartDataPoint } from "./DashboardCharts";
 import {
   Users, Calendar,
-  Clock, ChevronRight,
+  ChevronRight,
   Plus, Bell,
 } from "lucide-react";
 
@@ -16,8 +16,6 @@ export default async function AdminDashboardPage() {
   if (authUser.role === "MEMBER") redirect("/app");
 
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const twoWeeksLater = new Date(todayStart.getTime() + 14 * 86400000);
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
@@ -28,7 +26,6 @@ export default async function AdminDashboardPage() {
     recentFollowers,
     recentEventSignups,
     upcomingEvents,
-    upcomingFollowups,
   ] = await Promise.all([
     prisma.memberFavoriteTemple.count({ where: { templeId: authUser.templeId } }),
     prisma.member.count({ where: { templeId: authUser.templeId } }),
@@ -66,17 +63,6 @@ export default async function AdminDashboardPage() {
       },
       orderBy: { eventDate: "asc" },
       take: 5,
-    }),
-    prisma.memberNote.findMany({
-      where: {
-        templeId: authUser.templeId,
-        noteType: "FOLLOWUP",
-        isResolved: false,
-        followupDate: { gte: todayStart, lte: twoWeeksLater },
-      },
-      include: { member: { include: { user: { select: { name: true } } } } },
-      orderBy: { followupDate: "asc" },
-      take: 8,
     }),
   ]);
 
@@ -205,39 +191,6 @@ export default async function AdminDashboardPage() {
 
       {/* 月別グラフ */}
       <DashboardCharts data={chartData} />
-
-      {/* フォロー予定 */}
-      {upcomingFollowups.length > 0 && (
-        <DashCard
-          title="フォロー予定（2週間以内）"
-          icon={Clock}
-          iconColor="text-teal-600"
-          moreHref="/admin/members"
-          moreLabel="メンバー一覧"
-        >
-          <ul className="divide-y divide-stone-50">
-            {upcomingFollowups.map((note) => (
-              <li key={note.id}>
-                <Link href={`/admin/members/${note.memberId}`}
-                  className="flex items-start gap-3 py-3 hover:bg-stone-50 -mx-4 px-4 transition-colors rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-stone-800">{note.member.user.name}</p>
-                    {note.title && (
-                      <p className="text-xs text-stone-600 mt-0.5 truncate">{note.title}</p>
-                    )}
-                    <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{note.content}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full shrink-0">
-                    {note.followupDate
-                      ? new Date(note.followupDate).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })
-                      : ""}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </DashCard>
-      )}
     </div>
   );
 }

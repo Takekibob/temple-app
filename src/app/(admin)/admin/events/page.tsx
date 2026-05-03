@@ -162,7 +162,7 @@ export default async function AdminEventsPage({
                   >
                     参加者
                   </Link>
-                  {event.status === "PUBLISHED" && event.visibility !== "DANKA_ONLY" && (
+                  {event.status === "PUBLISHED" && (
                     <Link
                       href={`/events/${event.id}`}
                       target="_blank"

@@ -64,7 +64,7 @@ export default async function AppHomePage() {
               templeId: { in: followedTempleIds },
               status: "PUBLISHED",
               eventDate: { gte: now },
-              visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] },
+              visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
               participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } },
             },
             select: {
@@ -82,7 +82,7 @@ export default async function AppHomePage() {
               templeId: authUser.templeId,
               status: "PUBLISHED",
               eventDate: { gte: now },
-              visibility: { in: ["PUBLIC", "MEMBERS_ONLY"] },
+              visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
               ...(memberId
                 ? { participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } } }
                 : {}),
@@ -97,7 +97,6 @@ export default async function AppHomePage() {
             where: {
               templeId: { in: allTempleIds },
               publishedAt: { not: null, lte: now },
-              memberId: null,
             },
             orderBy: { publishedAt: "desc" },
             take: 3,

@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import NotesClient from "./NotesClient";
 import { logFeature } from "@/lib/featureLog";
 import {
   ChevronLeft, Pencil, Phone, MapPin, CalendarDays,
-  BookOpen, MessageCircle, CheckCircle2, XCircle,
+  MessageCircle, CheckCircle2, XCircle,
 } from "lucide-react";
 
 export default async function MemberDetailPage({
@@ -29,21 +28,10 @@ export default async function MemberDetailPage({
         orderBy: { createdAt: "desc" },
         take: 10,
       },
-      memberNotes: {
-        include: { author: { select: { name: true } } },
-        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
-      },
     },
   });
 
   if (!member) notFound();
-
-  const serializedNotes = member.memberNotes.map((n) => ({
-    ...n,
-    followupDate: n.followupDate ? n.followupDate.toISOString().slice(0, 10) : null,
-    createdAt: n.createdAt.toISOString(),
-    updatedAt: n.updatedAt.toISOString(),
-  }));
 
   const TAG_COLORS: Record<string, string> = {
     要フォロー: "bg-amber-100 text-amber-800",
@@ -131,14 +119,6 @@ export default async function MemberDetailPage({
                 )}
               </div>
             )}
-          </Card>
-
-          {/* メモ・対応履歴 */}
-          <Card
-            title={`メモ・対応履歴（${member.memberNotes.length}件）`}
-            icon={<BookOpen size={14} className="text-stone-500" />}
-          >
-            <NotesClient memberId={id} initialNotes={serializedNotes} />
           </Card>
 
           {/* イベント参加履歴 */}

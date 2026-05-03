@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushNotification } from "@/lib/push";
-import type { AnnouncementTarget } from "@/generated/prisma/enums";
 
 /**
  * POST /api/push/send — 管理者によるプッシュ通知手動送信
@@ -11,33 +10,21 @@ import type { AnnouncementTarget } from "@/generated/prisma/enums";
  *   title    — 通知タイトル（必須）
  *   body     — 通知本文（必須）
  *   url      — タップ時に開くURL（省略可, default: /app）
- *   segment  — "ALL" | "DANKA" | "GOEN"（デフォルト: "ALL"）
  */
 export async function POST(request: NextRequest) {
   try {
     const authUser = await requireAdmin();
 
-    const { title, body, url, segment } = await request.json();
+    const { title, body, url } = await request.json();
 
     if (!title || !body) {
       return NextResponse.json({ error: "title と body は必須です" }, { status: 400 });
     }
 
-    const seg: AnnouncementTarget =
-      segment === "DANKA" ? "DANKA" : segment === "GOEN" ? "GOEN" : "ALL";
-
-    const memberTypeFilter =
-      seg === "DANKA" ? { type: "DANKA" as const } :
-      seg === "GOEN"  ? { type: "GOEN" as const } :
-      undefined;
-
     const subscriptions = await prisma.pushSubscription.findMany({
       where: {
         templeId: authUser.templeId,
-        user: {
-          pushEnabled: true,
-          ...(memberTypeFilter ? { member: memberTypeFilter } : {}),
-        },
+        user: { pushEnabled: true },
       },
     });
 

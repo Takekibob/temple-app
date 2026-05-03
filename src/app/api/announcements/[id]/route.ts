@@ -15,7 +15,6 @@ export async function GET(
     }
 
     const { id } = await params;
-    const memberType = authUser.member?.type ?? null;
 
     const announcement = await prisma.announcement.findFirst({
       where: {
@@ -27,15 +26,6 @@ export async function GET(
 
     if (!announcement) {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    }
-
-    // セグメントチェック
-    const seg = announcement.targetSegment;
-    if (seg === "DANKA" && memberType !== "DANKA") {
-      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
-    }
-    if (seg === "GOEN" && memberType !== "GOEN") {
-      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
 
     return NextResponse.json({ announcement });
@@ -61,19 +51,13 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, body: content, targetSegment, publish, unpublish } = body;
-
-    const validSegments = ["ALL", "DANKA", "GOEN"];
-    if (targetSegment && !validSegments.includes(targetSegment)) {
-      return NextResponse.json({ error: "不正なセグメント値です" }, { status: 400 });
-    }
+    const { title, body: content, publish, unpublish } = body;
 
     const updated = await prisma.announcement.update({
       where: { id },
       data: {
         ...(title?.trim() && { title: title.trim() }),
         ...(content?.trim() && { body: content.trim() }),
-        ...(targetSegment && { targetSegment }),
         ...(publish && { publishedAt: existing.publishedAt ?? new Date() }),
         ...(unpublish && { publishedAt: null }),
       },

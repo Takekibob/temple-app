@@ -4,25 +4,13 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Bell, Plus, ChevronRight } from "lucide-react";
 
-const SEGMENT_LABELS: Record<string, string> = {
-  ALL: "全員",
-  DANKA: "檀家のみ",
-  GOEN: "ご縁さんのみ",
-};
-
-const SEGMENT_COLORS: Record<string, string> = {
-  ALL: "bg-stone-100 text-stone-600",
-  DANKA: "bg-amber-100 text-amber-800",
-  GOEN: "bg-teal-100 text-teal-800",
-};
-
 export default async function AdminAnnouncementsPage() {
   const authUser = await getAuthUser();
   if (!authUser) redirect("/");
   if (authUser.role === "MEMBER") redirect("/app");
 
   const announcements = await prisma.announcement.findMany({
-    where: { templeId: authUser.templeId, memberId: null },
+    where: { templeId: authUser.templeId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -90,8 +78,8 @@ export default async function AdminAnnouncementsPage() {
                       下書き
                     </span>
                   )}
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEGMENT_COLORS[a.targetSegment]}`}>
-                    {SEGMENT_LABELS[a.targetSegment]}向け
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                    フォロワー全員向け
                   </span>
                 </div>
                 <p className="text-sm font-semibold text-stone-800 truncate">{a.title}</p>

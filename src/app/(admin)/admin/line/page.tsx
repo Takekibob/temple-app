@@ -20,10 +20,8 @@ export default async function LineDashboardPage() {
 
   const MESSAGE_TYPE_LABELS: Record<string, string> = {
     BROADCAST: "一斉配信",
-    SEGMENT: "セグメント配信",
     INDIVIDUAL: "個別配信",
     REMINDER: "リマインダー",
-    THANKYOU: "お礼",
   };
 
   const STATUS_COLORS: Record<string, string> = {

@@ -24,9 +24,7 @@ export default async function LineSettingsPage() {
           id: true,
           lineUserId: true,
           lineNotifyEnabled: true,
-          notifyReservation: true,
           notifyEvent: true,
-          notifyAnniversary: true,
           notifyAnnouncement: true,
           lineCode: true,
           lineCodeExpiresAt: true,
@@ -41,7 +39,7 @@ export default async function LineSettingsPage() {
       <div className="min-h-screen bg-stone-50">
         <BackHeader title="LINE設定" />
         <div className="max-w-lg mx-auto px-4 py-6">
-          <p className="text-sm text-stone-500">会員登録後にご利用いただけます。</p>
+          <p className="text-sm text-stone-500">フォロー後にご利用いただけます。</p>
         </div>
       </div>
     );
@@ -55,9 +53,7 @@ export default async function LineSettingsPage() {
           memberId={user.member.id}
           lineLinked={!!user.member.lineUserId}
           lineNotifyEnabled={user.member.lineNotifyEnabled}
-          notifyReservation={user.member.notifyReservation}
           notifyEvent={user.member.notifyEvent}
-          notifyAnniversary={user.member.notifyAnniversary}
           notifyAnnouncement={user.member.notifyAnnouncement}
           existingCode={user.member.lineCode ?? null}
           codeExpiresAt={user.member.lineCodeExpiresAt?.toISOString() ?? null}

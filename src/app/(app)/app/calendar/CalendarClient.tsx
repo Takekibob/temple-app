@@ -13,73 +13,26 @@ interface CalendarEvent {
   date: string;
   startTime: string;
   endTime: string;
-  visibility: string;
   category: string;
   fee: number;
   type: "event";
-  color: "green" | "blue";
+  color: "green";
 }
-
-interface CalendarReservation {
-  id: string;
-  title: string;
-  date: string;
-  startTime: string;
-  status: string;
-  type: "reservation";
-  color: "purple";
-}
-
-interface CalendarAnnual {
-  id: string;
-  title: string;
-  date: string;
-  description?: string | null;
-  type: "annual";
-  color: "orange";
-}
-
-type CalendarItem = CalendarEvent | CalendarReservation | CalendarAnnual;
 
 interface CalendarData {
   year: number;
   month: number;
   events: CalendarEvent[];
-  reservations: CalendarReservation[];
-  annualEvents: CalendarAnnual[];
 }
 
 interface Props {
   initialData: CalendarData;
-  isDanka: boolean;
 }
 
 // ============================================================
 // Constants
 // ============================================================
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-
-const COLOR_DOT: Record<string, string> = {
-  green: "bg-emerald-500",
-  blue: "bg-sky-500",
-  purple: "bg-violet-500",
-  orange: "bg-orange-400",
-};
-
-const COLOR_BADGE: Record<string, string> = {
-  green: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  blue: "bg-sky-50 text-sky-800 border-sky-200",
-  purple: "bg-violet-50 text-violet-800 border-violet-200",
-  orange: "bg-orange-50 text-orange-800 border-orange-200",
-};
-
-const COLOR_ICON: Record<string, string> = {
-  green: "🌿",
-  blue: "🔷",
-  purple: "🙏",
-  orange: "🏮",
-};
-
 
 // ============================================================
 // Helpers
@@ -97,15 +50,10 @@ function buildGrid(year: number, month: number): (number | null)[][] {
   return weeks;
 }
 
-function getItemStartTime(item: CalendarItem): string {
-  if (item.type === "annual") return "";
-  return item.startTime ?? "";
-}
-
 // ============================================================
 // Component
 // ============================================================
-export default function CalendarClient({ initialData, isDanka }: Props) {
+export default function CalendarClient({ initialData }: Props) {
   const router = useRouter();
   const [data, setData] = useState<CalendarData>(initialData);
   const [, startTransition] = useTransition();
@@ -115,14 +63,8 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
 
-  const allItems: CalendarItem[] = [
-    ...data.events,
-    ...data.reservations,
-    ...data.annualEvents,
-  ];
-
-  const itemsByDate = new Map<string, CalendarItem[]>();
-  for (const item of allItems) {
+  const itemsByDate = new Map<string, CalendarEvent[]>();
+  for (const item of data.events) {
     if (!itemsByDate.has(item.date)) itemsByDate.set(item.date, []);
     itemsByDate.get(item.date)!.push(item);
   }
@@ -174,16 +116,9 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
     setSelectedDate((prev) => (prev === dateStr ? null : dateStr));
   }
 
-  function navigateTo(item: CalendarItem) {
-    if (item.type === "event") router.push(`/app/events/${item.id}`);
-    else if (item.type === "reservation") router.push(`/app/reservations`);
-  }
-
-  const sortedItems = allItems.slice().sort((a, b) => {
-    const da = a.date + getItemStartTime(a);
-    const db = b.date + getItemStartTime(b);
-    return da < db ? -1 : da > db ? 1 : 0;
-  });
+  const sortedEvents = data.events.slice().sort((a, b) =>
+    (a.date + a.startTime) < (b.date + b.startTime) ? -1 : 1
+  );
 
   return (
     <div className="max-w-lg mx-auto select-none">
@@ -198,21 +133,9 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
           <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
           公開イベント
         </span>
-        {isDanka && (
-          <>
-            <span className="flex items-center gap-1 text-xs text-stone-500">
-              <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
-              檀家限定
-            </span>
-            <span className="flex items-center gap-1 text-xs text-stone-500">
-              <span className="w-2 h-2 rounded-full bg-violet-500 inline-block" />
-              法要予約
-            </span>
-          </>
-        )}
         <span className="flex items-center gap-1 text-xs text-stone-500">
-          <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
-          年間行事
+          <span className="w-2 h-2 rounded-full bg-teal-500 inline-block" />
+          フォロワー限定
         </span>
       </div>
 
@@ -303,7 +226,7 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
                         {items.slice(0, 4).map((item, idx) => (
                           <span
                             key={idx}
-                            className={`w-1.5 h-1.5 rounded-full ${COLOR_DOT[item.color]}`}
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-500"
                           />
                         ))}
                       </div>
@@ -346,49 +269,22 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
                 {selectedItems.map((item) => (
                   <li key={item.id}>
                     <button
-                      onClick={() => navigateTo(item)}
-                      disabled={item.type === "annual"}
-                      className={`w-full text-left px-4 py-3 flex items-start gap-3 ${
-                        item.type !== "annual" ? "hover:bg-stone-50 active:bg-stone-100" : ""
-                      }`}
+                      onClick={() => router.push(`/app/events/${item.id}`)}
+                      className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-stone-50 active:bg-stone-100"
                     >
-                      <span className="text-base mt-0.5">{COLOR_ICON[item.color]}</span>
+                      <span className="text-base mt-0.5">🌿</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-stone-800 truncate">{item.title}</p>
                         <div className="flex flex-wrap items-center gap-x-2 mt-0.5">
-                          {item.type !== "annual" && item.startTime && (
-                            <span className="text-xs text-stone-500">{item.startTime}</span>
-                          )}
-                          {item.type === "event" && (
-                            <>
-                              <span className="text-xs text-stone-400">
-                                {getCategoryLabel(item.category)}
-                              </span>
-                              <span className="text-xs text-stone-400">
-                                {item.fee === 0 ? "無料" : `¥${item.fee.toLocaleString()}`}
-                              </span>
-                            </>
-                          )}
-                          {item.type === "reservation" && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                              item.status === "CONFIRMED"
-                                ? "bg-teal-100 text-teal-700"
-                                : "bg-amber-100 text-amber-700"
-                            }`}>
-                              {item.status === "CONFIRMED" ? "確定" : "確認待ち"}
-                            </span>
-                          )}
-                          {item.type === "annual" && item.description && (
-                            <span className="text-xs text-stone-400">{item.description}</span>
-                          )}
+                          <span className="text-xs text-stone-500">{item.startTime}</span>
+                          <span className="text-xs text-stone-400">{getCategoryLabel(item.category)}</span>
+                          <span className="text-xs text-stone-400">
+                            {item.fee === 0 ? "無料" : `¥${item.fee.toLocaleString()}`}
+                          </span>
                         </div>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${COLOR_BADGE[item.color]}`}>
-                        {item.type === "event"
-                          ? item.color === "blue" ? "檀家限定" : "イベント"
-                          : item.type === "reservation"
-                          ? "法要予約"
-                          : "年間行事"}
+                      <span className="text-xs px-2 py-0.5 rounded-full border shrink-0 mt-0.5 bg-emerald-50 text-emerald-800 border-emerald-200">
+                        イベント
                       </span>
                     </button>
                   </li>
@@ -402,7 +298,7 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
       {/* 今月の予定一覧（日付未選択時） */}
       {!selectedDate && (
         <div className="mx-2 mb-4">
-          {allItems.length === 0 ? (
+          {data.events.length === 0 ? (
             <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center">
               <p className="text-stone-400 text-sm">この月の予定はありません</p>
             </div>
@@ -412,38 +308,29 @@ export default function CalendarClient({ initialData, isDanka }: Props) {
                 <p className="text-sm font-semibold text-stone-700">{data.month}月の予定一覧</p>
               </div>
               <ul className="divide-y divide-stone-50">
-                {sortedItems.map((item) => (
+                {sortedEvents.map((item) => (
                   <li key={item.id}>
                     <button
-                      onClick={() => navigateTo(item)}
-                      disabled={item.type === "annual"}
-                      className={`w-full text-left px-4 py-3 flex items-center gap-3 ${
-                        item.type !== "annual" ? "hover:bg-stone-50 active:bg-stone-100" : ""
-                      }`}
+                      onClick={() => router.push(`/app/events/${item.id}`)}
+                      className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-stone-50 active:bg-stone-100"
                     >
-                      <div className={`w-1 self-stretch rounded-full ${COLOR_DOT[item.color]}`} />
+                      <div className="w-1 self-stretch rounded-full bg-emerald-500" />
                       <div className="w-12 shrink-0 text-center">
                         <p className="text-xs font-medium text-stone-500">
                           {new Date(item.date + "T00:00:00").toLocaleDateString("ja-JP", {
                             month: "numeric", day: "numeric",
                           })}
                         </p>
-                        {item.type !== "annual" && item.startTime && (
-                          <p className="text-xs text-stone-400">{item.startTime}</p>
-                        )}
+                        <p className="text-xs text-stone-400">{item.startTime}</p>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-stone-800 truncate">{item.title}</p>
-                        {item.type === "event" && (
-                          <p className="text-xs text-stone-400">
-                            {getCategoryLabel(item.category)}
-                            {item.fee === 0 ? " · 無料" : ` · ¥${item.fee.toLocaleString()}`}
-                          </p>
-                        )}
+                        <p className="text-xs text-stone-400">
+                          {getCategoryLabel(item.category)}
+                          {item.fee === 0 ? " · 無料" : ` · ¥${item.fee.toLocaleString()}`}
+                        </p>
                       </div>
-                      {item.type !== "annual" && (
-                        <span className="text-stone-300 shrink-0">›</span>
-                      )}
+                      <span className="text-stone-300 shrink-0">›</span>
                     </button>
                   </li>
                 ))}

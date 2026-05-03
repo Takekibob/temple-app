@@ -48,17 +48,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 2. 寺院レコードを作成 ──────────────────────────────────────────
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
-
     const temple = await prisma.temple.create({
       data: {
         name: templeName.trim(),
         denomination: denomination?.trim() || null,
         address: address.trim(),
         phone: phone.trim(),
-        planStatus: "TRIAL",
-        trialEndsAt,
       },
     });
 

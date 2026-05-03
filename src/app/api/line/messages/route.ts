@@ -30,15 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "messageType and content are required" }, { status: 400 });
   }
 
-  // 対象メンバーのlineUserIdを取得
-  let memberIds: string[] = targetMemberIds ?? [];
-  if (messageType === "SEGMENT" && targetType) {
-    const members = await prisma.member.findMany({
-      where: { templeId: authUser.templeId, type: targetType, lineUserId: { not: null } },
-      select: { id: true },
-    });
-    memberIds = members.map((m) => m.id);
-  }
+  const memberIds: string[] = targetMemberIds ?? [];
 
   const lineMessage = await prisma.lineMessage.create({
     data: {
@@ -52,8 +44,8 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // 即時送信（scheduledAt未指定かつBROADCAST/SEGMENT/INDIVIDUAL）
-  if (!scheduledAt && ["BROADCAST", "SEGMENT", "INDIVIDUAL"].includes(messageType)) {
+  // 即時送信（scheduledAt未指定かつBROADCAST/INDIVIDUAL）
+  if (!scheduledAt && ["BROADCAST", "INDIVIDUAL"].includes(messageType)) {
     await sendLineMessageNow(lineMessage.id, authUser.templeId, messageType, memberIds, content);
   }
 

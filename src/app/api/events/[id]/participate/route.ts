@@ -29,15 +29,6 @@ export async function POST(
     });
     if (!event) return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
 
-    // Visibility check: DANKA_ONLY は自寺院の檀家のみ
-    if (event.visibility === "DANKA_ONLY") {
-      const isMyTempleDanka =
-        authUser.member.type === "DANKA" && authUser.member.templeId === event.templeId;
-      if (!isMyTempleDanka) {
-        return NextResponse.json({ error: "このイベントは所属寺院の檀家会員のみ申込できます" }, { status: 403 });
-      }
-    }
-
     // Duplicate check
     const existing = await prisma.eventParticipation.findUnique({
       where: { eventId_memberId: { eventId, memberId: authUser.member.id } },

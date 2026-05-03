@@ -18,7 +18,6 @@ import {
   MemberType,
   EventStatus,
   EventVisibility,
-  AnnouncementTarget,
 } from "../src/generated/prisma/enums";
 
 // ============================================================
@@ -218,27 +217,6 @@ async function main() {
 
 ご不明な点はお気軽にお問い合わせください。
 合掌`,
-      targetSegment: AnnouncementTarget.ALL,
-      publishedAt: new Date(),
-    },
-    {
-      id: "pilot-announcement-danka-001",
-      templeId: temple.id,
-      title: "【檀家の方へ】令和8年度 護持会費のご案内",
-      body: `檀家の皆様へ
-
-令和8年度の護持会費の納入時期となりました。
-例年通り3月末日までにお納めいただきますようお願い申し上げます。
-
-・年額：10,000円
-・納入方法：窓口にて現金またはお振込み
-・振込先：〇〇銀行 〇〇支店 普通 1234567 エンショウジ
-
-ご不明な点はお寺までご連絡ください。
-電話：026-000-0000（受付時間 9:00〜17:00）
-
-合掌`,
-      targetSegment: AnnouncementTarget.DANKA,
       publishedAt: new Date(),
     },
   ] as const;
@@ -253,29 +231,7 @@ async function main() {
   }
 
   // ----------------------------------------------------------
-  // 7. 年中行事（参考データ）
-  // ----------------------------------------------------------
-  const annualEvents = [
-    { id: "annual-newyear", templeId: temple.id, name: "元旦会・修正会", month: 1, day: 1 },
-    { id: "annual-setsubun", templeId: temple.id, name: "節分会", month: 2, day: 3 },
-    { id: "annual-hanamatsuri", templeId: temple.id, name: "花まつり（仏誕会）", month: 4, day: 8 },
-    { id: "annual-obon-mukaebe", templeId: temple.id, name: "お盆（迎え火）", month: 8, day: 13 },
-    { id: "annual-obon-okuribo", templeId: temple.id, name: "お盆（送り火）", month: 8, day: 16 },
-    { id: "annual-higan-aki", templeId: temple.id, name: "秋彼岸法要", month: 9, day: 23 },
-    { id: "annual-joya", templeId: temple.id, name: "除夜の鐘", month: 12, day: 31 },
-  ];
-
-  for (const ae of annualEvents) {
-    await prisma.annualEvent.upsert({
-      where: { id: ae.id },
-      update: {},
-      create: ae,
-    });
-  }
-  console.log(`  ✅ Annual events: ${annualEvents.length} records`);
-
-  // ----------------------------------------------------------
-  // 8. 第2デモ寺院（法雲寺）— マルチテンプル検証用
+  // 7. 第2デモ寺院（法雲寺）— マルチテンプル検証用
   // ----------------------------------------------------------
   const temple2 = await prisma.temple.upsert({
     where: { id: "demo-temple-002" },

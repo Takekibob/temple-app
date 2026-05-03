@@ -13,7 +13,6 @@ export default async function NewsDetailPage({
   if (!authUser) redirect("/");
 
   const { id } = await params;
-  const memberType = authUser.member?.type ?? null;
 
   const announcement = await prisma.announcement.findFirst({
     where: {
@@ -24,14 +23,6 @@ export default async function NewsDetailPage({
   });
 
   if (!announcement) notFound();
-
-  if (announcement.memberId) {
-    if (announcement.memberId !== authUser.member?.id) redirect("/app/news");
-  } else {
-    const seg = announcement.targetSegment;
-    if (seg === "DANKA" && memberType !== "DANKA") redirect("/app/news");
-    if (seg === "GOEN" && memberType !== "GOEN") redirect("/app/news");
-  }
 
   return (
     <div className="max-w-lg mx-auto pb-28">

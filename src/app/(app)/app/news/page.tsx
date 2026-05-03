@@ -13,7 +13,6 @@ export default async function NewsPage() {
     where: {
       templeId: authUser.templeId,
       publishedAt: { not: null, lte: new Date() },
-      memberId: null,
       ...(memberId
         ? { reads: { none: { memberId, isDeleted: true } } }
         : {}),

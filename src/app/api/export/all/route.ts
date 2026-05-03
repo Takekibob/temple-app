@@ -12,11 +12,7 @@ export async function POST() {
     const [
       members,
       events,
-      reservations,
-      ofuse,
       announcements,
-      deceased,
-      gojikaiPayments,
       activityLogs,
     ] = await Promise.all([
       prisma.member.findMany({
@@ -27,13 +23,7 @@ export async function POST() {
         where: { templeId },
         include: { participations: true },
       }),
-      prisma.reservation.findMany({ where: { templeId } }),
-      prisma.ofuse.findMany({ where: { templeId } }),
       prisma.announcement.findMany({ where: { templeId } }),
-      prisma.deceasedPerson.findMany({
-        where: { member: { templeId } },
-      }),
-      prisma.gojikaiPayment.findMany({ where: { member: { templeId } } }),
       prisma.activityLog.findMany({
         where: { templeId },
         orderBy: { createdAt: "desc" },
@@ -51,11 +41,7 @@ export async function POST() {
         counts: {
           members: members.length,
           events: events.length,
-          reservations: reservations.length,
-          ofuse: ofuse.length,
           announcements: announcements.length,
-          deceased: deceased.length,
-          gojikaiPayments: gojikaiPayments.length,
           activityLogs: activityLogs.length,
         },
       },
@@ -68,11 +54,7 @@ export async function POST() {
       data: {
         members,
         events,
-        reservations,
-        ofuse,
         announcements,
-        deceased,
-        gojikaiPayments,
         activityLogs,
       },
     });
