@@ -33,7 +33,9 @@
       "Bash(grep -rn \"AnnouncementTarget\\\\|targetSegment.*DANKA\\\\|targetSegment.*GOEN\" /Users/haradatakeki/Developer/temple-app/src/app --include=*.ts --include=*.tsx)",
       "Bash(grep -rn member.templeId /Users/haradatakeki/Developer/temple-app/src/app --include=*.ts --include=*.tsx)",
       "Bash(mkdir -p /Users/haradatakeki/Developer/temple-app/src/app/api/membership-types/[id])",
-      "Bash(mkdir -p /Users/haradatakeki/Developer/temple-app/src/app/api/memberships/[id])"
+      "Bash(mkdir -p /Users/haradatakeki/Developer/temple-app/src/app/api/memberships/[id])",
+      "Read(//dev/**)",
+      "Bash(ls /Users/haradatakeki/Developer/temple-app/src/app/\\\\\\(admin\\\\\\)/admin/memberships/)"
     ],
     "additionalDirectories": [
       "/Users/haradatakeki/Developer/temple-app/src/app/(admin)/admin/announcements/[id]",
