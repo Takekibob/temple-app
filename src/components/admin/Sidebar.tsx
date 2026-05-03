@@ -5,11 +5,9 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { logout } from "@/app/auth/actions";
 import {
-  LayoutDashboard, Users, FilePen,
-  Coins, BarChart3, Calendar,
-  Bell, PenLine, CalendarRange, MessageCircle,
-  BadgeJapaneseYen, Layers,
-  Settings, UserCog, Ticket, CreditCard,
+  LayoutDashboard, Users, Calendar,
+  Bell, MessageCircle,
+  Settings, UserCog,
   ChevronRight, Eye, LogOut, Menu, X,
 } from "lucide-react";
 
@@ -20,9 +18,6 @@ interface NavItem {
   adminOnly?: boolean;
   excludePrefix?: string;
   activePrefix?: string;
-  badgeKey?: "changeRequests";
-  premiumOnly?: boolean; // TRIAL / ACTIVE が必要な機能
-  membershipOnly?: boolean; // membershipEnabled === true のときのみ表示
 }
 
 interface NavSection {
@@ -34,9 +29,6 @@ interface SidebarProps {
   templeName: string;
   userName: string;
   isAdmin: boolean;
-  planStatus?: string;
-  pendingChangeRequests?: number;
-  membershipEnabled?: boolean;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -44,59 +36,35 @@ const NAV_SECTIONS: NavSection[] = [
     items: [{ icon: LayoutDashboard, label: "ダッシュボード", href: "/admin" }],
   },
   {
-    title: "会員・法要",
+    title: "会員",
     items: [
-      { icon: Users, label: "会員一覧", href: "/admin/members", excludePrefix: "/admin/memberships" },
-      { icon: Layers, label: "関わり方の設計", href: "/admin/memberships", adminOnly: true, membershipOnly: true },
-      { icon: FilePen, label: "情報変更の申請", href: "/admin/change-requests", badgeKey: "changeRequests" as const },
-      // 法要予約・過去帳は Step3 (DANKA移行) 完了後に復活予定
+      { icon: Users, label: "メンバー一覧", href: "/admin/members" },
     ],
   },
   {
-    title: "イベント・行事",
+    title: "イベント・お知らせ",
     items: [
-      { icon: Calendar, label: "イベント一覧", href: "/admin/events", excludePrefix: "/admin/events/analytics", premiumOnly: true },
-      { icon: CalendarRange, label: "年間行事", href: "/admin/annual-events", premiumOnly: true },
-    ],
-  },
-  {
-    title: "お知らせ・発信",
-    items: [
+      { icon: Calendar, label: "イベント一覧", href: "/admin/events" },
       { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
-      { icon: PenLine, label: "ブログ", href: "/admin/blog", premiumOnly: true },
-      { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true, premiumOnly: true },
-    ],
-  },
-  {
-    title: "お金の管理",
-    items: [
-      { icon: Coins, label: "お布施", href: "/admin/ofuse", premiumOnly: true },
-      // 護持会費は Step3 (DANKA移行) 完了後に復活予定
-      { icon: BarChart3, label: "お布施会計", href: "/admin/reports", premiumOnly: true },
-      { icon: BadgeJapaneseYen, label: "収益ダッシュボード", href: "/admin/revenue", adminOnly: true, premiumOnly: true },
+      { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },
   {
     title: "設定",
     items: [
       { icon: Settings, label: "お寺の設定", href: "/admin/settings", adminOnly: true },
-      { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true, premiumOnly: true },
-      { icon: Ticket, label: "会員プラン", href: "/admin/plans", adminOnly: true, premiumOnly: true },
-      { icon: CreditCard, label: "お支払い", href: "/admin/billing", adminOnly: true },
+      { icon: UserCog, label: "スタッフ管理", href: "/admin/staff", adminOnly: true },
     ],
   },
 ];
 
-export default function Sidebar({ templeName, userName, isAdmin, planStatus, pendingChangeRequests = 0, membershipEnabled = false }: SidebarProps) {
+export default function Sidebar({ templeName, userName, isAdmin }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const visibleSections = NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) =>
-      (!item.adminOnly || isAdmin) &&
-      (!item.membershipOnly || membershipEnabled)
-    ),
+    items: section.items.filter((item) => !item.adminOnly || isAdmin),
   })).filter((section) => section.items.length > 0);
 
   const isActive = (item: NavItem) => {
@@ -214,16 +182,6 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
                       >
                         <Icon size={14} strokeWidth={1.8} className={active ? "text-amber-700" : "text-stone-400"} />
                         <span className="flex-1 text-[13px]">{item.label}</span>
-                        {item.badgeKey === "changeRequests" && pendingChangeRequests > 0 && (
-                          <span className="bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">
-                            {pendingChangeRequests > 9 ? "9+" : pendingChangeRequests}
-                          </span>
-                        )}
-                        {item.premiumOnly && planStatus !== "TRIAL" && planStatus !== "ACTIVE" && planStatus !== "PAST_DUE" && (
-                          <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full leading-none">
-                            PRO
-                          </span>
-                        )}
                       </Link>
                     );
                   })}
@@ -233,31 +191,6 @@ export default function Sidebar({ templeName, userName, isAdmin, planStatus, pen
           );
         })}
       </nav>
-
-      {/* プランステータス */}
-      {planStatus && planStatus !== "ACTIVE" && (
-        <div className="px-3 pb-2">
-          <Link
-            href="/admin/billing"
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border w-full ${
-              planStatus === "TRIAL"
-                ? "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100"
-                : planStatus === "PAST_DUE"
-                ? "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100"
-                : "text-red-700 bg-red-50 border-red-200 hover:bg-red-100"
-            }`}
-          >
-            <CreditCard size={12} />
-            <span>
-              {planStatus === "TRIAL" && "トライアル中"}
-              {planStatus === "PAST_DUE" && "支払い遅延"}
-              {planStatus === "CANCELLED" && "解約済み"}
-              {planStatus === "SUSPENDED" && "停止中"}
-            </span>
-          </Link>
-        </div>
-      )}
 
       {/* ユーザー情報 */}
       <div className="px-3 py-3 border-t border-stone-100">

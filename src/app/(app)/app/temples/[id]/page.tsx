@@ -3,17 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import SubscribeButton from "@/app/(app)/app/subscriptions/SubscribeButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
-import { PLAN_TEMPLATES } from "@/lib/planTemplates";
-import { MapPin, Phone, Globe, CalendarDays, Ticket, Home, ChevronLeft, ChevronRight, Users, Gift, Stamp, Youtube, Instagram, MessageCircle } from "lucide-react";
+import { MapPin, Phone, Globe, CalendarDays, Home, ChevronLeft, ChevronRight, Users, Stamp, Youtube, Instagram, MessageCircle } from "lucide-react";
 import FollowButton from "./FollowButton";
-
-const INTERVAL_LABELS: Record<string, string> = {
-  MONTHLY: "月額",
-  YEARLY: "年額",
-  ONE_TIME: "一回払い",
-};
 
 export default async function TempleProfilePage({
   params,
@@ -71,17 +63,6 @@ export default async function TempleProfilePage({
       }))
     : false;
 
-  const [templePlans, subscribedPlanIds] = await Promise.all([
-    prisma.membershipPlan.findMany({
-      where: { templeId: id, isActive: true, templateKey: { in: PLAN_TEMPLATES.map((t) => t.key) } },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    }),
-    memberId
-      ? prisma.memberSubscription
-          .findMany({ where: { memberId, templeId: id, status: "ACTIVE" }, select: { planId: true } })
-          .then((subs) => subs.map((s) => s.planId))
-      : Promise.resolve([] as string[]),
-  ]);
 
   return (
     <div className="max-w-lg mx-auto pb-28">
@@ -231,55 +212,6 @@ export default async function TempleProfilePage({
           )}
         </div>
 
-        {/* 会員プラン */}
-        {templePlans.length > 0 && (
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2 px-1">
-              <Ticket size={14} className="text-emerald-600" />
-              <h2 className="text-sm font-bold text-stone-700">会員プラン</h2>
-            </div>
-            {templePlans.map((plan) => {
-              const isSubscribed = subscribedPlanIds.includes(plan.id);
-              return (
-                <div
-                  key={plan.id}
-                  className={`bg-white rounded-2xl border shadow-sm p-4 ${
-                    isSubscribed ? "border-emerald-300" : "border-stone-100"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <p className="font-bold text-stone-800">{plan.name}</p>
-                    {isSubscribed && (
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                        加入中
-                      </span>
-                    )}
-                  </div>
-                  {plan.description && (
-                    <p className="text-xs text-stone-500 mb-3">{plan.description}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="font-bold text-stone-800">
-                      ¥{plan.price.toLocaleString()}
-                      <span className="text-xs font-normal text-stone-400 ml-1">
-                        / {INTERVAL_LABELS[plan.interval]}
-                      </span>
-                    </p>
-                    {!isSubscribed && memberId && (
-                      <SubscribeButton planId={plan.id} />
-                    )}
-                    {!isSubscribed && !memberId && (
-                      <Link href="/auth/login" className="text-xs text-amber-700 font-semibold hover:underline">
-                        ログインして加入する →
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
         {/* アクションボタン */}
         <div className="space-y-3">
           {memberId && (
@@ -289,15 +221,6 @@ export default async function TempleProfilePage({
             >
               <Stamp size={16} />
               参拝を記録する
-            </Link>
-          )}
-          {temple.stripeConnectOnboarded && memberId && (
-            <Link
-              href={`/app/donations/new?templeId=${id}`}
-              className="flex items-center justify-center gap-2 w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-3.5 rounded-2xl shadow-sm transition-colors"
-            >
-              <Gift size={16} />
-              {temple.name}に寄付する
             </Link>
           )}
           {memberId && !isMyTemple && (
