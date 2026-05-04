@@ -14,15 +14,9 @@ export type LogAction =
 export type LogTargetType =
   | "member"
   | "event"
-  | "reservation"
-  | "ofuse"
   | "settings"
-  | "gojikai"
   | "announcement"
-  | "deceased"
-  | "staff"
-  | "donation"
-  | "subscription";
+  | "staff";
 
 export interface LogOptions {
   templeId: string;
@@ -71,13 +65,7 @@ export const ACTION_LABELS: Record<LogAction, string> = {
 export const TARGET_LABELS: Record<LogTargetType, string> = {
   member: "会員",
   event: "イベント",
-  reservation: "法要予約",
-  ofuse: "お布施",
   settings: "設定",
-  gojikai: "護持会費",
   announcement: "お知らせ",
-  deceased: "過去帳",
   staff: "スタッフ",
-  donation: "寄付",
-  subscription: "サブスク",
 };

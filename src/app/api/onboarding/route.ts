@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, MemberType } from "@/generated/prisma/enums";
-import { validatePhone } from "@/lib/memberValidation";
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -15,49 +14,22 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { memberType, name, familyName, address, phone, interestTags, templeId: selectedTempleId } = body as {
-    memberType: string;
+  const { name, interestTags, templeId: selectedTempleId } = body as {
     name: string;
-    familyName?: string;
-    address?: string;
-    phone?: string;
     interestTags?: string[];
     templeId?: string;
   };
 
-  if (!memberType || !name?.trim()) {
+  if (!name?.trim()) {
     return NextResponse.json({ error: "必須項目を入力してください" }, { status: 400 });
-  }
-  if (memberType === "DANKA" && (!familyName?.trim() || !address?.trim() || !phone?.trim())) {
-    return NextResponse.json({ error: "檀家登録には家名・住所・電話番号が必要です" }, { status: 400 });
-  }
-  if (phone) {
-    const phoneErr = validatePhone(phone);
-    if (phoneErr) return NextResponse.json({ error: phoneErr }, { status: 400 });
-  }
-  if (memberType === "DANKA" && !selectedTempleId) {
-    return NextResponse.json({ error: "所属するお寺を選択してください" }, { status: 400 });
   }
 
   try {
-    // Userレコードにはデフォルト寺院（最初の寺院）を設定
-    const defaultTemple = await prisma.temple.findFirst({ where: { isActive: true } });
-    if (!defaultTemple) {
-      return NextResponse.json({ error: "寺院情報が見つかりません" }, { status: 500 });
-    }
+    const type = MemberType.GOEN;
 
-    // 檀家の場合は指定された寺院を検証
-    let memberTempleId: string | null = null;
-    if (memberType === "DANKA" && selectedTempleId) {
-      const selectedTemple = await prisma.temple.findFirst({
-        where: { id: selectedTempleId, isActive: true },
-      });
-      if (!selectedTemple) {
-        return NextResponse.json({ error: "指定されたお寺が見つかりません" }, { status: 400 });
-      }
-      memberTempleId = selectedTempleId;
-    }
-    // ご縁さんは templeId = null
+    const memberTempleId = selectedTempleId
+      ? (await prisma.temple.findFirst({ where: { id: selectedTempleId, isActive: true } }))?.id ?? null
+      : null;
 
     // DBユーザーを取得 or 作成
     let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
@@ -70,6 +42,12 @@ export async function POST(request: NextRequest) {
         provider === "apple"  ? AuthProvider.APPLE  :
         provider === "line"   ? AuthProvider.LINE   :
         AuthProvider.EMAIL;
+
+      // Userレコードにはデフォルト寺院（最初の寺院）を設定
+      const defaultTemple = await prisma.temple.findFirst({ where: { isActive: true } });
+      if (!defaultTemple) {
+        return NextResponse.json({ error: "寺院情報が見つかりません" }, { status: 500 });
+      }
 
       dbUser = await prisma.user.create({
         data: {
@@ -93,29 +71,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const type = memberType === "DANKA" ? MemberType.DANKA : MemberType.GOEN;
-
-    // 既にmembersレコードがある場合はtypeが異なれば更新
+    // 既にmembersレコードがある場合はスキップ
     const existing = await prisma.member.findUnique({ where: { userId: dbUser.id } });
     if (existing) {
-      if (existing.type !== type) {
-        await prisma.member.update({ where: { id: existing.id }, data: { type } });
-      }
       return NextResponse.json({ ok: true });
     }
 
     await prisma.member.create({
       data: {
-        templeId: memberTempleId,  // 檀家: 選択寺院, ご縁さん: null
+        templeId: memberTempleId,
         userId: dbUser.id,
         type,
-        familyName: type === MemberType.DANKA ? familyName!.trim() : (familyName?.trim() || name.trim()),
-        address: type === MemberType.DANKA ? address!.trim() : undefined,
-        phone: type === MemberType.DANKA ? phone!.trim() : undefined,
-        interestTags:
-          type === MemberType.GOEN && Array.isArray(interestTags) && interestTags.length > 0
-            ? interestTags
-            : undefined,
+        familyName: name.trim(),
+        interestTags: Array.isArray(interestTags) && interestTags.length > 0 ? interestTags : undefined,
       },
     });
 

@@ -112,18 +112,6 @@ export default async function AdminEventAnalyticsPage({
     count,
   }));
 
-  // ── 会員種別 ──
-  const memberTypeMap: Record<string, number> = { DANKA: 0, GOEN: 0 };
-  for (const p of participations) {
-    if (p.status === "CANCELLED") continue;
-    const t = p.member.type as string;
-    memberTypeMap[t] = (memberTypeMap[t] ?? 0) + 1;
-  }
-  const memberTypeBreakdown = [
-    { type: "DANKA", label: "檀家", count: memberTypeMap.DANKA },
-    { type: "GOEN", label: "ご縁さん", count: memberTypeMap.GOEN },
-  ];
-
   // ── フィードバック一覧（最大20件）──
   const feedbackList = feedbacks
     .slice()
@@ -159,7 +147,6 @@ export default async function AdminEventAnalyticsPage({
     statusCounts,
     dailyTrend,
     referralBreakdown,
-    memberTypeBreakdown,
     scoreDistribution,
     feedbackList,
     shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/app/events/${event.id}`,

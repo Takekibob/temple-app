@@ -9,15 +9,9 @@ import { ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 const SCREEN_LABELS: Partial<Record<LogTargetType, string>> = {
   member:       "会員管理",
   event:        "イベント管理",
-  reservation:  "法要予約管理",
-  ofuse:        "お布施管理",
   settings:     "設定",
-  gojikai:      "護持会費管理",
   announcement: "お知らせ管理",
-  deceased:     "過去帳管理",
   staff:        "スタッフ管理",
-  donation:     "寄付管理",
-  subscription: "会員プラン管理",
 };
 
 type AnyLog = {

@@ -83,17 +83,6 @@ export async function GET(
       count,
     }));
 
-    // Member type breakdown
-    const memberTypeMap: Record<string, number> = { DANKA: 0, GOEN: 0 };
-    for (const p of participations) {
-      const t = p.member.type;
-      memberTypeMap[t] = (memberTypeMap[t] ?? 0) + 1;
-    }
-    const memberTypeBreakdown = [
-      { type: "DANKA", label: "檀家", count: memberTypeMap.DANKA },
-      { type: "GOEN", label: "ご縁さん", count: memberTypeMap.GOEN },
-    ];
-
     // Feedback list
     const feedbackList = participations
       .filter((p) => p.feedbackScore != null)
@@ -119,7 +108,6 @@ export async function GET(
       },
       dailyTrend,
       referralBreakdown,
-      memberTypeBreakdown,
       feedbackList,
     });
   } catch {

@@ -25,8 +25,8 @@ interface MonthlyKpis {
   prevAttended: number;
   currentAvgRate: number | null;
   prevAvgRate: number | null;
-  newGoenCount: number;
-  prevNewGoenCount: number;
+  newFollowerCount: number;
+  prevNewFollowerCount: number;
 }
 
 interface PerformanceEvent {
@@ -113,10 +113,10 @@ export default function EventAnalyticsClient({
           }
         />
         <KpiCard
-          label="新規ご縁さん獲得"
-          value={`${monthlyKpis.newGoenCount}名`}
+          label="新規フォロワー獲得"
+          value={`${monthlyKpis.newFollowerCount}名`}
           badge={
-            <MoMBadge current={monthlyKpis.newGoenCount} prev={monthlyKpis.prevNewGoenCount} />
+            <MoMBadge current={monthlyKpis.newFollowerCount} prev={monthlyKpis.prevNewFollowerCount} />
           }
         />
       </div>
@@ -318,10 +318,10 @@ export default function EventAnalyticsClient({
         )}
       </div>
 
-      {/* ── 新規ご縁さん獲得チャネル ── */}
+      {/* ── 新規フォロワー獲得チャネル ── */}
       <div className="bg-white rounded-xl border border-stone-200 p-5">
-        <h2 className="font-semibold text-stone-800 mb-1">新規ご縁さん 獲得チャネル</h2>
-        <p className="text-xs text-stone-400 mb-4">直近12ヶ月の登録会員（ご縁さん）の流入元</p>
+        <h2 className="font-semibold text-stone-800 mb-1">新規フォロワー 獲得チャネル</h2>
+        <p className="text-xs text-stone-400 mb-4">直近12ヶ月の新規フォロワーの流入元</p>
         {acquisitionData.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">まだデータがありません</p>
         ) : (

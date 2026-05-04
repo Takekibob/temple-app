@@ -9,9 +9,6 @@ type Step = { delayDays: number; message: string };
 const TRIGGER_LABELS: Record<string, string> = {
   LINE_REGISTER: "LINE登録時",
   FIRST_EVENT_ATTEND: "イベント初参加時",
-  STAGE_CHANGE_PROSPECT: "見込みステージ遷移時",
-  STAGE_CHANGE_CANDIDATE: "檀家候補ステージ遷移時",
-  DONATION_FIRST: "初回寄付時",
 };
 
 export default function EditSequencePage() {
@@ -104,7 +101,7 @@ export default function EditSequencePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            placeholder="ご縁さん育成シーケンス"
+            placeholder="フォロワー育成シーケンス"
           />
         </div>
 

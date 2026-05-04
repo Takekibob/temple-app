@@ -15,9 +15,6 @@ type Sequence = {
 const TRIGGER_LABELS: Record<string, string> = {
   FIRST_EVENT_ATTEND: "イベント初参加",
   LINE_REGISTER: "LINE登録",
-  STAGE_CHANGE_PROSPECT: "見込みステージ遷移",
-  STAGE_CHANGE_CANDIDATE: "檀家候補ステージ遷移",
-  DONATION_FIRST: "初回寄付",
 };
 
 export default function SequencesPage() {

@@ -36,7 +36,7 @@ export async function GET() {
       ID: m.id,
       氏名: m.user.name,
       メールアドレス: m.user.email,
-      種別: m.type === "DANKA" ? "檀家" : "ご縁さん",
+      種別: "フォロワー",
       家族名: m.familyName,
       住所: m.address ?? "",
       郵便番号: m.postalCode ?? "",

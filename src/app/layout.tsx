@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     default: "てらログ",
     template: "%s | てらログ",
   },
-  description: "お寺DX管理アプリ - 法要予約・会員管理・イベント参加をデジタル化。檀家・ご縁さんの絆をつなぐお寺専用アプリ。",
+  description: "お寺DX管理アプリ — イベント・フォロー・お知らせ・寺院プロフィールの4機能に特化したお寺専用アプリ。",
   metadataBase: new URL(siteUrl),
   manifest: "/manifest.json",
   appleWebApp: {
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "てらログ",
     title: "てらログ - お寺DX管理アプリ",
-    description: "法要予約・会員管理・イベント参加をデジタル化。檀家・ご縁さんの絆をつなぐお寺専用アプリ。",
+    description: "お寺DX管理アプリ — イベント・フォロー・お知らせ・寺院プロフィールの4機能に特化したお寺専用アプリ。",
     images: [
       {
         url: "/opengraph-image",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "てらログ - お寺DX管理アプリ",
-    description: "法要予約・会員管理・イベント参加をデジタル化。檀家・ご縁さんの絆をつなぐお寺専用アプリ。",
+    description: "お寺DX管理アプリ — イベント・フォロー・お知らせ・寺院プロフィールの4機能に特化したお寺専用アプリ。",
     images: ["/opengraph-image"],
   },
   robots: {

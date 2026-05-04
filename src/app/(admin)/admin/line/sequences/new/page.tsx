@@ -57,7 +57,7 @@ export default function NewSequencePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm"
-            placeholder="ご縁さん育成シーケンス"
+            placeholder="フォロワー育成シーケンス"
           />
         </div>
 
@@ -70,9 +70,6 @@ export default function NewSequencePage() {
           >
             <option value="LINE_REGISTER">LINE登録時</option>
             <option value="FIRST_EVENT_ATTEND">イベント初参加時</option>
-            <option value="STAGE_CHANGE_PROSPECT">見込みステージ遷移時</option>
-            <option value="STAGE_CHANGE_CANDIDATE">檀家候補ステージ遷移時</option>
-            <option value="DONATION_FIRST">初回寄付時</option>
           </select>
         </div>
 

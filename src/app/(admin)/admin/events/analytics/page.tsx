@@ -80,14 +80,12 @@ export default async function EventAnalyticsPage() {
   const currentAvgRate = avgRate(currentMonthEvents);
   const prevAvgRate = avgRate(prevMonthEvents);
 
-  // KPI 4: 新規ご縁さん獲得数（今月登録のGOENで今月イベントに申込あり）
   const currentMonthEventIds = currentMonthEvents.map((e) => e.id);
-  const [newGoenCount, prevNewGoenCount] = await Promise.all([
+  const [newFollowerCount, prevNewFollowerCount] = await Promise.all([
     currentMonthEventIds.length > 0
       ? prisma.member.count({
           where: {
             templeId: authUser.templeId,
-            type: "GOEN",
             createdAt: { gte: currentMonthStart },
             eventParticipations: {
               some: { eventId: { in: currentMonthEventIds }, status: { not: "CANCELLED" } },
@@ -101,7 +99,6 @@ export default async function EventAnalyticsPage() {
         ? prisma.member.count({
             where: {
               templeId: authUser.templeId,
-              type: "GOEN",
               createdAt: { gte: prevMonthStart, lt: currentMonthStart },
               eventParticipations: {
                 some: { eventId: { in: prevIds }, status: { not: "CANCELLED" } },
@@ -183,11 +180,10 @@ export default async function EventAnalyticsPage() {
     };
   });
 
-  // ── 新規ご縁さん獲得チャネル（直近12ヶ月）────
+  // ── 新規フォロワー獲得チャネル（直近12ヶ月）────
   const recentGoenMembers = await prisma.member.findMany({
     where: {
       templeId: authUser.templeId,
-      type: "GOEN",
       createdAt: { gte: oneYearAgo },
     },
     select: { referralSource: true },
@@ -210,8 +206,8 @@ export default async function EventAnalyticsPage() {
         prevAttended: prevMonthAttended,
         currentAvgRate,
         prevAvgRate,
-        newGoenCount,
-        prevNewGoenCount,
+        newFollowerCount,
+        prevNewFollowerCount,
       }}
       monthlyTrend={monthlyTrend}
       categoryRanking={categoryRanking}

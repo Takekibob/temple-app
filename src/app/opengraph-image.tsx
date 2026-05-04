@@ -59,7 +59,7 @@ export default function OgImage() {
             marginTop: "48px",
           }}
         >
-          {["法要予約", "会員管理", "イベント参加"].map((label) => (
+          {["イベント管理", "フォロー", "お知らせ"].map((label) => (
             <div
               key={label}
               style={{

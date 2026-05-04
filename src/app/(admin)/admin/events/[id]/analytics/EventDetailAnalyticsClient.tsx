@@ -6,14 +6,10 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -46,13 +42,10 @@ interface AnalyticsData {
   };
   dailyTrend: { date: string; count: number }[];
   referralBreakdown: { source: string; label: string; count: number }[];
-  memberTypeBreakdown: { type: string; label: string; count: number }[];
   scoreDistribution: { star: number; count: number }[];
   feedbackList: { name: string; score: number; comment: string | null }[];
   shareUrl: string;
 }
-
-const PIE_COLORS = ["#92400e", "#d97706", "#fbbf24", "#fde68a"];
 
 export default function EventDetailAnalyticsClient({ data }: { data: AnalyticsData }) {
   const {
@@ -61,7 +54,6 @@ export default function EventDetailAnalyticsClient({ data }: { data: AnalyticsDa
     statusCounts,
     dailyTrend,
     referralBreakdown,
-    memberTypeBreakdown,
     scoreDistribution,
     feedbackList,
     shareUrl,
@@ -212,54 +204,23 @@ export default function EventDetailAnalyticsClient({ data }: { data: AnalyticsDa
         )}
       </section>
 
-      {/* ── 流入経路 + 会員種別 ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <section className="bg-white rounded-xl border border-stone-200 p-4">
-          <h2 className="text-sm font-semibold text-stone-700 mb-3">流入経路</h2>
-          {referralBreakdown.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-6">まだデータがありません</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={referralBreakdown} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-                <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={72} />
-                <Tooltip formatter={(v) => [`${v}名`, "人数"]} />
-                <Bar dataKey="count" fill="#b45309" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </section>
-
-        <section className="bg-white rounded-xl border border-stone-200 p-4">
-          <h2 className="text-sm font-semibold text-stone-700 mb-3">会員種別</h2>
-          {memberTypeBreakdown.every((m) => m.count === 0) ? (
-            <p className="text-sm text-stone-400 text-center py-6">まだデータがありません</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={memberTypeBreakdown}
-                  dataKey="count"
-                  nameKey="label"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={65}
-                  label={({ name, percent }: { name?: string; percent?: number }) =>
-                    `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`
-                  }
-                >
-                  {memberTypeBreakdown.map((_entry, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => [`${v}名`]} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </section>
-      </div>
+      {/* ── 流入経路 ── */}
+      <section className="bg-white rounded-xl border border-stone-200 p-4">
+        <h2 className="text-sm font-semibold text-stone-700 mb-3">流入経路</h2>
+        {referralBreakdown.length === 0 ? (
+          <p className="text-sm text-stone-400 text-center py-6">まだデータがありません</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={referralBreakdown} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+              <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={72} />
+              <Tooltip formatter={(v) => [`${v}名`, "人数"]} />
+              <Bar dataKey="count" fill="#b45309" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </section>
 
       {/* ── フィードバック集計 ── */}
       <section className="bg-white rounded-xl border border-stone-200 p-4">

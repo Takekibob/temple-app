@@ -48,7 +48,6 @@ export async function GET() {
       開催日: p.event.eventDate.toISOString().slice(0, 10),
       参加者氏名: p.member.user.name,
       メールアドレス: p.member.user.email,
-      会員種別: p.member.type === "DANKA" ? "檀家" : "ご縁さん",
       参加人数: p.numGuests,
       ステータス: STATUS_LABELS[p.status] ?? p.status,
       評価スコア: p.feedbackScore ?? "",
