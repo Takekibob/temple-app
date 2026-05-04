@@ -171,6 +171,9 @@ model Member {
   favoriteTemples     MemberFavoriteTemple[]
   announcementReads   AnnouncementRead[]
   templeVisits        TempleVisit[]
+  eventPhotos         EventPhoto[]
+  eventReflections    EventReflection[]
+  reflectionThanks    EventReflectionThanks[]
 
   @@map("members")
 }
@@ -227,6 +230,7 @@ model Event {
   location    String?
   capacity    Int?            // NULL = 無制限
   fee         Int             @default(0)
+  priceMode   PriceMode       @default(FREE)
   imageUrl    String?
   shareUrl    String?
   status      EventStatus     @default(DRAFT)
@@ -235,6 +239,8 @@ model Event {
 
   temple         Temple               @relation(fields: [templeId], references: [id])
   participations EventParticipation[]
+  photos         EventPhoto[]
+  reflections    EventReflection[]
 
   @@map("events")
 }
@@ -244,6 +250,14 @@ enum EventType {
   BOOKING // 予約型（個別日程）
 
   @@map("event_type")
+}
+
+enum PriceMode {
+  FREE       // 無料
+  VOLUNTARY  // お気持ち（任意）
+  FIXED      // 金額を指定
+
+  @@map("price_mode")
 }
 
 enum EventStatus {
@@ -484,4 +498,59 @@ model FeatureLog {
   @@index([feature])
   @@index([createdAt])
   @@map("feature_logs")
+}
+
+// ==========================================
+// イベント写真
+// ==========================================
+model EventPhoto {
+  id        String   @id @default(cuid())
+  eventId   String
+  memberId  String
+  url       String
+  caption   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  event      Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy Member @relation(fields: [memberId], references: [id])
+
+  @@index([eventId])
+  @@index([memberId])
+  @@map("event_photos")
+}
+
+// ==========================================
+// イベント振り返り
+// ==========================================
+model EventReflection {
+  id        String   @id @default(cuid())
+  eventId   String
+  memberId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  event  Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member Member                  @relation(fields: [memberId], references: [id])
+  thanks EventReflectionThanks[]
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@map("event_reflections")
+}
+
+// ==========================================
+// 振り返りへのありがとう
+// ==========================================
+model EventReflectionThanks {
+  id           String   @id @default(cuid())
+  reflectionId String
+  memberId     String
+  createdAt    DateTime @default(now())
+
+  reflection EventReflection @relation(fields: [reflectionId], references: [id], onDelete: Cascade)
+  member     Member          @relation(fields: [memberId], references: [id])
+
+  @@unique([reflectionId, memberId])
+  @@index([reflectionId])
+  @@map("event_reflection_thanks")
 }
