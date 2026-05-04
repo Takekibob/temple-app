@@ -19,7 +19,6 @@ interface EventData {
   location?: string;
   capacity?: number | null;
   fee?: number;
-  visibility?: string;
   eventType?: string;
   imageUrl?: string;
   status?: string;
@@ -31,11 +30,6 @@ interface Props {
   customCategories?: string[];
   stripeConnectOnboarded?: boolean;
 }
-
-const VISIBILITIES = [
-  { value: "PUBLIC", label: "公開（誰でも）" },
-  { value: "FOLLOWERS_ONLY", label: "フォロワー限定" },
-];
 
 const EVENT_TYPES = [
   { value: "GROUP", label: "グループ参加（参加者リスト表示）" },
@@ -113,7 +107,6 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
       location: form.get("location"),
       capacity: form.get("capacity") || null,
       fee: form.get("fee"),
-      visibility: form.get("visibility"),
       eventType: form.get("eventType"),
       imageUrl: imageUrl || null,
       status: publishStatus ?? (isEdit ? undefined : "DRAFT"),
@@ -186,43 +179,28 @@ export default function EventFormClient({ initialData, isEdit, customCategories 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-stone-700">カテゴリ <span className="text-red-500">*</span></Label>
-              <select
-                id="category"
-                name="category"
-                defaultValue={initialData?.category ?? "ZAZEN"}
-                required
-                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              >
-                <optgroup label="標準カテゴリ">
-                  {STANDARD_CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
+          <div className="space-y-1.5">
+            <Label htmlFor="category" className="text-stone-700">カテゴリ <span className="text-red-500">*</span></Label>
+            <select
+              id="category"
+              name="category"
+              defaultValue={initialData?.category ?? "ZAZEN"}
+              required
+              className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <optgroup label="標準カテゴリ">
+                {STANDARD_CATEGORY_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </optgroup>
+              {customCategories.length > 0 && (
+                <optgroup label="カスタムカテゴリ">
+                  {customCategories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </optgroup>
-                {customCategories.length > 0 && (
-                  <optgroup label="カスタムカテゴリ">
-                    {customCategories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="visibility" className="text-stone-700">公開範囲 <span className="text-red-500">*</span></Label>
-              <select
-                id="visibility"
-                name="visibility"
-                defaultValue={initialData?.visibility ?? "PUBLIC"}
-                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              >
-                {VISIBILITIES.map((v) => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
-                ))}
-              </select>
-            </div>
+              )}
+            </select>
           </div>
 
           <div className="space-y-1.5">

@@ -13,17 +13,25 @@ export default async function AppLayout({
     authUser != null &&
     ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
-  // 未読お知らせ数を取得
+  // 未読お知らせ数を取得（フォロー中の寺院 + 所属寺院）
   let unreadNewsCount = 0;
   if (authUser?.member) {
     const memberId = authUser.member.id;
-    unreadNewsCount = await prisma.announcement.count({
-      where: {
-        templeId: authUser.templeId,
-        publishedAt: { not: null, lte: new Date() },
-        reads: { none: { memberId } },
-      },
-    });
+    const followedTempleIds = await prisma.memberFavoriteTemple
+      .findMany({ where: { memberId }, select: { templeId: true } })
+      .then((favs) => favs.map((f) => f.templeId));
+    const allTempleIds = Array.from(
+      new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
+    );
+    if (allTempleIds.length > 0) {
+      unreadNewsCount = await prisma.announcement.count({
+        where: {
+          templeId: { in: allTempleIds },
+          publishedAt: { not: null, lte: new Date() },
+          reads: { none: { memberId } },
+        },
+      });
+    }
   }
 
   return (

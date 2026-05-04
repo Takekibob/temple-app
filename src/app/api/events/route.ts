@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const VALID_VISIBILITIES = ["PUBLIC", "FOLLOWERS_ONLY"] as const;
-
 export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth();
@@ -16,13 +14,8 @@ export async function GET(request: NextRequest) {
 
     const isAdmin = ["ADMIN", "SUPER_ADMIN", "STAFF"].includes(authUser.role);
 
-    const visibilityFilter = isAdmin
-      ? undefined
-      : { visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] as const } };
-
     const where: Record<string, unknown> = {
       templeId: authUser.templeId,
-      ...(visibilityFilter ?? {}),
       ...(!isAdmin ? { status: "PUBLISHED" } : {}),
       ...(category ? { category } : {}),
     };
@@ -66,11 +59,22 @@ export async function GET(request: NextRequest) {
       participationMap = Object.fromEntries(myParts.map((p) => [p.eventId, p.status]));
     }
 
+    // フォロー中の寺院IDを取得してフラグ付与
+    let followedTempleIds = new Set<string>();
+    if (authUser.member) {
+      const favs = await prisma.memberFavoriteTemple.findMany({
+        where: { memberId: authUser.member.id },
+        select: { templeId: true },
+      });
+      followedTempleIds = new Set(favs.map((f) => f.templeId));
+    }
+
     const eventsWithStatus = events.map((e) => ({
       ...e,
       myParticipationStatus: participationMap[e.id] ?? null,
       participantCount: e._count.participations,
       isFull: e.capacity != null && e._count.participations >= e.capacity,
+      isFromFollowedTemple: followedTempleIds.has(e.templeId),
     }));
 
     return NextResponse.json({ events: eventsWithStatus, total, page, pageSize: PAGE_SIZE });
@@ -100,7 +104,6 @@ export async function POST(request: NextRequest) {
       location,
       capacity,
       fee = 0,
-      visibility = "PUBLIC",
       eventType = "GROUP",
       imageUrl,
       status = "DRAFT",
@@ -109,9 +112,6 @@ export async function POST(request: NextRequest) {
     if (!title || !category || !eventDate || !startTime || !endTime) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
     }
-
-    // visibility は PUBLIC / FOLLOWERS_ONLY のみ受け付ける
-    const safeVisibility = VALID_VISIBILITIES.includes(visibility) ? visibility : "PUBLIC";
 
     // 有料イベント × Stripe Connect 未完了 チェック
     const parsedFee = parseInt(fee) || 0;
@@ -143,7 +143,6 @@ export async function POST(request: NextRequest) {
         location: location || null,
         capacity: capacity ? parseInt(capacity) : null,
         fee: parsedFee,
-        visibility: safeVisibility,
         imageUrl: imageUrl || null,
         status,
       },

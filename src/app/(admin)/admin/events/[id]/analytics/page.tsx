@@ -26,7 +26,6 @@ export default async function AdminEventAnalyticsPage({
       capacity: true,
       category: true,
       fee: true,
-      visibility: true,
       status: true,
     },
   });

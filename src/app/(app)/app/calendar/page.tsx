@@ -19,7 +19,6 @@ export default async function CalendarPage() {
       templeId: authUser.templeId,
       status: "PUBLISHED",
       eventDate: { gte: monthStart, lt: monthEnd },
-      visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
     },
     select: {
       id: true, title: true, eventDate: true, startTime: true, endTime: true,

@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
         templeId: authUser.templeId,
         status: "PUBLISHED",
         eventDate: { gte: monthStart, lt: monthEnd },
-        visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
       },
       select: {
         id: true,

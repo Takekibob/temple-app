@@ -32,7 +32,6 @@ export async function GET(
     where: {
       templeId: id,
       status: "PUBLISHED",
-      visibility: "PUBLIC",
       eventDate: { gte: new Date(new Date().toDateString()) },
     },
     select: {

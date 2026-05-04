@@ -227,7 +227,6 @@ model Event {
   location    String?
   capacity    Int?            // NULL = 無制限
   fee         Int             @default(0)
-  visibility  EventVisibility @default(PUBLIC)
   imageUrl    String?
   shareUrl    String?
   status      EventStatus     @default(DRAFT)
@@ -245,18 +244,6 @@ enum EventType {
   BOOKING // 予約型（個別日程）
 
   @@map("event_type")
-}
-
-enum EventVisibility {
-  PUBLIC         // 誰でも
-  FOLLOWERS_ONLY // フォロワー限定
-  // @deprecated — 後方互換性のため残存（DBのRLSポリシーが依存）。新規コードでは使用しないこと
-  MEMBERS_ONLY        // @deprecated
-  MEMBERSHIP_REQUIRED // @deprecated
-  SUBSCRIBERS_ONLY    // @deprecated
-  DANKA_ONLY          // @deprecated
-
-  @@map("event_visibility")
 }
 
 enum EventStatus {

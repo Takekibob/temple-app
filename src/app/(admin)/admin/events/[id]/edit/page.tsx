@@ -41,7 +41,6 @@ export default async function AdminEventEditPage({
         location: event.location ?? "",
         capacity: event.capacity,
         fee: event.fee,
-        visibility: event.visibility,
         imageUrl: event.imageUrl ?? "",
         status: event.status,
       }}

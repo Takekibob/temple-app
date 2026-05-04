@@ -42,7 +42,6 @@ export default async function TempleProfilePage({
     where: {
       templeId: id,
       status: "PUBLISHED",
-      visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
       eventDate: { gte: new Date(new Date().toDateString()) },
     },
     select: {

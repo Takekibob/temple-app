@@ -81,7 +81,6 @@ export async function PATCH(
       location,
       capacity,
       fee,
-      visibility,
       imageUrl,
       status,
     } = body;
@@ -98,7 +97,6 @@ export async function PATCH(
         ...(location !== undefined ? { location: location || null } : {}),
         ...(capacity !== undefined ? { capacity: capacity ? parseInt(capacity) : null } : {}),
         ...(fee !== undefined ? { fee: parseInt(fee) || 0 } : {}),
-        ...(visibility !== undefined ? { visibility } : {}),
         ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
         ...(status !== undefined ? { status } : {}),
       },

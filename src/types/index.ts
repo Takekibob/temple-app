@@ -14,9 +14,6 @@ export type EventCategory =
   | "seasonal"
   | "other";
 
-// イベント公開範囲 (v2)
-export type EventVisibility = "public" | "followers_only";
-
 // APIエラーレスポンス
 export type ApiError = {
   error: {

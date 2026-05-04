@@ -5,7 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { getCategoryLabel, getCategoryIcon, STANDARD_CATEGORY_KEYS } from "@/lib/eventCategories";
-import { MapPin, Clock, Users, CheckCircle, Heart, Lock } from "lucide-react";
+import { MapPin, Clock, Users, CheckCircle, Heart } from "lucide-react";
 import { Suspense } from "react";
 import SearchBar from "@/components/app/SearchBar";
 
@@ -27,7 +27,6 @@ function EventCard({
 }) {
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
   const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
-  const isFollowersOnly = (event.visibility as string) === "FOLLOWERS_ONLY";
 
   return (
     <Link
@@ -41,11 +40,6 @@ function EventCard({
             <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
               {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
             </span>
-            {isFollowersOnly && (
-              <span className="bg-rose-600/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-                <Lock size={9} />フォロワー限定
-              </span>
-            )}
           </div>
         </div>
       )}
@@ -56,11 +50,6 @@ function EventCard({
             <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full">
               {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
             </span>
-            {isFollowersOnly && (
-              <span className="text-xs text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
-                <Lock size={9} />フォロワー限定
-              </span>
-            )}
           </div>
         )}
 
@@ -166,22 +155,19 @@ export default async function AppEventsPage({
     favoriteTempleIds = favs.map((f) => f.templeId);
   }
 
-  // フォロワーにはフォロー中寺院の FOLLOWERS_ONLY も表示
-  const publicVisibility: Prisma.EventWhereInput["visibility"] = { in: ["PUBLIC", "FOLLOWERS_ONLY"] };
-
   let favoriteEvents: EventRow[] = [];
   let otherEvents: EventRow[] = [];
 
   if (favoriteTempleIds.length > 0) {
     [favoriteEvents, otherEvents] = await Promise.all([
       prisma.event.findMany({
-        where: { ...baseWhere, templeId: { in: favoriteTempleIds }, visibility: publicVisibility },
+        where: { ...baseWhere, templeId: { in: favoriteTempleIds } },
         include: INCLUDE,
         orderBy: { eventDate: "asc" },
         take: 20,
       }),
       prisma.event.findMany({
-        where: { ...baseWhere, templeId: { notIn: favoriteTempleIds }, visibility: publicVisibility },
+        where: { ...baseWhere, templeId: { notIn: favoriteTempleIds } },
         include: INCLUDE,
         orderBy: { eventDate: "asc" },
         take: 20,
@@ -189,7 +175,7 @@ export default async function AppEventsPage({
     ]);
   } else {
     otherEvents = await prisma.event.findMany({
-      where: { ...baseWhere, visibility: publicVisibility },
+      where: baseWhere,
       include: INCLUDE,
       orderBy: { eventDate: "asc" },
       take: 40,

@@ -17,7 +17,6 @@ import {
   Role,
   MemberType,
   EventStatus,
-  EventVisibility,
 } from "../src/generated/prisma/enums";
 
 // ============================================================
@@ -153,7 +152,7 @@ async function main() {
       location: "本堂",
       capacity: 20,
       fee: 1000,
-      visibility: EventVisibility.PUBLIC,
+      
       status: EventStatus.PUBLISHED,
     },
     {
@@ -169,7 +168,7 @@ async function main() {
       location: "客殿",
       capacity: 15,
       fee: 800,
-      visibility: EventVisibility.PUBLIC,
+      
       status: EventStatus.PUBLISHED,
     },
     {
@@ -185,7 +184,7 @@ async function main() {
       location: "境内",
       capacity: null,
       fee: 0,
-      visibility: EventVisibility.PUBLIC,
+      
       status: EventStatus.PUBLISHED,
     },
   ] as const;
@@ -305,7 +304,7 @@ async function main() {
       location: "禅堂",
       capacity: 10,
       fee: 500,
-      visibility: EventVisibility.PUBLIC,
+      
       status: EventStatus.PUBLISHED,
     },
   });

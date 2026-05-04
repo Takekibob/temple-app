@@ -159,12 +159,19 @@ export default function NearbyTemplesClient({
     });
   }
 
-  // クライアント側フィルタ（tab / prefecture）
-  const filtered = sorted.filter((t) => {
-    if (tab === "following" && !favorites.has(t.id)) return false;
-    if (prefecture && !(t.address ?? "").includes(prefecture)) return false;
-    return true;
-  });
+  // クライアント側フィルタ（tab / prefecture）+ 「すべて」タブではフォロー寺院を先頭に
+  const filtered = sorted
+    .filter((t) => {
+      if (tab === "following" && !favorites.has(t.id)) return false;
+      if (prefecture && !(t.address ?? "").includes(prefecture)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (tab !== "all") return 0;
+      const aFav = favorites.has(a.id) ? 0 : 1;
+      const bFav = favorites.has(b.id) ? 0 : 1;
+      return aFav - bFav;
+    });
 
   const followingCount = favorites.size;
   const hasActiveFilter = !!denomination || !!prefecture;

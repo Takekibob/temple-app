@@ -64,7 +64,6 @@ export default async function AppHomePage() {
               templeId: { in: followedTempleIds },
               status: "PUBLISHED",
               eventDate: { gte: now },
-              visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
               participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } },
             },
             select: {
@@ -82,7 +81,6 @@ export default async function AppHomePage() {
               templeId: authUser.templeId,
               status: "PUBLISHED",
               eventDate: { gte: now },
-              visibility: { in: ["PUBLIC", "FOLLOWERS_ONLY"] },
               ...(memberId
                 ? { participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } } }
                 : {}),

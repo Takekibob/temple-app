@@ -5,7 +5,7 @@ import { logActivity } from "@/lib/activityLog";
 import { sendPushNotification } from "@/lib/push";
 import { sendLineNotification } from "@/lib/line";
 
-// GET /api/announcements — 会員向け: ブロードキャストお知らせ一覧
+// GET /api/announcements — 会員向け: フォロー寺院 + 所属寺院のお知らせ一覧（フォロー寺院優先）
 export async function GET() {
   try {
     const authUser = await getAuthUser();
@@ -14,9 +14,25 @@ export async function GET() {
     }
 
     const memberId = authUser.member?.id ?? null;
+
+    // フォロー中の寺院ID取得
+    const followedTempleIds: string[] = memberId
+      ? await prisma.memberFavoriteTemple
+          .findMany({ where: { memberId }, select: { templeId: true } })
+          .then((favs) => favs.map((f) => f.templeId))
+      : [];
+
+    const allTempleIds = Array.from(
+      new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
+    );
+
+    if (allTempleIds.length === 0) {
+      return NextResponse.json({ announcements: [], memberId });
+    }
+
     const announcements = await prisma.announcement.findMany({
       where: {
-        templeId: authUser.templeId,
+        templeId: { in: allTempleIds },
         publishedAt: { not: null, lte: new Date() },
       },
       orderBy: { publishedAt: "desc" },
@@ -25,10 +41,19 @@ export async function GET() {
         title: true,
         publishedAt: true,
         createdAt: true,
+        templeId: true,
       },
     });
 
-    return NextResponse.json({ announcements, memberId });
+    // フォロー寺院のお知らせを先頭に
+    const followedSet = new Set(followedTempleIds);
+    const sorted = [...announcements].sort((a, b) => {
+      const aP = followedSet.has(a.templeId) ? 0 : 1;
+      const bP = followedSet.has(b.templeId) ? 0 : 1;
+      return aP - bP;
+    });
+
+    return NextResponse.json({ announcements: sorted, memberId });
   } catch {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
