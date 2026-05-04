@@ -55,6 +55,7 @@ model Temple {
   lineMessages      LineMessage[]
   templeVisits      TempleVisit[]
 
+  @@index([latitude, longitude])
   @@map("temples")
 }
 

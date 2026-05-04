@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import NearbyTemplesClient from "./NearbyTemplesClient";
@@ -73,11 +74,25 @@ export default async function TemplesPage({
 
   return (
     <div className="max-w-lg mx-auto pb-28">
-      <div className="px-5 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お寺を探す</h1>
-        <p className="text-xs text-stone-400 mt-0.5">
-          フォローするとイベントやお知らせが届きます
-        </p>
+      <div className="px-5 pt-6 pb-4 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お寺を探す</h1>
+          <p className="text-xs text-stone-400 mt-0.5">
+            フォローするとイベントやお知らせが届きます
+          </p>
+        </div>
+        {/* リスト/地図 切替 */}
+        <div className="flex items-center gap-0 mb-1">
+          <span className="px-4 py-1.5 font-serif text-[12px] font-light text-ink border-[0.5px] border-ink tracking-section bg-paper-soft">
+            リスト
+          </span>
+          <Link
+            href="/app/temples/map"
+            className="px-4 py-1.5 font-serif text-[12px] font-light text-ink-tertiary border-[0.5px] border-border tracking-section"
+          >
+            地 図
+          </Link>
+        </div>
       </div>
 
       <div className="px-4">
