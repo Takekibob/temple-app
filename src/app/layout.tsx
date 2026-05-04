@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_JP } from "next/font/google";
+import { Noto_Serif_JP, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+
+const notoSerifJP = Noto_Serif_JP({
+  variable: "--font-serif-jp",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  display: "swap",
+});
 
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://teralog.app";
@@ -68,8 +75,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${notoSansJP.variable} h-full`}>
-      <body className="min-h-full flex flex-col font-sans antialiased">
+    <html lang="ja" className={`${notoSerifJP.variable} ${notoSansJP.variable} h-full`}>
+      <body className="min-h-full flex flex-col antialiased">
         {children}
       </body>
     </html>

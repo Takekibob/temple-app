@@ -46,6 +46,19 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* てらログ カスタムトークン */
+  --color-ink: var(--color-text-primary);
+  --color-ink-secondary: var(--color-text-secondary);
+  --color-ink-tertiary: var(--color-text-tertiary);
+  --color-paper: var(--color-base);
+  --color-paper-cream: var(--color-base-cream);
+  --color-paper-soft: var(--color-surface-soft);
+  --color-border-thin: var(--border-thin);
+  --font-serif: var(--font-serif-jp);
+  --letter-spacing-section: var(--tracking-section);
+  --letter-spacing-section-wide: var(--tracking-section-wide);
+  --letter-spacing-button: var(--tracking-button);
 }
 
 :root {
@@ -64,23 +77,35 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: #E5E5E5;
+  --input: #E5E5E5;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-border: #E5E5E5;
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* てらログ デザイントークン */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-base: #FFFFFF;
+  --color-base-cream: #FAFAF9;
+  --color-surface-soft: #F5F5F2;
+  --border-thin: #F0F0F0;
+  --tracking-section: 0.3em;
+  --tracking-section-wide: 0.5em;
+  --tracking-button: 0.4em;
 }
 
 .dark {
@@ -123,8 +148,19 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-serif);
+    line-height: 2;
   }
   html {
     @apply font-sans;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+  .font-numeric {
+    font-family: var(--font-sans);
   }
 }
