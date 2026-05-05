@@ -41,7 +41,7 @@ export default async function AppHomePage() {
     new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
   );
 
-  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples] =
+  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples, latestPosts] =
     await Promise.all([
       memberId
         ? prisma.eventParticipation.findMany({
@@ -110,6 +110,18 @@ export default async function AppHomePage() {
             },
             take: 4,
             select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
+          })
+        : Promise.resolve([]),
+
+      allTempleIds.length > 0
+        ? prisma.templePost.findMany({
+            where: { templeId: { in: allTempleIds } },
+            include: {
+              photos: { orderBy: { order: "asc" }, take: 1 },
+              temple: { select: { id: true, name: true, logoUrl: true } },
+            },
+            orderBy: { publishedAt: "desc" },
+            take: 3,
           })
         : Promise.resolve([]),
     ]);
@@ -310,6 +322,41 @@ export default async function AppHomePage() {
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {/* お寺の声 */}
+        {latestPosts.length > 0 && (
+          <section>
+            <SectionHeader title="お寺の声" moreHref="/app/posts" moreLabel="すべて見る" />
+            <div className="space-y-2">
+              {latestPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/app/posts/${post.id}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                >
+                  {post.photos[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.photos[0].url} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-stone-50 rounded-lg flex items-center justify-center shrink-0">
+                      <span className="text-stone-300 text-lg">—</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-stone-400 mb-0.5">{post.temple.name}</p>
+                    <p className="text-sm font-medium text-stone-800 truncate">
+                      {post.title ?? post.body.slice(0, 30) + (post.body.length > 30 ? "…" : "")}
+                    </p>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {post.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                </Link>
+              ))}
+            </div>
           </section>
         )}
 

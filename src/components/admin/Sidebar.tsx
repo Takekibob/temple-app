@@ -46,6 +46,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: Calendar, label: "イベント一覧", href: "/admin/events" },
       { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
+      { icon: Eye, label: "お寺の声", href: "/admin/posts" },
       { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },

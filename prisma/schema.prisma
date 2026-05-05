@@ -54,6 +54,7 @@ model Temple {
   activityLogs      ActivityLog[]
   lineMessages      LineMessage[]
   templeVisits      TempleVisit[]
+  posts             TemplePost[]
 
   @@index([latitude, longitude])
   @@map("temples")
@@ -89,6 +90,7 @@ model User {
   pushSubscriptions PushSubscription[]
   activityLogs      ActivityLog[]
   proxyMembers      Member[]           @relation("ProxyMembers")
+  authoredPosts     TemplePost[]
 
   @@map("users")
 }
@@ -554,4 +556,40 @@ model EventReflectionThanks {
   @@unique([reflectionId, memberId])
   @@index([reflectionId])
   @@map("event_reflection_thanks")
+}
+
+// ==========================================
+// お寺の声（TemplePost）
+// ==========================================
+model TemplePost {
+  id          String   @id @default(cuid())
+  templeId    String
+  authorId    String
+  title       String?
+  body        String   @db.Text
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  temple  Temple           @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  author  User             @relation(fields: [authorId], references: [id])
+  photos  TemplePostPhoto[]
+
+  @@index([templeId, publishedAt(sort: Desc)])
+  @@index([publishedAt(sort: Desc)])
+  @@map("temple_posts")
+}
+
+model TemplePostPhoto {
+  id        String   @id @default(cuid())
+  postId    String
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post TemplePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("temple_post_photos")
 }
