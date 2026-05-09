@@ -141,8 +141,8 @@ export default function NotificationsClient({
         <div className="bg-white rounded-2xl border border-stone-100 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-stone-700">プッシュ通知</p>
-              <p className="text-xs text-stone-400 mt-0.5">ブラウザへのリアルタイム通知</p>
+              <p className="font-serif text-sm font-semibold text-stone-700">プッシュ通知</p>
+              <p className="font-serif text-xs text-stone-400 mt-0.5">ブラウザへのリアルタイム通知</p>
             </div>
             <button
               type="button"
@@ -181,8 +181,8 @@ function ToggleRow({
   return (
     <div className="flex items-center justify-between px-5 py-3.5">
       <div>
-        <p className="text-sm font-semibold text-stone-700">{label}</p>
-        <p className="text-xs text-stone-400 mt-0.5">{description}</p>
+        <p className="font-serif text-sm font-semibold text-stone-700">{label}</p>
+        <p className="font-serif text-xs text-stone-400 mt-0.5">{description}</p>
       </div>
       <button
         type="button"

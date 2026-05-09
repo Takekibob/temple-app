@@ -129,7 +129,7 @@ export default function LineSettingsClient({
       <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Smartphone size={16} className="text-[#06C755]" />
-          <p className="text-sm font-semibold text-stone-700">LINE連携</p>
+          <p className="font-serif text-sm font-semibold text-stone-700">LINE連携</p>
           {lineLinked ? (
             <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">連携済み</span>
           ) : (
@@ -139,7 +139,7 @@ export default function LineSettingsClient({
 
         {!lineLinked && (
           <div className="space-y-3 pt-1">
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="font-serif text-xs text-stone-500 leading-relaxed">
               LINEを連携すると予約確認・法事のリマインドなどをLINEで受け取れます。
             </p>
 
@@ -196,13 +196,13 @@ export default function LineSettingsClient({
       {/* 通知設定（LINE連携済みの場合のみ） */}
       {lineLinked && (
         <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
-          <p className="text-sm font-semibold text-stone-700">LINE通知設定</p>
+          <p className="font-serif text-sm font-semibold text-stone-700">LINE通知設定</p>
 
           {/* LINE通知マスタートグル */}
           <div className="flex items-center justify-between pb-3 border-b border-stone-100">
             <div>
-              <p className="text-sm text-stone-700">LINE通知を受け取る</p>
-              <p className="text-xs text-stone-400 mt-0.5">OFFにするとすべてのLINE通知が停止します</p>
+              <p className="font-serif text-sm text-stone-700">LINE通知を受け取る</p>
+              <p className="font-serif text-xs text-stone-400 mt-0.5">OFFにするとすべてのLINE通知が停止します</p>
             </div>
             <button
               type="button"
@@ -222,7 +222,7 @@ export default function LineSettingsClient({
           <div className={`space-y-3 ${!notify.lineNotifyEnabled ? "opacity-40 pointer-events-none" : ""}`}>
             {NOTIFY_ITEMS.map(({ key, label }) => (
               <div key={key} className="flex items-center justify-between">
-                <p className="text-sm text-stone-700">{label}</p>
+                <p className="font-serif text-sm text-stone-700">{label}</p>
                 <button
                   type="button"
                   role="switch"

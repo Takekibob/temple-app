@@ -24,7 +24,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
     <div className="min-h-screen bg-stone-50">
       {/* ヘッダー */}
       <header className="bg-white border-b border-stone-100 px-5 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-stone-800">マイページ</h1>
+        <h1 className="font-serif text-lg font-bold text-stone-800">マイページ</h1>
         <button
           onClick={() => startLogoutTransition(async () => { await logout(); })}
           disabled={isLogoutPending}
@@ -50,8 +50,8 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-stone-800 text-base">{user.name}</p>
-                <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
+                <p className="font-serif font-bold text-stone-800 text-base">{user.name}</p>
+                <p className="font-serif text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
               </div>
               <Link href="/app/mypage/profile"
                 className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl border border-stone-200 text-stone-400 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-all">
@@ -73,8 +73,8 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm">LINEと連携しよう</p>
-              <p className="text-white/80 text-xs mt-0.5">イベントのお知らせをLINEで受け取れます</p>
+              <p className="font-serif text-white font-bold text-sm">LINEと連携しよう</p>
+              <p className="font-serif text-white/80 text-xs mt-0.5">イベントのお知らせをLINEで受け取れます</p>
             </div>
             <div className="shrink-0 bg-white text-[#06C755] text-xs font-bold px-3 py-1.5 rounded-full">
               連携する
@@ -118,7 +118,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-      <p className="text-[10px] font-bold text-stone-400 px-4 pt-3.5 pb-1.5 uppercase tracking-widest">
+      <p className="font-serif text-[10px] font-bold text-stone-400 px-4 pt-3.5 pb-1.5 uppercase tracking-widest">
         {title}
       </p>
       <div className="divide-y divide-stone-50">{children}</div>
@@ -140,7 +140,7 @@ function NavItem({
       href={href}
       className="flex items-center justify-between px-4 py-3 hover:bg-stone-50 transition-colors"
     >
-      <span className="flex items-center gap-3 text-sm text-stone-700">
+      <span className="flex items-center gap-3 font-serif text-sm text-stone-700">
         <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconColor}`}>
           <Icon size={15} strokeWidth={1.8} />
         </span>
