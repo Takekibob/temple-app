@@ -62,7 +62,7 @@ export default async function PostDetailPage({
       </div>
 
       {/* 寺院ヘッダー */}
-      <div className="px-6 pb-5 flex items-center gap-3" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="px-6 pb-5 flex items-center gap-3" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <Link href={`/app/temples/${post.temple.id}`}>
           <TempleAvatar name={post.temple.name} imageUrl={post.temple.logoUrl ?? undefined} size="md" />
         </Link>

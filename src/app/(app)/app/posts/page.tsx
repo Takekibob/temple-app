@@ -43,7 +43,7 @@ export default async function AppPostsPage() {
 
   return (
     <div className="max-w-lg mx-auto pb-28">
-      <div className="px-6 pt-6 pb-4" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="px-6 pt-6 pb-4" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <h1 className="font-serif text-xl text-ink font-light">お寺の声</h1>
         <p className="font-serif text-[11px] text-ink-tertiary tracking-section mt-1">
           フォロー中のお寺からの日常
