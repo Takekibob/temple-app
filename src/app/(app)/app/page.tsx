@@ -1,30 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import { getArticleCategoryLabel } from "@/lib/articleCategories";
-import {
-  CalendarRange, BookOpen, Heart,
-  Bell, MapPin, ChevronRight, Clock,
-  Compass, Stamp, PenLine,
-} from "lucide-react";
+import { Bell, BookOpen, ChevronRight, PenLine } from "lucide-react";
 
-type QuickItem = {
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-  label: string;
-  href: string;
-  color: string;
-};
-
-const QUICK_ITEMS: QuickItem[] = [
-  { icon: BookOpen,      label: "イベント",   href: "/app/events",         color: "bg-sky-50 text-sky-600" },
-  { icon: CalendarRange, label: "カレンダー", href: "/app/calendar",       color: "bg-violet-50 text-violet-600" },
-  { icon: Bell,          label: "お知らせ",   href: "/app/news",           color: "bg-orange-50 text-orange-600" },
-  { icon: Compass,       label: "お寺を探す", href: "/app/temples",        color: "bg-emerald-50 text-emerald-600" },
-  { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",  color: "bg-teal-50 text-teal-600" },
-  { icon: PenLine,       label: "学びの日記", href: "/app/journal",        color: "bg-stone-50 text-stone-500" },
-];
+const SUB_MESSAGES = [
+  "今日も一日、丁寧に。",
+  "呼吸を整えて、はじめましょう。",
+  "いまここに、ありますか。",
+  "小さな気づきを、大切に。",
+  "ご縁に感謝して。",
+] as const;
 
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
@@ -32,6 +21,11 @@ export default async function AppHomePage() {
 
   const memberId = authUser.member?.id;
   const now = new Date();
+
+  const dayOfYear = Math.floor(
+    (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000
+  );
+  const subMessage = SUB_MESSAGES[dayOfYear % SUB_MESSAGES.length];
 
   const followedTempleIds: string[] = memberId
     ? await prisma.memberFavoriteTemple
@@ -43,386 +37,329 @@ export default async function AppHomePage() {
     new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
   );
 
-  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples, latestPosts, latestArticles] =
-    await Promise.all([
-      memberId
-        ? prisma.eventParticipation.findMany({
-            where: {
-              memberId,
-              status: { in: ["APPLIED", "CONFIRMED"] },
-              event: { eventDate: { gte: now } },
+  const [
+    upcomingParticipations,
+    followedEvents,
+    followedTemples,
+    discoveryTemples,
+    latestPosts,
+    latestArticles,
+    unreadNewsCount,
+  ] = await Promise.all([
+    // 参加予定のイベント (up to 3)
+    memberId
+      ? prisma.eventParticipation.findMany({
+          where: {
+            memberId,
+            status: { in: ["APPLIED", "CONFIRMED"] },
+            event: { eventDate: { gte: now } },
+          },
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                eventDate: true,
+                startTime: true,
+                category: true,
+                temple: { select: { name: true } },
+              },
             },
-            include: {
-              event: { select: { id: true, title: true, eventDate: true, startTime: true, category: true } },
-            },
-            orderBy: { event: { eventDate: "asc" } },
-            take: 3,
-          })
-        : Promise.resolve([]),
+          },
+          orderBy: { event: { eventDate: "asc" } },
+          take: 3,
+        })
+      : Promise.resolve([]),
 
-      followedTempleIds.length > 0 && memberId
-        ? prisma.event.findMany({
-            where: {
-              templeId: { in: followedTempleIds },
-              status: "PUBLISHED",
-              eventDate: { gte: now },
-              participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } },
-            },
-            select: {
-              id: true, title: true, eventDate: true, startTime: true, category: true, fee: true,
-              temple: { select: { name: true } },
-            },
-            orderBy: { eventDate: "asc" },
-            take: 5,
-          })
-        : Promise.resolve([]),
+    // フォロー中のお寺の未参加イベント (up to 3)
+    followedTempleIds.length > 0 && memberId
+      ? prisma.event.findMany({
+          where: {
+            templeId: { in: followedTempleIds },
+            status: "PUBLISHED",
+            eventDate: { gte: now },
+            participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } },
+          },
+          select: {
+            id: true,
+            title: true,
+            eventDate: true,
+            startTime: true,
+            category: true,
+            fee: true,
+            temple: { select: { name: true } },
+          },
+          orderBy: { eventDate: "asc" },
+          take: 3,
+        })
+      : prisma.event.findMany({
+          where: { status: "PUBLISHED", eventDate: { gte: now } },
+          select: {
+            id: true,
+            title: true,
+            eventDate: true,
+            startTime: true,
+            category: true,
+            fee: true,
+            temple: { select: { name: true } },
+          },
+          orderBy: { eventDate: "asc" },
+          take: 3,
+        }),
 
-      authUser.templeId
-        ? prisma.event.findMany({
-            where: {
-              templeId: authUser.templeId,
-              status: "PUBLISHED",
-              eventDate: { gte: now },
-              ...(memberId
-                ? { participations: { none: { memberId, status: { notIn: ["CANCELLED"] } } } }
-                : {}),
-            },
-            orderBy: { eventDate: "asc" },
-            take: 3,
-          })
-        : Promise.resolve([]),
+    // フォロー中のお寺 (up to 3)
+    followedTempleIds.length > 0
+      ? prisma.temple.findMany({
+          where: { id: { in: followedTempleIds }, isActive: true },
+          select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
+          take: 3,
+        })
+      : Promise.resolve([]),
 
-      allTempleIds.length > 0
-        ? prisma.announcement.findMany({
-            where: {
-              templeId: { in: allTempleIds },
-              publishedAt: { not: null, lte: now },
-            },
-            orderBy: { publishedAt: "desc" },
-            take: 3,
-            select: { id: true, title: true, publishedAt: true },
-          })
-        : Promise.resolve([]),
+    // 発見用お寺 (when no follows)
+    followedTempleIds.length === 0
+      ? prisma.temple.findMany({
+          where: { isActive: true },
+          take: 3,
+          select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
+        })
+      : Promise.resolve([]),
 
-      followedTempleIds.length === 0
-        ? prisma.temple.findMany({
-            where: {
-              isActive: true,
-              ...(authUser.templeId ? { id: { not: authUser.templeId } } : {}),
-            },
-            take: 4,
-            select: { id: true, name: true, denomination: true, logoUrl: true, address: true },
-          })
-        : Promise.resolve([]),
+    // お寺の声 (up to 3)
+    allTempleIds.length > 0
+      ? prisma.templePost.findMany({
+          where: { templeId: { in: allTempleIds } },
+          include: {
+            photos: { orderBy: { order: "asc" }, take: 1 },
+            temple: { select: { id: true, name: true } },
+          },
+          orderBy: { publishedAt: "desc" },
+          take: 3,
+        })
+      : Promise.resolve([]),
 
-      allTempleIds.length > 0
-        ? prisma.templePost.findMany({
-            where: { templeId: { in: allTempleIds } },
-            include: {
-              photos: { orderBy: { order: "asc" }, take: 1 },
-              temple: { select: { id: true, name: true, logoUrl: true } },
-            },
-            orderBy: { publishedAt: "desc" },
-            take: 3,
-          })
-        : Promise.resolve([]),
+    // 学びの記事 (up to 3)
+    prisma.article.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        slug: true,
+        title: true,
+        excerpt: true,
+        category: true,
+        coverImage: true,
+        publishedAt: true,
+      },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+    }),
 
-      prisma.article.findMany({
-        where: { status: "PUBLISHED" },
-        select: {
-          slug: true, title: true, excerpt: true, category: true,
-          coverImage: true, publishedAt: true,
-        },
-        orderBy: { publishedAt: "desc" },
-        take: 3,
-      }),
-    ]);
+    // 未読お知らせ数
+    memberId && allTempleIds.length > 0
+      ? prisma.announcement.count({
+          where: {
+            templeId: { in: allTempleIds },
+            publishedAt: { not: null, lte: now },
+            reads: { none: { memberId } },
+          },
+        })
+      : Promise.resolve(0),
+  ]);
 
-  const displayName = authUser.name;
+  // 集いセクション: 参加予定 > フォロー中未参加 > 全体
+  const eventsToShow =
+    upcomingParticipations.length > 0
+      ? upcomingParticipations.map((p) => ({
+          id: p.event.id,
+          title: p.event.title,
+          eventDate: p.event.eventDate,
+          startTime: p.event.startTime,
+          category: p.event.category,
+          templeName: p.event.temple?.name ?? "",
+          isParticipating: true,
+          fee: 0,
+        }))
+      : followedEvents.map((e) => ({
+          id: e.id,
+          title: e.title,
+          eventDate: e.eventDate,
+          startTime: e.startTime,
+          category: e.category,
+          templeName: e.temple.name,
+          isParticipating: false,
+          fee: e.fee,
+        }));
+
+  const displayTemples = followedTemples.length > 0 ? followedTemples : discoveryTemples;
+  const DAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
   return (
-    <div className="pb-28 max-w-lg mx-auto">
+    <div className="pb-32 max-w-lg mx-auto">
       {/* ヘッダー */}
-      <div className="px-5 pt-6 pb-5">
-        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">
-          こんにちは、<span className="text-amber-800">{displayName}</span>さん
-        </h1>
+      <div className="px-5 pt-6 pb-5 flex items-start justify-between">
+        <div>
+          <p className="font-serif text-[11px] text-ink-tertiary tracking-section mb-1">てらログ</p>
+          <h1 className="font-serif text-xl text-ink font-medium">{authUser.name}</h1>
+          <p className="font-serif text-sm text-ink-tertiary font-light mt-0.5">{subMessage}</p>
+        </div>
+        <Link href="/app/news" className="relative mt-1 p-1.5" aria-label="お知らせ">
+          <Bell size={20} strokeWidth={1.6} className="text-ink-tertiary" />
+          {unreadNewsCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+              {unreadNewsCount > 99 ? "99+" : unreadNewsCount}
+            </span>
+          )}
+        </Link>
       </div>
 
-      <div className="px-4 space-y-5">
-        {/* クイックアクセス */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {QUICK_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
+      <div className="px-5 space-y-8">
+        {/* ─── 集い ─── */}
+        <section>
+          <SectionHeaderLink label="集 い" href="/app/events" moreLabel="すべて見る" />
+          {eventsToShow.length === 0 ? (
+            <div className="mt-3 py-6 text-center">
+              <p className="font-serif text-sm text-ink-tertiary font-light">近日の集いはありません</p>
               <Link
-                key={item.href}
-                href={item.href}
-                className="flex flex-col items-center justify-center gap-2 bg-white border border-stone-100 rounded-2xl py-4 shadow-sm hover:shadow-md hover:border-amber-200 hover:-translate-y-0.5 transition-all"
+                href="/app/events"
+                className="font-serif text-sm text-ink font-light border-b-[0.5px] border-ink mt-3 inline-block"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
-                  <Icon size={20} strokeWidth={1.8} />
-                </div>
-                <span className="text-xs text-stone-600 font-medium">{item.label}</span>
+                集いを探す
               </Link>
-            );
-          })}
-        </div>
-
-        {/* フォロー0件 — お寺発見セクション */}
-        {followedTempleIds.length === 0 && (
-          <section>
-            <SectionHeader title="お寺を見つけよう" moreHref="/app/temples" moreLabel="すべて見る" />
-            <Link
-              href="/app/temples"
-              className="flex items-center gap-4 bg-gradient-to-r from-teal-50 to-amber-50 rounded-2xl border border-teal-100 px-4 py-4 hover:shadow-md transition-all mb-2"
-            >
-              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                <MapPin size={20} className="text-teal-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-serif text-sm font-bold text-stone-800">近くのお寺を探そう</p>
-                <p className="font-serif text-xs text-stone-500 mt-0.5">フォローするとイベントやお知らせが届きます</p>
-              </div>
-              <span className="shrink-0 text-xs font-semibold text-teal-700 bg-white px-3 py-1.5 rounded-full border border-teal-200 shadow-sm whitespace-nowrap">
-                探す
-              </span>
-            </Link>
-            {discoveryTemples.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {discoveryTemples.map((t) => (
+            </div>
+          ) : (
+            <div className="mt-3">
+              {eventsToShow.map((e) => {
+                const d = new Date(e.eventDate);
+                return (
                   <Link
-                    key={t.id}
-                    href={`/app/temples/${t.id}`}
-                    className="bg-white border border-stone-100 rounded-xl p-3 hover:border-teal-200 hover:shadow-md transition-all"
+                    key={e.id}
+                    href={`/app/events/${e.id}`}
+                    className="block py-3.5"
+                    style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
                   >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {t.logoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={t.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-sm shrink-0">🏯</div>
+                    <div className="flex items-baseline justify-between mb-0.5">
+                      <time className="font-sans text-[11px] text-ink-tertiary">
+                        {d.getMonth() + 1}.{d.getDate()} {DAYS[d.getDay()]}
+                        {e.startTime && ` · ${e.startTime}`}
+                      </time>
+                      {e.isParticipating && (
+                        <span className="font-serif text-[10px] text-ink-tertiary">参加予定</span>
                       )}
-                      <p className="text-xs font-bold text-stone-800 truncate">{t.name}</p>
                     </div>
-                    {t.denomination && (
-                      <p className="text-[10px] text-amber-700 font-medium truncate">{t.denomination}</p>
-                    )}
-                    {t.address && (
-                      <p className="text-[10px] text-stone-400 truncate mt-0.5">{t.address}</p>
-                    )}
+                    <p className="font-serif text-sm text-ink font-light truncate">{e.title}</p>
+                    <p className="font-serif text-[11px] text-ink-tertiary font-light mt-0.5">
+                      {e.templeName} · {getCategoryLabel(e.category)}
+                    </p>
                   </Link>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-        {/* フォロー中のお寺のイベント */}
-        {followedEvents.length > 0 && (
-          <section>
-            <SectionHeader title="フォロー中のお寺のイベント" moreHref="/app/events" moreLabel="すべて" />
-            <div className="space-y-2">
-              {followedEvents.map((e) => (
+        {/* ─── お寺との出会い ─── */}
+        <section>
+          <SectionHeaderLink
+            label={followedTemples.length > 0 ? "フォロー中のお寺" : "お 寺 を 探 す"}
+            href="/app/temples"
+            moreLabel="すべて見る"
+          />
+          {displayTemples.length === 0 ? (
+            <div className="mt-3 py-6 text-center">
+              <p className="font-serif text-sm text-ink-tertiary font-light">お寺を見つけよう</p>
+              <Link
+                href="/app/temples/map"
+                className="font-serif text-sm text-ink font-light border-b-[0.5px] border-ink mt-3 inline-block"
+              >
+                地図で探す
+              </Link>
+            </div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto pb-2 mt-3 -mx-5 px-5">
+              {displayTemples.map((t) => (
                 <Link
-                  key={e.id}
-                  href={`/app/events/${e.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-teal-200 hover:shadow-md transition-all"
+                  key={t.id}
+                  href={`/app/temples/${t.id}`}
+                  className="flex-shrink-0 w-32 bg-paper border-[0.5px] border-border p-3"
                 >
-                  <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
-                    <BookOpen size={16} className="text-teal-600" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-paper-soft mb-2 relative">
+                    {t.logoUrl ? (
+                      <Image src={t.logoUrl} alt={t.name} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-serif text-lg text-ink-tertiary">
+                        {t.name.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-teal-700 font-medium">
-                      {getCategoryLabel(e.category)}
-                      <span className="text-stone-300 mx-1">·</span>
-                      <span className="text-stone-400 font-normal">{e.temple.name}</span>
-                    </p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                      {e.startTime && ` ${e.startTime}`}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
-                    <span className="text-xs font-bold text-amber-700">
-                      {e.fee === 0 ? "無料" : `¥${e.fee.toLocaleString()}`}
-                    </span>
-                    <ChevronRight size={14} className="text-stone-300" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 参加予定のイベント */}
-        {upcomingParticipations.length > 0 && (
-          <section>
-            <SectionHeader title="参加予定のイベント" moreHref="/app/events/my" moreLabel="すべて" />
-            <div className="space-y-2">
-              {upcomingParticipations.map((p) => (
-                <Link key={p.id} href={`/app/events/${p.event.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
-                  <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
-                    <Heart size={16} className="text-rose-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-amber-700 font-medium">{getCategoryLabel(p.event.category)}</p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{p.event.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {p.event.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                      {" "}{p.event.startTime}
-                    </p>
-                  </div>
-                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* フォロー中のイベントがなければ全体から表示 */}
-        {followedEvents.length === 0 && featuredEvents.length > 0 && (
-          <section>
-            <SectionHeader title="今後のイベント" moreHref="/app/events" moreLabel="すべて" />
-            <Link href={`/app/events/${featuredEvents[0].id}`}
-              className="block bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-teal-200 text-xs font-medium mb-1">
-                    {featuredEvents[0].eventDate.toLocaleDateString("ja-JP", {
-                      year: "numeric", month: "long", day: "numeric", weekday: "short",
-                    })}
-                  </p>
-                  <p className="text-xl font-bold leading-snug">{featuredEvents[0].title}</p>
-                  {featuredEvents[0].startTime && (
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      <Clock size={12} className="text-teal-200" />
-                      <p className="text-teal-100 text-xs">{featuredEvents[0].startTime}〜</p>
-                    </div>
+                  <p className="font-serif text-xs text-ink font-light leading-snug line-clamp-2">{t.name}</p>
+                  {t.denomination && (
+                    <p className="font-serif text-[10px] text-ink-tertiary mt-1">{t.denomination}</p>
                   )}
-                </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className="bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                    {getCategoryLabel(featuredEvents[0].category)}
-                  </span>
-                  <span className="text-teal-100 text-xs font-bold">
-                    {featuredEvents[0].fee === 0 ? "無料" : `¥${featuredEvents[0].fee.toLocaleString()}`}
-                  </span>
-                </div>
-              </div>
-            </Link>
-            {featuredEvents.length > 1 && (
-              <div className="space-y-2 mt-2">
-                {featuredEvents.slice(1).map((e) => (
-                  <Link key={e.id} href={`/app/events/${e.id}`}
-                    className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-teal-200 hover:shadow-md transition-all">
-                    <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
-                      <BookOpen size={16} className="text-teal-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-teal-700 font-medium">{getCategoryLabel(e.category)}</p>
-                      <p className="text-sm font-semibold text-stone-800 truncate">{e.title}</p>
-                      <p className="text-xs text-stone-400 mt-0.5">
-                        {e.eventDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                        {" "}{e.startTime}
-                      </p>
-                    </div>
-                    <ChevronRight size={16} className="text-stone-300 shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* お寺の声 */}
+        {/* ─── お寺の声 ─── */}
         {latestPosts.length > 0 && (
           <section>
-            <SectionHeader title="お寺の声" moreHref="/app/posts" moreLabel="すべて見る" />
-            <div className="space-y-2">
+            <SectionHeaderLink label="お 寺 の 声" href="/app/posts" moreLabel="すべて見る" />
+            <div className="mt-3">
               {latestPosts.map((post) => (
                 <Link
                   key={post.id}
                   href={`/app/posts/${post.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                  className="flex items-start gap-3 py-3.5"
+                  style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
                 >
                   {post.photos[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.photos[0].url} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                    <img src={post.photos[0].url} alt="" className="w-12 h-12 object-cover shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 bg-stone-50 rounded-lg flex items-center justify-center shrink-0">
-                      <span className="text-stone-300 text-lg">—</span>
+                    <div className="w-12 h-12 bg-paper-soft flex items-center justify-center shrink-0">
+                      <PenLine size={16} className="text-ink-tertiary" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-stone-400 mb-0.5">{post.temple.name}</p>
-                    <p className="text-sm font-medium text-stone-800 truncate">
+                    <p className="font-serif text-[11px] text-ink-tertiary mb-0.5">{post.temple.name}</p>
+                    <p className="font-serif text-sm text-ink font-light truncate">
                       {post.title ?? post.body.slice(0, 30) + (post.body.length > 30 ? "…" : "")}
                     </p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {post.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
-                    </p>
                   </div>
-                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                  <ChevronRight size={14} className="text-ink-tertiary shrink-0 mt-1" />
                 </Link>
               ))}
             </div>
           </section>
         )}
 
-        {/* お知らせ */}
-        {latestNews.length > 0 && (
-          <section>
-            <SectionHeader title="お知らせ" moreHref="/app/news" moreLabel="すべて" />
-            <div className="space-y-2">
-              {latestNews.map((n) => (
-                <Link key={n.id} href={`/app/news/${n.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3.5 shadow-sm hover:border-amber-200 hover:shadow-md transition-all">
-                  <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                    <Bell size={14} className="text-amber-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-stone-700 font-medium truncate">{n.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      {n.publishedAt!.toLocaleDateString("ja-JP", { month: "long", day: "numeric" })}
-                    </p>
-                  </div>
-                  <ChevronRight size={16} className="text-stone-300 shrink-0" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 学びの記事 */}
+        {/* ─── 学びの記事 ─── */}
         {latestArticles.length > 0 && (
           <section>
-            <SectionHeader title="学びの記事" moreHref="/app/articles" moreLabel="すべて見る" />
-            <div className="space-y-3">
+            <SectionHeaderLink label="学 び の 記 事" href="/app/articles" moreLabel="すべて見る" />
+            <div className="mt-3">
               {latestArticles.map((article) => (
                 <Link
                   key={article.slug}
                   href={`/app/articles/${article.slug}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                  className="flex items-start gap-3 py-3.5"
+                  style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
                 >
                   {article.coverImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={article.coverImage} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                    <img src={article.coverImage} alt="" className="w-12 h-12 object-cover shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                      <BookOpen size={16} className="text-amber-400" />
+                    <div className="w-12 h-12 bg-paper-soft flex items-center justify-center shrink-0">
+                      <BookOpen size={16} className="text-ink-tertiary" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-stone-400 mb-0.5">
+                    <p className="font-serif text-[11px] text-ink-tertiary mb-0.5">
                       {getArticleCategoryLabel(article.category)}
                     </p>
-                    <p className="text-sm font-medium text-stone-800 truncate">{article.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{article.excerpt}</p>
+                    <p className="font-serif text-sm text-ink font-light truncate">{article.title}</p>
                   </div>
-                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                  <ChevronRight size={14} className="text-ink-tertiary shrink-0 mt-1" />
                 </Link>
               ))}
             </div>
@@ -433,12 +370,24 @@ export default async function AppHomePage() {
   );
 }
 
-function SectionHeader({ title, moreHref, moreLabel }: { title: string; moreHref: string; moreLabel: string }) {
+function SectionHeaderLink({
+  label,
+  href,
+  moreLabel,
+}: {
+  label: string;
+  href: string;
+  moreLabel: string;
+}) {
   return (
-    <div className="flex items-center justify-between mb-2.5">
-      <h2 className="font-serif text-sm font-bold text-stone-700">{title}</h2>
-      <Link href={moreHref} className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
-        {moreLabel}<ChevronRight size={12} />
+    <div className="flex items-baseline justify-between">
+      <p className="font-serif text-[11px] text-ink-tertiary tracking-section">{label}</p>
+      <Link
+        href={href}
+        className="font-serif text-[11px] text-ink-tertiary tracking-section flex items-center gap-0.5"
+      >
+        {moreLabel}
+        <ChevronRight size={11} />
       </Link>
     </div>
   );
