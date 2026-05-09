@@ -144,7 +144,7 @@ export default async function AppHomePage() {
     <div className="pb-28 max-w-lg mx-auto">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-5">
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">
+        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">
           こんにちは、<span className="text-amber-800">{displayName}</span>さん
         </h1>
       </div>
@@ -181,8 +181,8 @@ export default async function AppHomePage() {
                 <MapPin size={20} className="text-teal-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-stone-800">近くのお寺を探そう</p>
-                <p className="text-xs text-stone-500 mt-0.5">フォローするとイベントやお知らせが届きます</p>
+                <p className="font-serif text-sm font-bold text-stone-800">近くのお寺を探そう</p>
+                <p className="font-serif text-xs text-stone-500 mt-0.5">フォローするとイベントやお知らせが届きます</p>
               </div>
               <span className="shrink-0 text-xs font-semibold text-teal-700 bg-white px-3 py-1.5 rounded-full border border-teal-200 shadow-sm whitespace-nowrap">
                 探す
@@ -436,7 +436,7 @@ export default async function AppHomePage() {
 function SectionHeader({ title, moreHref, moreLabel }: { title: string; moreHref: string; moreLabel: string }) {
   return (
     <div className="flex items-center justify-between mb-2.5">
-      <h2 className="text-sm font-bold text-stone-700">{title}</h2>
+      <h2 className="font-serif text-sm font-bold text-stone-700">{title}</h2>
       <Link href={moreHref} className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
         {moreLabel}<ChevronRight size={12} />
       </Link>
