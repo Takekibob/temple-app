@@ -140,7 +140,7 @@ export default function LineSettingsClient({
         {!lineLinked && (
           <div className="space-y-3 pt-1">
             <p className="font-serif text-xs text-stone-500 leading-relaxed">
-              LINEを連携すると予約確認・法事のリマインドなどをLINEで受け取れます。
+              LINEを連携するとイベントや行事のリマインドが届きます。
             </p>
 
             {code && remainingSec > 0 ? (
