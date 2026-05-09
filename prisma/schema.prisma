@@ -55,6 +55,7 @@ model Temple {
   lineMessages      LineMessage[]
   templeVisits      TempleVisit[]
   posts             TemplePost[]
+  articles          Article[]
 
   @@index([latitude, longitude])
   @@map("temples")
@@ -91,6 +92,8 @@ model User {
   activityLogs      ActivityLog[]
   proxyMembers      Member[]           @relation("ProxyMembers")
   authoredPosts     TemplePost[]
+  articles          Article[]          @relation("ArticleAuthor")
+  journals          Journal[]
 
   @@map("users")
 }
@@ -244,6 +247,7 @@ model Event {
   participations EventParticipation[]
   photos         EventPhoto[]
   reflections    EventReflection[]
+  journals       Journal[]
 
   @@map("events")
 }
@@ -592,4 +596,85 @@ model TemplePostPhoto {
 
   @@index([postId])
   @@map("temple_post_photos")
+}
+
+// ==========================================
+// 学びの記事
+// ==========================================
+enum ArticleCategory {
+  PARTICIPATION  // 参拝の作法
+  DENOMINATION   // 宗派について
+  CEREMONY       // 行事・節句
+  PRACTICE       // 坐禅・写経等の実践
+  OTHER
+
+  @@map("article_category")
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("article_status")
+}
+
+model Article {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  title       String
+  excerpt     String          @db.Text
+  body        String          @db.Text
+  category    ArticleCategory
+  status      ArticleStatus   @default(DRAFT)
+  authorId    String
+  templeId    String?
+  coverImage  String?
+  publishedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  author User    @relation("ArticleAuthor", fields: [authorId], references: [id])
+  temple Temple? @relation(fields: [templeId], references: [id])
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([category, status])
+  @@index([slug])
+  @@map("articles")
+}
+
+// ==========================================
+// 学びの日記（Journal） — 完全プライベート
+// ==========================================
+enum Mood {
+  PEACEFUL    // 穏やか
+  GRATEFUL    // 感謝
+  STRUGGLING  // 葛藤
+  REFLECTIVE  // 内省
+  JOYFUL      // 喜び
+
+  @@map("mood")
+}
+
+model Journal {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title   String?  @db.VarChar(100)
+  content String   @db.Text
+  mood    Mood?
+  tags    String[]
+
+  entryDate DateTime
+
+  relatedEventId String?
+  relatedEvent   Event?  @relation(fields: [relatedEventId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, entryDate(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("journals")
 }

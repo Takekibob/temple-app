@@ -7,7 +7,7 @@ import { getArticleCategoryLabel } from "@/lib/articleCategories";
 import {
   CalendarRange, BookOpen, Heart,
   Bell, MapPin, ChevronRight, Clock,
-  Compass, Stamp,
+  Compass, Stamp, PenLine,
 } from "lucide-react";
 
 type QuickItem = {
@@ -23,6 +23,7 @@ const QUICK_ITEMS: QuickItem[] = [
   { icon: Bell,          label: "お知らせ",   href: "/app/news",           color: "bg-orange-50 text-orange-600" },
   { icon: Compass,       label: "お寺を探す", href: "/app/temples",        color: "bg-emerald-50 text-emerald-600" },
   { icon: Stamp,         label: "参拝記録",   href: "/app/temples/visit",  color: "bg-teal-50 text-teal-600" },
+  { icon: PenLine,       label: "学びの日記", href: "/app/journal",        color: "bg-stone-50 text-stone-500" },
 ];
 
 export default async function AppHomePage() {
