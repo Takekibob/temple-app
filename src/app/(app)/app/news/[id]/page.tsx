@@ -53,10 +53,10 @@ export default async function NewsDetailPage({
           </div>
 
           <div className="px-5 py-5">
-            <h1 className="text-xl font-bold text-stone-800 leading-snug mb-4">
+            <h1 className="font-serif text-xl font-bold text-stone-800 leading-snug mb-4">
               {announcement.title}
             </h1>
-            <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
+            <p className="font-serif text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
               {announcement.body}
             </p>
           </div>

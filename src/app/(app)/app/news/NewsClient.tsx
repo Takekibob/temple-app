@@ -48,7 +48,7 @@ export default function NewsClient({ announcements: initial, hasMember }: Props)
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お知らせ</h1>
+          <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">お知らせ</h1>
           {unreadCount > 0 && (
             <span className="text-xs font-bold text-white bg-blue-500 rounded-full px-2 py-0.5 min-w-[1.25rem] text-center">
               {unreadCount}
@@ -100,7 +100,7 @@ export default function NewsClient({ announcements: initial, hasMember }: Props)
                   className="flex-1 min-w-0 flex items-center gap-3"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm leading-snug truncate ${a.isRead ? "font-medium text-stone-700" : "font-bold text-stone-800"}`}>
+                    <p className={`font-serif text-sm leading-snug truncate ${a.isRead ? "font-medium text-stone-700" : "font-bold text-stone-800"}`}>
                       {a.title}
                     </p>
                     <p className="text-xs text-stone-400 mt-0.5">
