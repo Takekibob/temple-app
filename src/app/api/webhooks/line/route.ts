@@ -82,7 +82,7 @@ async function handleMessage(event: LineEvent) {
     },
   });
 
-  await pushLineMessage(lineUserId, "連携が完了しました！\nこれからLINEで法要・イベントのお知らせをお送りします。");
+  await pushLineMessage(lineUserId, "連携が完了しました！\nこれからLINEでイベントのお知らせをお送りします。");
 }
 
 // ─── 型定義 ─────────────────────────────────────────
