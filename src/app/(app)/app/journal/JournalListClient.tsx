@@ -116,7 +116,7 @@ function JournalCard({ journal }: { journal: JournalItem }) {
     <Link
       href={`/app/journal/${journal.id}`}
       className="block py-4"
-      style={{ borderBottom: "0.5px solid #F0F0F0" }}
+      style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
     >
       <div className="flex items-baseline justify-between mb-1">
         <time className="font-sans text-[11px] text-ink-tertiary">
@@ -224,7 +224,7 @@ export default function JournalListClient() {
       </div>
 
       {/* リスト / カレンダー切替 */}
-      <div className="flex px-5 mb-4 gap-4" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="flex px-5 mb-4 gap-4" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         {(["list", "calendar"] as const).map((mode) => (
           <button
             key={mode}

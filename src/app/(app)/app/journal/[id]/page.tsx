@@ -89,7 +89,7 @@ export default async function JournalDetailPage({ params }: Props) {
           </div>
         )}
 
-        <hr style={{ border: "none", borderTop: "0.5px solid #E5E5E5", marginBottom: "1.5rem" }} />
+        <hr style={{ border: "none", borderTop: "0.5px solid var(--color-border)", marginBottom: "1.5rem" }} />
 
         {/* 本文 */}
         <ArticleRenderer content={journal.content} />

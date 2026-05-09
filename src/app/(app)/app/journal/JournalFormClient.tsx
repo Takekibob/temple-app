@@ -331,7 +331,7 @@ export default function JournalFormClient({ initialData, isEdit, recentEvents = 
       </div>
 
       {/* アクション */}
-      <div className="flex items-center gap-4 mt-8 pt-4" style={{ borderTop: "0.5px solid #E5E5E5" }}>
+      <div className="flex items-center gap-4 mt-8 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
         <button
           type="button"
           onClick={handleSave}
@@ -346,7 +346,7 @@ export default function JournalFormClient({ initialData, isEdit, recentEvents = 
       </div>
 
       {isEdit && (
-        <div className="mt-4 pt-4" style={{ borderTop: "0.5px solid #F0F0F0" }}>
+        <div className="mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border-thin)" }}>
           <button
             type="button"
             onClick={handleDelete}

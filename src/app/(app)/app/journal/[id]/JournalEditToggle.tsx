@@ -97,7 +97,7 @@ export default function JournalEditToggle({ journalId, initialData, recentEvents
   return (
     <div className="mt-10">
       {/* アクション行 */}
-      <div className="pt-4 flex flex-wrap gap-4" style={{ borderTop: "0.5px solid #E5E5E5" }}>
+      <div className="pt-4 flex flex-wrap gap-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -150,7 +150,7 @@ export default function JournalEditToggle({ journalId, initialData, recentEvents
               type="button"
               onClick={handleCopy}
               className="font-serif text-[11px] tracking-section border-b-[0.5px] border-dashed border-border"
-              style={{ color: copied ? "#1A1A1A" : undefined }}
+              style={{ color: copied ? "var(--color-ink)" : undefined }}
             >
               {copied ? "コピーしました ✓" : "テキストをコピー"}
             </button>
