@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { logout } from "@/app/auth/actions";
 import {
   LayoutDashboard, Users, Calendar,
-  Bell, MessageCircle,
+  Bell, MessageCircle, BookOpen,
   Settings, UserCog,
   ChevronRight, Eye, LogOut, Menu, X,
 } from "lucide-react";
@@ -47,6 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: Calendar, label: "イベント一覧", href: "/admin/events" },
       { icon: Bell, label: "お知らせ", href: "/admin/announcements" },
       { icon: Eye, label: "お寺の声", href: "/admin/posts" },
+      { icon: BookOpen, label: "学びの記事", href: "/admin/articles" },
       { icon: MessageCircle, label: "LINE配信", href: "/admin/line", adminOnly: true },
     ],
   },

@@ -54,7 +54,7 @@ export default async function TempleProfilePage({
   const memberId = authUser.member?.id;
   const isMyTemple = authUser.member?.templeId === id;
 
-  const [followerCount, isFollowingRaw, recentPosts] = await Promise.all([
+  const [followerCount, isFollowingRaw, recentPosts, recentArticles] = await Promise.all([
     prisma.memberFavoriteTemple.count({ where: { templeId: id } }),
     memberId
       ? prisma.memberFavoriteTemple.findUnique({
@@ -64,6 +64,12 @@ export default async function TempleProfilePage({
     prisma.templePost.findMany({
       where: { templeId: id },
       include: { photos: { orderBy: { order: "asc" }, take: 1 } },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+    }),
+    prisma.article.findMany({
+      where: { templeId: id, status: "PUBLISHED" },
+      select: { slug: true, title: true, coverImage: true, publishedAt: true },
       orderBy: { publishedAt: "desc" },
       take: 3,
     }),
@@ -249,6 +255,43 @@ export default async function TempleProfilePage({
                     <p className="text-xs text-stone-400 mt-0.5">
                       {post.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                     </p>
+                  </div>
+                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 学びの記事 */}
+        {recentArticles.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-bold text-stone-700">学びの記事</h2>
+              <Link href="/app/articles" className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
+                すべて<ChevronRight size={12} />
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {recentArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/app/articles/${article.slug}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                >
+                  {article.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={article.coverImage} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 bg-amber-50 rounded-lg shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-800 truncate">{article.title}</p>
+                    {article.publishedAt && (
+                      <p className="text-xs text-stone-400 mt-0.5">
+                        {article.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight size={14} className="text-stone-300 shrink-0" />
                 </Link>

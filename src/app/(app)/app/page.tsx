@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel } from "@/lib/eventCategories";
+import { getArticleCategoryLabel } from "@/lib/articleCategories";
 import {
   CalendarRange, BookOpen, Heart,
   Bell, MapPin, ChevronRight, Clock,
@@ -41,7 +42,7 @@ export default async function AppHomePage() {
     new Set([...(authUser.templeId ? [authUser.templeId] : []), ...followedTempleIds])
   );
 
-  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples, latestPosts] =
+  const [upcomingParticipations, followedEvents, featuredEvents, latestNews, discoveryTemples, latestPosts, latestArticles] =
     await Promise.all([
       memberId
         ? prisma.eventParticipation.findMany({
@@ -124,6 +125,16 @@ export default async function AppHomePage() {
             take: 3,
           })
         : Promise.resolve([]),
+
+      prisma.article.findMany({
+        where: { status: "PUBLISHED" },
+        select: {
+          slug: true, title: true, excerpt: true, category: true,
+          coverImage: true, publishedAt: true,
+        },
+        orderBy: { publishedAt: "desc" },
+        take: 3,
+      }),
     ]);
 
   const displayName = authUser.name;
@@ -378,6 +389,39 @@ export default async function AppHomePage() {
                     </p>
                   </div>
                   <ChevronRight size={16} className="text-stone-300 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 学びの記事 */}
+        {latestArticles.length > 0 && (
+          <section>
+            <SectionHeader title="学びの記事" moreHref="/app/articles" moreLabel="すべて見る" />
+            <div className="space-y-3">
+              {latestArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/app/articles/${article.slug}`}
+                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                >
+                  {article.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={article.coverImage} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
+                      <BookOpen size={16} className="text-amber-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-stone-400 mb-0.5">
+                      {getArticleCategoryLabel(article.category)}
+                    </p>
+                    <p className="text-sm font-medium text-stone-800 truncate">{article.title}</p>
+                    <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{article.excerpt}</p>
+                  </div>
+                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
                 </Link>
               ))}
             </div>
