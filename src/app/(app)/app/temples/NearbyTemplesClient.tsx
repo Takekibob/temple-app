@@ -300,8 +300,8 @@ export default function NearbyTemplesClient({
           <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Heart size={20} className="text-rose-300" />
           </div>
-          <p className="text-sm font-medium text-stone-600 mb-1">フォロー中のお寺がありません</p>
-          <p className="text-xs text-stone-400 leading-relaxed">
+          <p className="font-serif text-sm font-medium text-stone-600 mb-1">フォロー中のお寺がありません</p>
+          <p className="font-serif text-xs text-stone-400 leading-relaxed">
             「すべて」タブからお寺を<br />フォローしましょう
           </p>
         </div>
@@ -331,7 +331,7 @@ export default function NearbyTemplesClient({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-sm font-bold text-stone-800 truncate">{temple.name}</p>
+                  <p className="font-serif text-sm font-bold text-stone-800 truncate">{temple.name}</p>
                   {temple.isMyTemple && (
                     <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full shrink-0">
                       所属
@@ -385,7 +385,7 @@ export default function NearbyTemplesClient({
 
       {filtered.length === 0 && !(tab === "following" && followingCount === 0) && (
         <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center shadow-sm">
-          <p className="text-sm text-stone-400">該当するお寺が見つかりませんでした</p>
+          <p className="font-serif text-sm text-stone-400">該当するお寺が見つかりませんでした</p>
         </div>
       )}
 

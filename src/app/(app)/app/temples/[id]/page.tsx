@@ -119,9 +119,9 @@ export default async function TempleProfilePage({
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-stone-800">{temple.name}</h1>
+              <h1 className="font-serif text-xl font-bold text-stone-800">{temple.name}</h1>
               {temple.denomination && (
-                <p className="text-sm text-amber-700 font-medium mt-0.5">{temple.denomination}</p>
+                <p className="font-serif text-sm text-amber-700 font-medium mt-0.5">{temple.denomination}</p>
               )}
               {followerCount > 0 && (
                 <p className="text-xs text-stone-400 mt-1 flex items-center gap-1">
@@ -184,8 +184,8 @@ export default async function TempleProfilePage({
         {/* 説明文 */}
         {temple.description && (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">お寺について</h2>
-            <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
+            <h2 className="font-serif text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">お寺について</h2>
+            <p className="font-serif text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
               {temple.description}
             </p>
           </div>
@@ -195,7 +195,7 @@ export default async function TempleProfilePage({
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
           <div className="px-4 pt-4 pb-3 border-b border-stone-50 flex items-center gap-2">
             <CalendarDays size={14} className="text-amber-600" />
-            <h2 className="text-sm font-bold text-stone-700">開催予定のイベント</h2>
+            <h2 className="font-serif text-sm font-bold text-stone-700">開催予定のイベント</h2>
           </div>
           {events.length === 0 ? (
             <p className="text-sm text-stone-400 text-center py-6">開催予定のイベントはありません</p>
@@ -230,7 +230,7 @@ export default async function TempleProfilePage({
         {recentPosts.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-bold text-stone-700">お寺の声</h2>
+              <h2 className="font-serif text-sm font-bold text-stone-700">お寺の声</h2>
               <Link href="/app/posts" className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
                 すべて<ChevronRight size={12} />
               </Link>
@@ -267,7 +267,7 @@ export default async function TempleProfilePage({
         {recentArticles.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-bold text-stone-700">学びの記事</h2>
+              <h2 className="font-serif text-sm font-bold text-stone-700">学びの記事</h2>
               <Link href="/app/articles" className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
                 すべて<ChevronRight size={12} />
               </Link>
