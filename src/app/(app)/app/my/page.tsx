@@ -5,6 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import { getMoodIcon, getMoodLabel } from "@/lib/journalMoods";
+import MonthlyShareButton from "./MonthlyShareButton";
 import {
   Pencil, PenLine, CalendarCheck, Building2, ChevronRight,
 } from "lucide-react";
@@ -45,6 +46,7 @@ export default async function MyPage() {
     recentJournals,
     pastEvents,
     totalEventCount,
+    thisMonthJournalTags,
   ] = await Promise.all([
     prisma.journal.findMany({ where: { userId }, select: { entryDate: true } }),
     prisma.journal.count({ where: { userId, entryDate: { gte: thisMonthStart } } }),
@@ -84,7 +86,18 @@ export default async function MyPage() {
     memberId
       ? prisma.eventParticipation.count({ where: { memberId, status: { in: ["APPLIED", "CONFIRMED"] } } })
       : Promise.resolve(0),
+    prisma.journal.findMany({
+      where: { userId, entryDate: { gte: thisMonthStart } },
+      select: { tags: true },
+    }),
   ]);
+
+  // 今月のトップタグ（3件）
+  const tagCounts = new Map<string, number>();
+  for (const j of thisMonthJournalTags) {
+    for (const tag of j.tags) tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+  }
+  const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
 
   const streakDays = calcStreak(allJournalDates.map((j) => j.entryDate));
   const daysSinceJoined = Math.floor((now.getTime() - new Date(authUser.createdAt).getTime()) / (1000 * 60 * 60 * 24));
@@ -146,6 +159,15 @@ export default async function MyPage() {
               count={followedTemples.length}
               label="フォロー中"
               href="/app/temples"
+            />
+          </div>
+          <div className="mt-4">
+            <MonthlyShareButton
+              year={now.getFullYear()}
+              month={now.getMonth() + 1}
+              journalCount={thisMonthJournalCount}
+              eventCount={thisMonthEventCount}
+              topTags={topTags}
             />
           </div>
         </section>
