@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import BottomNav from "@/components/shared/BottomNav";
+import FloatingActionButton from "@/components/teralog/FloatingActionButton";
 
 export default async function AppLayout({
   children,
@@ -30,6 +31,7 @@ export default async function AppLayout({
         </div>
       )}
       {children}
+      <FloatingActionButton />
       <BottomNav />
     </div>
   );
