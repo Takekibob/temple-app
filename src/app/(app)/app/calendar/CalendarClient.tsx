@@ -124,7 +124,7 @@ export default function CalendarClient({ initialData }: Props) {
     <div className="max-w-lg mx-auto select-none">
       {/* ヘッダー */}
       <div className="px-4 pt-4 pb-2">
-        <h1 className="text-xl font-bold text-stone-800">行事カレンダー</h1>
+        <h1 className="font-serif text-xl font-bold text-stone-800">行事カレンダー</h1>
       </div>
 
       {/* 凡例 */}
@@ -152,7 +152,7 @@ export default function CalendarClient({ initialData }: Props) {
             ‹
           </button>
           <div className="text-center min-w-[120px]">
-            <p className="text-lg font-bold text-stone-800">
+            <p className="font-serif text-lg font-bold text-stone-800">
               {data.year}年{data.month}月
             </p>
             {loading && <p className="text-xs text-stone-400">読み込み中…</p>}
@@ -249,7 +249,7 @@ export default function CalendarClient({ initialData }: Props) {
         <div className="mx-2 mb-4">
           <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-              <p className="text-sm font-semibold text-stone-700">
+              <p className="font-serif text-sm font-semibold text-stone-700">
                 {new Date(selectedDate + "T00:00:00").toLocaleDateString("ja-JP", {
                   month: "long", day: "numeric", weekday: "short",
                 })}
@@ -274,7 +274,7 @@ export default function CalendarClient({ initialData }: Props) {
                     >
                       <span className="text-base mt-0.5">🌿</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-stone-800 truncate">{item.title}</p>
+                        <p className="font-serif text-sm font-medium text-stone-800 truncate">{item.title}</p>
                         <div className="flex flex-wrap items-center gap-x-2 mt-0.5">
                           <span className="text-xs text-stone-500">{item.startTime}</span>
                           <span className="text-xs text-stone-400">{getCategoryLabel(item.category)}</span>
@@ -305,7 +305,7 @@ export default function CalendarClient({ initialData }: Props) {
           ) : (
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-stone-100">
-                <p className="text-sm font-semibold text-stone-700">{data.month}月の予定一覧</p>
+                <p className="font-serif text-sm font-semibold text-stone-700">{data.month}月の予定一覧</p>
               </div>
               <ul className="divide-y divide-stone-50">
                 {sortedEvents.map((item) => (
@@ -324,7 +324,7 @@ export default function CalendarClient({ initialData }: Props) {
                         <p className="text-xs text-stone-400">{item.startTime}</p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-stone-800 truncate">{item.title}</p>
+                        <p className="font-serif text-sm text-stone-800 truncate">{item.title}</p>
                         <p className="text-xs text-stone-400">
                           {getCategoryLabel(item.category)}
                           {item.fee === 0 ? " · 無料" : ` · ¥${item.fee.toLocaleString()}`}

@@ -58,12 +58,12 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
           <ChevronLeft size={16} />
           戻る
         </button>
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">感想を送る</h1>
+        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">感想を送る</h1>
       </div>
 
       <div className="px-4">
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
-          <p className="text-sm font-semibold text-stone-700 mb-0.5">{eventTitle}</p>
+          <p className="font-serif text-sm font-semibold text-stone-700 mb-0.5">{eventTitle}</p>
           <p className="text-xs text-stone-400 mb-5">{dateStr}</p>
 
           {done ? (
@@ -71,8 +71,8 @@ export default function FeedbackClient({ eventId, eventTitle, eventDate, existin
               <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 size={28} className="text-teal-600" />
               </div>
-              <p className="font-bold text-stone-800 mb-1">フィードバックを送信しました</p>
-              <p className="text-sm text-stone-500 mb-6">ご参加ありがとうございました。</p>
+              <p className="font-serif font-bold text-stone-800 mb-1">フィードバックを送信しました</p>
+              <p className="font-serif text-sm text-stone-500 mb-6">ご参加ありがとうございました。</p>
               <button
                 onClick={() => router.push("/app/events")}
                 className="px-6 py-2.5 bg-amber-700 text-white rounded-xl text-sm font-semibold hover:bg-amber-800 transition-colors"
