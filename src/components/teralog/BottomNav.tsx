@@ -19,7 +19,7 @@ export default function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 bg-paper z-40 flex"
-      style={{ borderTop: "0.5px solid #E5E5E5", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ borderTop: "0.5px solid var(--color-border)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {NAV_ITEMS.map(({ href, label, symbol }) => {
         const active = isActive(href);

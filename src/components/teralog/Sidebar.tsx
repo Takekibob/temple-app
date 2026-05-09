@@ -50,7 +50,7 @@ export default function Sidebar({ templeName, logoUrl, userName, isAdmin }: Side
             : "text-ink-secondary hover:bg-paper-cream hover:text-ink"
           }
         `}
-        style={active ? { borderLeft: "2px solid #1A1A1A" } : { borderLeft: "2px solid transparent" }}
+        style={active ? { borderLeft: "2px solid var(--color-ink)" } : { borderLeft: "2px solid transparent" }}
       >
         {label}
       </Link>
@@ -60,7 +60,7 @@ export default function Sidebar({ templeName, logoUrl, userName, isAdmin }: Side
   const content = (
     <div className="flex flex-col h-full bg-paper">
       {/* ヘッダー */}
-      <div className="flex items-center gap-3 px-6 py-5" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="flex items-center gap-3 px-6 py-5" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <TempleAvatar name={templeName} imageUrl={logoUrl} size="sm" />
         <div className="min-w-0">
           <p className="font-serif text-[10px] text-ink-tertiary tracking-section font-light leading-none mb-1">
@@ -80,11 +80,11 @@ export default function Sidebar({ templeName, logoUrl, userName, isAdmin }: Side
       </nav>
 
       {/* 設定 + ユーザー */}
-      <div style={{ borderTop: "0.5px solid #E5E5E5" }}>
+      <div style={{ borderTop: "0.5px solid var(--color-border)" }}>
         {BOTTOM_NAV.filter((item) => !item.adminOnly || isAdmin).map((item) =>
           navItem(item.href, item.label)
         )}
-        <div className="px-6 py-4" style={{ borderTop: "0.5px solid #F0F0F0" }}>
+        <div className="px-6 py-4" style={{ borderTop: "0.5px solid var(--color-border-thin)" }}>
           <p className="font-serif text-[11px] text-ink-tertiary font-light mb-3 truncate">
             {userName}
           </p>
@@ -113,7 +113,7 @@ export default function Sidebar({ templeName, logoUrl, userName, isAdmin }: Side
       {/* モバイル: ハンバーガーボタン */}
       <button
         className="lg:hidden fixed top-4 left-4 z-50 bg-paper p-2"
-        style={{ border: "0.5px solid #E5E5E5" }}
+        style={{ border: "0.5px solid var(--color-border)" }}
         onClick={() => setMobileOpen((v) => !v)}
         aria-label="メニュー"
       >
@@ -140,7 +140,7 @@ export default function Sidebar({ templeName, logoUrl, userName, isAdmin }: Side
       </div>
 
       {/* デスクトップ: 固定サイドバー */}
-      <aside className="hidden lg:flex flex-col w-56 shrink-0 h-screen sticky top-0" style={{ borderRight: "0.5px solid #E5E5E5" }}>
+      <aside className="hidden lg:flex flex-col w-56 shrink-0 h-screen sticky top-0" style={{ borderRight: "0.5px solid var(--color-border)" }}>
         {content}
       </aside>
     </>

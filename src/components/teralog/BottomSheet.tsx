@@ -59,7 +59,7 @@ export default function BottomSheet({
         }}
       >
         {/* タイトル */}
-        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
           <h2 className="font-serif text-base text-ink font-light">{title}</h2>
           <button
             type="button"

@@ -9,7 +9,7 @@ type Props = {
 
 export default function QuoteBlock({ children, author, thanks, onThanksClick }: Props) {
   return (
-    <div className="pl-4" style={{ borderLeft: "0.5px solid #1A1A1A" }}>
+    <div className="pl-4" style={{ borderLeft: "0.5px solid var(--color-ink)" }}>
       <div className="font-serif text-sm text-ink font-light leading-[2]">
         {children}
       </div>

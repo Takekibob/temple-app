@@ -18,7 +18,7 @@ export default function ArticleRenderer({ content }: Props) {
           </h1>
         ),
         h2: ({ children }) => (
-          <h2 className="font-serif text-[20px] font-medium text-ink leading-snug mt-8 mb-3" style={{ letterSpacing: "0.05em", borderBottom: "0.5px solid #E5E5E5", paddingBottom: "0.5rem" }}>
+          <h2 className="font-serif text-[20px] font-medium text-ink leading-snug mt-8 mb-3" style={{ letterSpacing: "0.05em", borderBottom: "0.5px solid var(--color-border)", paddingBottom: "0.5rem" }}>
             {children}
           </h2>
         ),
@@ -41,7 +41,7 @@ export default function ArticleRenderer({ content }: Props) {
         blockquote: ({ children }) => (
           <blockquote
             className="pl-5 my-6 font-serif text-ink-secondary font-light"
-            style={{ borderLeft: "0.5px solid #1A1A1A", lineHeight: "2.2" }}
+            style={{ borderLeft: "0.5px solid var(--color-ink)", lineHeight: "2.2" }}
           >
             {children}
           </blockquote>
@@ -76,7 +76,7 @@ export default function ArticleRenderer({ content }: Props) {
           </span>
         ),
         hr: () => (
-          <hr className="my-8" style={{ border: "none", borderTop: "0.5px solid #E5E5E5" }} />
+          <hr className="my-8" style={{ border: "none", borderTop: "0.5px solid var(--color-border)" }} />
         ),
         code: ({ children }) => (
           <code className="font-sans text-[13px] bg-paper-soft px-1.5 py-0.5 text-ink">

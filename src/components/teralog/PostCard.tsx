@@ -54,7 +54,7 @@ export default function PostCard({ post, variant = "list" }: Props) {
           src={firstPhoto.url}
           alt={firstPhoto.caption ?? post.title ?? ""}
           className="w-full h-40 object-cover mb-3"
-          style={{ borderBottom: "0.5px solid #F0F0F0" }}
+          style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
         />
       )}
 
