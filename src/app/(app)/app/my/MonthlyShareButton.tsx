@@ -110,7 +110,7 @@ export default function MonthlyShareButton({ year, month, journalCount, eventCou
               type="button"
               onClick={handleCopy}
               className="font-serif text-[11px] tracking-section border-b-[0.5px] border-dashed border-border"
-              style={{ color: copied ? "#1A1A1A" : undefined }}
+              style={{ color: copied ? "var(--color-ink)" : undefined }}
             >
               {copied ? "コピーしました ✓" : "テキストをコピー"}
             </button>

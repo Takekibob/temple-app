@@ -190,7 +190,7 @@ export default async function MyPage() {
                     key={j.id}
                     href={`/app/journal/${j.id}`}
                     className="block py-3.5"
-                    style={{ borderBottom: "0.5px solid #F0F0F0" }}
+                    style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
                   >
                     <div className="flex items-baseline justify-between mb-1">
                       <time className="font-sans text-[11px] text-ink-tertiary">
@@ -241,7 +241,7 @@ export default async function MyPage() {
                     key={p.event.id}
                     href={`/app/events/${p.event.id}`}
                     className="flex items-center justify-between py-3.5"
-                    style={{ borderBottom: "0.5px solid #F0F0F0" }}
+                    style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-serif text-[11px] text-ink-tertiary tracking-section mb-0.5">
@@ -310,7 +310,7 @@ export default async function MyPage() {
         </section>
 
         {/* ─── 設定リンク ─── */}
-        <div className="pt-2" style={{ borderTop: "0.5px solid #E5E5E5" }}>
+        <div className="pt-2" style={{ borderTop: "0.5px solid var(--color-border)" }}>
           <Link
             href="/app/mypage"
             className="font-serif text-[11px] text-ink-tertiary tracking-section"
