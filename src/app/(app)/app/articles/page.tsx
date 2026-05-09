@@ -30,7 +30,7 @@ export default function ArticlesPage() {
       </div>
 
       {/* カテゴリタブ */}
-      <div className="flex overflow-x-auto px-5 gap-4 pb-3" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="flex overflow-x-auto px-5 gap-4 pb-3" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <button
           onClick={() => setCategory("")}
           className={`font-serif text-[11px] tracking-section whitespace-nowrap pb-2 ${

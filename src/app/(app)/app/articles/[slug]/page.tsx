@@ -107,14 +107,14 @@ export default async function ArticleDetailPage({ params }: Props) {
         </p>
 
         {/* 仕切り */}
-        <hr style={{ border: "none", borderTop: "0.5px solid #E5E5E5", marginBottom: "2rem" }} />
+        <hr style={{ border: "none", borderTop: "0.5px solid var(--color-border)", marginBottom: "2rem" }} />
 
         {/* 本文 */}
         <ArticleRenderer content={article.body} />
 
         {/* 著者 / 出典 */}
         {(article.author || article.temple) && (
-          <div className="mt-10 pt-4" style={{ borderTop: "0.5px solid #E5E5E5" }}>
+          <div className="mt-10 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
             {article.temple && (
               <p className="font-serif text-[11px] text-ink-tertiary tracking-section font-light">
                 {article.temple.name}
