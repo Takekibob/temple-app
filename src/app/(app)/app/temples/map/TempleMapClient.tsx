@@ -84,7 +84,7 @@ export default function TempleMapClient({ initialFollowedIds, denominations }: P
   return (
     <div className="flex flex-col h-full">
       {/* 上部フィルターバー */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-paper" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="flex items-center gap-2 px-4 py-3 bg-paper" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <select
           value={denomination}
           onChange={(e) => setDenomination(e.target.value)}
@@ -144,7 +144,7 @@ export default function TempleMapClient({ initialFollowedIds, denominations }: P
 
         {/* 選択中寺院 ミニカード */}
         {selectedTemple && (
-          <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-paper" style={{ borderTop: "0.5px solid #E5E5E5" }}>
+          <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-paper" style={{ borderTop: "0.5px solid var(--color-border)" }}>
             <Link
               href={`/app/temples/${selectedTemple.id}`}
               className="flex items-center gap-4 px-5 py-4"

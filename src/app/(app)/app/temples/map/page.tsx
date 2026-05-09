@@ -30,7 +30,7 @@ export default async function TempleMapPage() {
   return (
     <div className="flex flex-col h-[calc(100dvh-56px)]">
       {/* ページヘッダー */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-paper" style={{ borderBottom: "0.5px solid #E5E5E5" }}>
+      <div className="flex items-center gap-4 px-6 py-4 bg-paper" style={{ borderBottom: "0.5px solid var(--color-border)" }}>
         <h1 className="font-serif text-base text-ink font-light flex-1">
           お寺をさがす
         </h1>
