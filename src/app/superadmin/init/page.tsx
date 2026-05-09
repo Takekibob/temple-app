@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import SuperAdminInitClient from "./SuperAdminInitClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function SuperAdminInitPage() {
   const existing = await prisma.user.findFirst({ where: { role: "SUPER_ADMIN" } });
 
