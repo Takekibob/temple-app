@@ -13,14 +13,17 @@ const NAV_ITEMS = [
   { href: "/app/events",  icon: BookOpen, label: "イベント" },
   { href: "/app/temples", icon: MapPin,   label: "寺院" },
   { href: "/app/news",    icon: Bell,    label: "お知らせ" },
-  { href: "/app/mypage",  icon: User,    label: "マイページ" },
+  { href: "/app/my",      icon: User,    label: "マイページ" },
 ];
 
 export default function BottomNav({ unreadNewsCount = 0 }: BottomNavProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    href === "/app" ? pathname === "/app" : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === "/app") return pathname === "/app";
+    if (href === "/app/my") return pathname === "/app/my" || pathname.startsWith("/app/my/");
+    return pathname.startsWith(href);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)] flex safe-area-pb z-40">
