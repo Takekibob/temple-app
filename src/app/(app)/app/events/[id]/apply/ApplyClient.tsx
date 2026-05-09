@@ -80,10 +80,10 @@ export default function ApplyClient({ event }: { event: EventInfo }) {
               : <CheckCircle2 size={28} className="text-teal-600" />
             }
           </div>
-          <h2 className="text-xl font-bold text-stone-800 mb-2">
+          <h2 className="font-serif text-xl font-bold text-stone-800 mb-2">
             {resultStatus === "WAITLISTED" ? "キャンセル待ち登録完了" : "申込が完了しました"}
           </h2>
-          <p className="text-sm text-stone-500 mb-8 leading-relaxed">
+          <p className="font-serif text-sm text-stone-500 mb-8 leading-relaxed">
             {resultStatus === "WAITLISTED"
               ? "定員に達しているためキャンセル待ちに登録しました。空きが出た場合にご連絡します。"
               : "お寺より確認のご連絡をさせていただく場合があります。"}
@@ -118,8 +118,8 @@ export default function ApplyClient({ event }: { event: EventInfo }) {
           <ChevronLeft size={16} />
           イベント詳細
         </Link>
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">参加申込</h1>
-        <p className="text-sm text-stone-500 mt-0.5 line-clamp-1">{event.title}</p>
+        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">参加申込</h1>
+        <p className="font-serif text-sm text-stone-500 mt-0.5 line-clamp-1">{event.title}</p>
       </div>
 
       <div className="px-4 space-y-4">

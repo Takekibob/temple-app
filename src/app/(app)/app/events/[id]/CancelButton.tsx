@@ -22,7 +22,7 @@ export default function CancelButton({ eventId }: { eventId: string }) {
 
   return (
     <div className="mt-2">
-      {error && <p className="text-xs text-red-600 mb-1">{error}</p>}
+      {error && <p className="font-serif text-xs text-red-600 mb-1">{error}</p>}
       <button
         onClick={handleCancel}
         disabled={isPending}

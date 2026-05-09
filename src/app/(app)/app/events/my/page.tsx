@@ -53,7 +53,7 @@ export default async function MyEventsPage() {
     <div className="max-w-lg mx-auto pb-28">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">申込済みイベント</h1>
+        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">申込済みイベント</h1>
         <Link
           href="/app/events"
           className="flex items-center gap-1 text-xs text-amber-700 font-semibold bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors"
@@ -84,7 +84,7 @@ export default async function MyEventsPage() {
           >
             <p className="text-xs font-semibold text-teal-200 uppercase tracking-widest mb-2">次のイベント</p>
             <p className="text-xs text-teal-200 mb-1">{getCategoryIcon(next.event.category)} {getCategoryLabel(next.event.category)}</p>
-            <p className="text-xl font-bold mb-3 leading-snug">{next.event.title}</p>
+            <p className="font-serif text-xl font-bold mb-3 leading-snug">{next.event.title}</p>
             <div className="flex items-center gap-4 text-sm text-teal-100">
               <span className="flex items-center gap-1.5">
                 <Clock size={14} />
@@ -172,7 +172,7 @@ function ParticipationRow({
             <p className="text-xs text-stone-400 mb-0.5">
               {getCategoryIcon(p.event.category)} {getCategoryLabel(p.event.category)}
             </p>
-            <p className={`text-sm font-semibold leading-snug ${past ? "text-stone-500" : "text-stone-800"}`}>
+            <p className={`font-serif text-sm font-semibold leading-snug ${past ? "text-stone-500" : "text-stone-800"}`}>
               {p.event.title}
             </p>
             <p className="text-xs text-stone-400 mt-0.5">

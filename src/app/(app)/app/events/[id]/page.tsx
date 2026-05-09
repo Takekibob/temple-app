@@ -94,7 +94,7 @@ export default async function AppEventDetailPage({
               </span>
             </div>
           )}
-          <h1 className="text-xl font-bold text-stone-800 leading-snug">{event.title}</h1>
+          <h1 className="font-serif text-xl font-bold text-stone-800 leading-snug">{event.title}</h1>
           <Link
             href={`/app/temples/${event.temple.id}`}
             className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline mt-1.5"
@@ -151,8 +151,8 @@ export default async function AppEventDetailPage({
         {/* 説明 */}
         {event.description && (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">詳細</h2>
-            <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">
+            <h2 className="font-serif text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">詳細</h2>
+            <p className="font-serif text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">
               {event.description}
             </p>
           </div>
@@ -216,8 +216,8 @@ function InfoRow({
   return (
     <div className="flex items-start gap-3 px-4 py-3.5">
       <div className="w-5 shrink-0 mt-0.5">{icon}</div>
-      <p className="text-xs text-stone-400 w-12 shrink-0 pt-0.5">{label}</p>
-      <p className="text-sm text-stone-700 flex-1">{children}</p>
+      <p className="font-serif text-xs text-stone-400 w-12 shrink-0 pt-0.5">{label}</p>
+      <p className="font-serif text-sm text-stone-700 flex-1">{children}</p>
     </div>
   );
 }

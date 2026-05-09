@@ -53,7 +53,7 @@ function EventCard({
           </div>
         )}
 
-        <h3 className="font-bold text-stone-800 text-base leading-snug mb-2">{event.title}</h3>
+        <h3 className="font-serif font-bold text-stone-800 text-base leading-snug mb-2">{event.title}</h3>
 
         {showTemple && (
           <p className="text-xs text-amber-700 font-medium mb-2 flex items-center gap-1">
@@ -203,7 +203,7 @@ export default async function AppEventsPage({
     <div className="max-w-lg mx-auto pb-28">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">イベント</h1>
+        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">イベント</h1>
         <Link
           href="/app/events/my"
           className="flex items-center gap-1 text-xs text-amber-700 font-semibold bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors"
@@ -264,8 +264,8 @@ export default async function AppEventsPage({
               <Heart size={20} className="text-rose-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-stone-800">お寺をフォローしよう</p>
-              <p className="text-xs text-stone-500 mt-0.5">
+              <p className="font-serif text-sm font-bold text-stone-800">お寺をフォローしよう</p>
+              <p className="font-serif text-xs text-stone-500 mt-0.5">
                 フォローするとそのお寺のイベントがここに表示されます
               </p>
             </div>
