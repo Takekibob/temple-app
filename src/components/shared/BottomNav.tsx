@@ -23,7 +23,10 @@ export default function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)] flex safe-area-pb z-40">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-paper flex safe-area-pb z-40"
+      style={{ borderTop: "0.5px solid var(--color-border)" }}
+    >
       {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
         const active = isActive(href);
         return (
@@ -33,14 +36,14 @@ export default function BottomNav() {
             className="flex-1 flex flex-col items-center justify-center pt-2 pb-1 gap-0.5 relative"
           >
             {active && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-amber-700 rounded-full" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[0.5px] bg-ink" />
             )}
             <Icon
               size={22}
-              strokeWidth={active ? 2.2 : 1.7}
-              className={active ? "text-amber-700" : "text-stone-400"}
+              strokeWidth={active ? 2 : 1.6}
+              className={active ? "text-ink" : "text-ink-tertiary"}
             />
-            <span className={`text-[10px] font-medium tracking-tight ${active ? "text-amber-700" : "text-stone-400"}`}>
+            <span className={`font-serif text-[10px] tracking-section font-light ${active ? "text-ink" : "text-ink-tertiary"}`}>
               {label}
             </span>
           </Link>
