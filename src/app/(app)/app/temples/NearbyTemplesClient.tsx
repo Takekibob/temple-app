@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Navigation, Loader2, Search, Heart, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { MapPin, Navigation, Loader2, Search, Check, Plus, ChevronRight, SlidersHorizontal } from "lucide-react";
 
 const PREFECTURES = [
   "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
@@ -180,20 +180,20 @@ export default function NearbyTemplesClient({
     <div className="space-y-3">
       {/* 検索バー */}
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="お寺の名前・説明文で検索…"
-          className="w-full pl-9 pr-10 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200 transition-colors"
+          className="w-full pl-9 pr-10 py-2.5 bg-paper border-[0.5px] border-border font-serif text-sm focus:outline-none focus:border-ink transition-colors"
         />
         <button
           onClick={() => setShowFilters((v) => !v)}
-          className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors ${
+          className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 transition-colors ${
             showFilters || hasActiveFilter
-              ? "text-amber-700 bg-amber-50"
-              : "text-stone-400 hover:text-stone-600"
+              ? "text-ink"
+              : "text-ink-tertiary hover:text-ink"
           }`}
           aria-label="フィルター"
         >
@@ -203,14 +203,14 @@ export default function NearbyTemplesClient({
 
       {/* フィルタパネル */}
       {showFilters && (
-        <div className="bg-white border border-stone-200 rounded-xl p-3 space-y-2">
+        <div className="bg-paper p-3 space-y-2" style={{ border: "0.5px solid var(--color-border)" }}>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-1">宗派</label>
+              <label className="font-sans text-[10px] text-ink-tertiary uppercase tracking-widest block mb-1">宗派</label>
               <select
                 value={denomination}
                 onChange={(e) => setDenomination(e.target.value)}
-                className="w-full text-xs border border-stone-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-amber-400 text-stone-700"
+                className="w-full font-serif text-xs border-[0.5px] border-border px-2.5 py-2 bg-paper focus:outline-none focus:border-ink text-ink"
               >
                 <option value="">すべて</option>
                 {denominations.map((d) => (
@@ -219,11 +219,11 @@ export default function NearbyTemplesClient({
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-1">都道府県</label>
+              <label className="font-sans text-[10px] text-ink-tertiary uppercase tracking-widest block mb-1">都道府県</label>
               <select
                 value={prefecture}
                 onChange={(e) => setPrefecture(e.target.value)}
-                className="w-full text-xs border border-stone-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-amber-400 text-stone-700"
+                className="w-full font-serif text-xs border-[0.5px] border-border px-2.5 py-2 bg-paper focus:outline-none focus:border-ink text-ink"
               >
                 <option value="">すべて</option>
                 {PREFECTURES.map((p) => (
@@ -235,7 +235,7 @@ export default function NearbyTemplesClient({
           {hasActiveFilter && (
             <button
               onClick={() => { setDenomination(""); setPrefecture(""); }}
-              className="text-xs text-amber-700 font-medium hover:underline"
+              className="font-sans text-xs text-ink-secondary hover:text-ink"
             >
               フィルターをリセット
             </button>
@@ -247,27 +247,27 @@ export default function NearbyTemplesClient({
       <div className="flex gap-2">
         <button
           onClick={() => setTab("all")}
-          className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+          className={`flex-1 py-2 font-sans text-xs border-[0.5px] transition-colors ${
             tab === "all"
-              ? "bg-amber-700 text-white border-amber-700 shadow-sm"
-              : "bg-white text-stone-500 border-stone-200 hover:border-amber-300"
+              ? "bg-ink text-paper border-ink"
+              : "bg-paper text-ink-secondary border-border hover:bg-paper-soft"
           }`}
         >
           すべて
         </button>
         <button
           onClick={() => setTab("following")}
-          className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 font-sans text-xs border-[0.5px] transition-colors flex items-center justify-center gap-1.5 ${
             tab === "following"
-              ? "bg-amber-700 text-white border-amber-700 shadow-sm"
-              : "bg-white text-stone-500 border-stone-200 hover:border-amber-300"
+              ? "bg-ink text-paper border-ink"
+              : "bg-paper text-ink-secondary border-border hover:bg-paper-soft"
           }`}
         >
-          <Heart size={11} className={tab === "following" ? "fill-white" : ""} />
+          {tab === "following" && <Check size={11} />}
           フォロー中
           {followingCount > 0 && (
-            <span className={`text-[10px] font-bold px-1.5 rounded-full ${
-              tab === "following" ? "bg-white/20" : "bg-amber-50 text-amber-700"
+            <span className={`font-sans text-[10px] ${
+              tab === "following" ? "text-paper/70" : "text-ink-tertiary"
             }`}>
               {followingCount}
             </span>
@@ -277,77 +277,73 @@ export default function NearbyTemplesClient({
 
       {/* 位置情報ステータス */}
       {geoState !== "idle" && (
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
-          geoState === "granted"
-            ? "bg-teal-50 text-teal-700 border border-teal-100"
-            : geoState === "denied"
-            ? "bg-stone-100 text-stone-400"
-            : "bg-amber-50 text-amber-600 border border-amber-100"
-        }`}>
+        <div
+          className={`flex items-center gap-2 px-3 py-2 font-serif text-xs ${
+            geoState === "granted" ? "text-ink-secondary" : "text-ink-tertiary"
+          }`}
+          style={{ border: "0.5px solid var(--color-border-thin)" }}
+        >
           {geoState === "loading" ? (
-            <><Loader2 size={13} className="animate-spin" />位置情報を取得中…</>
+            <><Loader2 size={13} className="animate-spin shrink-0" />位置情報を取得中…</>
           ) : geoState === "granted" ? (
-            <><Navigation size={13} />現在地から近い順に表示しています</>
+            <><Navigation size={13} className="shrink-0" />現在地から近い順に表示しています</>
           ) : (
-            <><MapPin size={13} />位置情報が無効のため名前順で表示しています</>
+            <><MapPin size={13} className="shrink-0" />位置情報が無効のため名前順で表示しています</>
           )}
         </div>
       )}
 
       {/* フォロー中タブが空 */}
       {tab === "following" && followingCount === 0 && (
-        <div className="bg-white rounded-2xl border border-stone-100 p-10 text-center shadow-sm">
-          <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <Heart size={20} className="text-rose-300" />
-          </div>
-          <p className="font-serif text-sm font-medium text-stone-600 mb-1">フォロー中のお寺がありません</p>
-          <p className="font-serif text-xs text-stone-400 leading-relaxed">
+        <div className="bg-paper p-10 text-center" style={{ border: "0.5px solid var(--color-border)" }}>
+          <p className="font-serif text-sm text-ink-secondary mb-1">フォロー中のお寺がありません</p>
+          <p className="font-serif text-xs text-ink-tertiary leading-relaxed">
             「すべて」タブからお寺を<br />フォローしましょう
           </p>
         </div>
       )}
 
       {/* 寺院リスト */}
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {filtered.map((temple) => {
           const isFav = favorites.has(temple.id);
           return (
             <Link
               key={temple.id}
               href={`/app/temples/${temple.id}`}
-              className={`flex items-center gap-3 bg-white rounded-2xl border shadow-sm px-4 py-3.5 hover:shadow-md transition-all ${
-                temple.isMyTemple
-                  ? "border-amber-200"
-                  : isFav
-                  ? "border-rose-100 bg-rose-50/20"
-                  : "border-stone-100 hover:border-amber-200"
-              }`}
+              className="flex items-center gap-3 bg-paper px-4 py-3.5 hover:bg-paper-soft transition-colors"
+              style={{ border: "0.5px solid var(--color-border)" }}
             >
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                temple.isMyTemple ? "bg-amber-50" : isFav ? "bg-rose-50" : "bg-stone-50"
-              }`}>
-                🏯
+              {/* 寺名一文字フォールバック */}
+              <div
+                className="w-11 h-11 bg-paper-soft flex items-center justify-center flex-shrink-0"
+                style={{ border: "0.5px solid var(--color-border)" }}
+              >
+                <span className="font-serif text-base text-ink-tertiary">{temple.name.charAt(0)}</span>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="font-serif text-sm font-bold text-stone-800 truncate">{temple.name}</p>
+                  <p className="font-serif text-sm text-ink font-medium truncate">{temple.name}</p>
                   {temple.isMyTemple && (
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full shrink-0">
+                    <span
+                      className="font-sans text-[10px] text-ink-secondary bg-paper-soft px-2 py-0.5 shrink-0"
+                      style={{ border: "0.5px solid var(--color-border)" }}
+                    >
                       所属
                     </span>
                   )}
                   {isFav && !temple.isMyTemple && (
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-full shrink-0">
-                      フォロー中
+                    <span className="font-sans text-[10px] text-ink-tertiary flex items-center gap-0.5 shrink-0">
+                      <Check size={10} />フォロー中
                     </span>
                   )}
                 </div>
                 {temple.denomination && (
-                  <p className="text-xs text-stone-400">{temple.denomination}</p>
+                  <p className="font-serif text-xs text-ink-tertiary">{temple.denomination}</p>
                 )}
                 {temple.address && (
-                  <p className="text-xs text-stone-400 mt-0.5 flex items-center gap-1 truncate">
+                  <p className="font-serif text-xs text-ink-tertiary mt-0.5 flex items-center gap-1 truncate">
                     <MapPin size={10} className="shrink-0" />
                     {temple.address.slice(0, 24)}{temple.address.length > 24 ? "…" : ""}
                   </p>
@@ -356,7 +352,10 @@ export default function NearbyTemplesClient({
 
               <div className="flex items-center gap-2 shrink-0">
                 {temple.distanceKm != null && (
-                  <span className="text-xs font-semibold text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">
+                  <span
+                    className="font-sans text-xs text-ink-secondary bg-paper-soft px-2 py-0.5"
+                    style={{ border: "0.5px solid var(--color-border-thin)" }}
+                  >
                     {temple.distanceKm < 1
                       ? `${Math.round(temple.distanceKm * 1000)}m`
                       : `${temple.distanceKm.toFixed(1)}km`}
@@ -366,17 +365,18 @@ export default function NearbyTemplesClient({
                   <button
                     onClick={(e) => toggleFavorite(e, temple.id)}
                     disabled={pendingId === temple.id}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                    className={`w-8 h-8 flex items-center justify-center transition-colors disabled:opacity-50 ${
                       isFav
-                        ? "bg-rose-50 text-rose-500 border border-rose-200 hover:bg-rose-100"
-                        : "text-stone-300 border border-stone-200 hover:border-rose-300 hover:text-rose-400 hover:bg-rose-50"
-                    } disabled:opacity-50`}
+                        ? "text-ink-secondary bg-paper-soft"
+                        : "text-ink-tertiary hover:text-ink hover:bg-paper-soft"
+                    }`}
+                    style={{ border: "0.5px solid var(--color-border)" }}
                     aria-label={isFav ? "フォロー解除" : "フォロー"}
                   >
-                    <Heart size={14} className={isFav ? "fill-rose-500" : ""} />
+                    {isFav ? <Check size={14} /> : <Plus size={14} />}
                   </button>
                 )}
-                <ChevronRight size={15} className="text-stone-300" />
+                <ChevronRight size={15} className="text-ink-tertiary" />
               </div>
             </Link>
           );
@@ -384,13 +384,13 @@ export default function NearbyTemplesClient({
       </div>
 
       {filtered.length === 0 && !(tab === "following" && followingCount === 0) && (
-        <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center shadow-sm">
-          <p className="font-serif text-sm text-stone-400">該当するお寺が見つかりませんでした</p>
+        <div className="bg-paper p-8 text-center" style={{ border: "0.5px solid var(--color-border)" }}>
+          <p className="font-serif text-sm text-ink-tertiary">該当するお寺が見つかりませんでした</p>
         </div>
       )}
 
       {isPending && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-ink text-paper font-sans text-xs px-3 py-1.5">
           更新中…
         </div>
       )}

@@ -76,8 +76,8 @@ export default async function TemplesPage({
     <div className="max-w-lg mx-auto pb-28">
       <div className="px-5 pt-6 pb-4 flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight">お寺を探す</h1>
-          <p className="text-xs text-stone-400 mt-0.5">
+          <h1 className="font-serif text-xl text-ink font-medium">お寺を探す</h1>
+          <p className="font-serif text-xs text-ink-tertiary mt-0.5">
             フォローするとイベントやお知らせが届きます
           </p>
         </div>
