@@ -38,18 +38,18 @@ export default function SearchBar({
 
   return (
     <div className="relative">
-      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-9 pr-9 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200 transition-colors"
+        className="w-full pl-9 pr-9 py-2.5 bg-paper border-[0.5px] border-border font-sans text-sm text-ink placeholder:text-ink-tertiary focus:outline-none focus:border-ink transition-colors"
       />
       {value && (
         <button
           onClick={() => setValue("")}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink-secondary transition-colors"
           aria-label="クリア"
         >
           <X size={14} />

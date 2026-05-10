@@ -1,3 +1,6 @@
+import { Circle, Feather, Leaf, Flame, GraduationCap, Flower2, MoreHorizontal } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 /** 標準カテゴリのキー一覧 */
 export const STANDARD_CATEGORY_KEYS = [
   "ZAZEN",
@@ -22,15 +25,15 @@ export const STANDARD_CATEGORY_LABELS: Record<string, string> = {
   OTHER: "その他",
 };
 
-/** 標準カテゴリのアイコンマップ */
-export const CATEGORY_ICONS: Record<string, string> = {
-  ZAZEN: "🧘",
-  SHAKYO: "✍️",
-  YOGA: "🌿",
-  MINDFULNESS: "🕯️",
-  LECTURE: "📖",
-  SEASONAL: "🌸",
-  OTHER: "🎋",
+/** 標準カテゴリのアイコンマップ (Lucide React コンポーネント) */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  ZAZEN: Circle,
+  SHAKYO: Feather,
+  YOGA: Leaf,
+  MINDFULNESS: Flame,
+  LECTURE: GraduationCap,
+  SEASONAL: Flower2,
+  OTHER: MoreHorizontal,
 };
 
 /** フォーム用: 標準カテゴリの選択肢 */
@@ -49,11 +52,11 @@ export function getCategoryLabel(category: string): string {
 }
 
 /**
- * カテゴリ値からアイコンを返す。
- * カスタムカテゴリのアイコンは固定で 🎋 を返す。
+ * カテゴリ値から Lucide アイコンコンポーネントを返す。
+ * カスタムカテゴリは MoreHorizontal を返す。
  */
-export function getCategoryIcon(category: string): string {
-  return CATEGORY_ICONS[category] ?? "🎋";
+export function getCategoryIcon(category: string): LucideIcon {
+  return CATEGORY_ICONS[category] ?? MoreHorizontal;
 }
 
 /**

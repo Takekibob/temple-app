@@ -27,18 +27,21 @@ function EventCard({
 }) {
   const isFull = event.capacity != null && event._count.participations >= event.capacity;
   const remaining = event.capacity != null ? event.capacity - event._count.participations : null;
+  const CategoryIcon = getCategoryIcon(event.category);
 
   return (
     <Link
       href={`/app/events/${event.id}`}
-      className="block bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden hover:shadow-md hover:border-amber-200 hover:-translate-y-0.5 transition-all"
+      className="block bg-paper overflow-hidden hover:bg-paper-soft transition-colors"
+      style={{ border: "0.5px solid var(--color-border)" }}
     >
       {event.imageUrl && (
-        <div className="relative h-40 overflow-hidden bg-stone-100">
+        <div className="relative h-40 overflow-hidden bg-paper-soft">
           <Image src={event.imageUrl} alt={event.title} fill className="object-cover" />
           <div className="absolute top-3 left-3 flex gap-1.5">
-            <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-              {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+            <span className="bg-paper/90 text-ink-tertiary font-sans text-[10px] px-2 py-0.5 flex items-center gap-1">
+              <CategoryIcon size={11} />
+              {getCategoryLabel(event.category)}
             </span>
           </div>
         </div>
@@ -47,16 +50,17 @@ function EventCard({
       <div className="p-4">
         {!event.imageUrl && (
           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-            <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-0.5 rounded-full">
-              {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+            <span className="font-sans text-[10px] text-ink-tertiary bg-paper-soft px-2 py-0.5 flex items-center gap-1">
+              <CategoryIcon size={11} />
+              {getCategoryLabel(event.category)}
             </span>
           </div>
         )}
 
-        <h3 className="font-serif font-bold text-stone-800 text-base leading-snug mb-2">{event.title}</h3>
+        <h3 className="font-serif text-sm text-ink font-light leading-snug mb-2">{event.title}</h3>
 
         {showTemple && (
-          <p className="text-xs text-amber-700 font-medium mb-2 flex items-center gap-1">
+          <p className="font-serif text-[11px] text-ink-tertiary font-light mb-2 flex items-center gap-1">
             <MapPin size={11} />
             {event.temple.name}
             {event.temple.denomination && `（${event.temple.denomination}）`}
@@ -65,15 +69,15 @@ function EventCard({
 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-xs text-stone-500 flex items-center gap-1">
-              <Clock size={11} className="text-stone-400" />
+            <p className="font-sans text-xs text-ink-tertiary flex items-center gap-1">
+              <Clock size={11} className="text-ink-tertiary" />
               {event.eventDate.toLocaleDateString("ja-JP", {
                 month: "long", day: "numeric", weekday: "short",
               })}{" "}
               {event.startTime}〜{event.endTime}
             </p>
             {event.location && (
-              <p className="text-xs text-stone-400 flex items-center gap-1">
+              <p className="font-sans text-xs text-ink-tertiary flex items-center gap-1">
                 <MapPin size={11} />
                 {event.location}
               </p>
@@ -81,19 +85,19 @@ function EventCard({
           </div>
 
           <div className="text-right shrink-0 ml-3">
-            <p className="text-base font-bold text-amber-700">
+            <p className="font-sans text-sm text-ink font-light">
               {event.fee === 0 ? "無料" : `¥${event.fee.toLocaleString()}`}
             </p>
             {myStatus ? (
-              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 font-sans text-[10px] text-ink-secondary bg-paper-soft px-2 py-0.5">
                 <CheckCircle size={10} />申込済
               </span>
             ) : isFull ? (
-              <span className="inline-flex items-center gap-1 text-[10px] text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 font-sans text-[10px] text-ink-tertiary bg-paper-soft px-2 py-0.5">
                 <Users size={10} />満席
               </span>
             ) : remaining !== null ? (
-              <span className="text-[10px] text-stone-500">残{remaining}席</span>
+              <span className="font-sans text-[10px] text-ink-tertiary">残{remaining}席</span>
             ) : null}
           </div>
         </div>
@@ -203,10 +207,10 @@ export default async function AppEventsPage({
     <div className="max-w-lg mx-auto pb-28">
       {/* ヘッダー */}
       <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-bold text-stone-800 tracking-tight">イベント</h1>
+        <h1 className="font-serif text-xl text-ink font-medium">集 い</h1>
         <Link
           href="/app/events/my"
-          className="flex items-center gap-1 text-xs text-amber-700 font-semibold bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors"
+          className="font-sans flex items-center gap-1 text-xs text-ink-secondary bg-paper-soft px-3 py-1.5 border-[0.5px] border-border hover:bg-paper-cream transition-colors"
         >
           <CheckCircle size={12} />
           申込済み
@@ -216,7 +220,7 @@ export default async function AppEventsPage({
       {/* 検索バー */}
       <div className="px-4 pb-3">
         <Suspense>
-          <SearchBar placeholder="イベントを検索…" />
+          <SearchBar placeholder="集いを検索…" />
         </Suspense>
       </div>
 
@@ -224,33 +228,37 @@ export default async function AppEventsPage({
       <div className="flex gap-2 overflow-x-auto px-5 pb-4 scrollbar-hide">
         <Link
           href="/app/events"
-          className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+          className={`flex-shrink-0 font-sans px-4 py-1.5 text-xs transition-colors ${
             !category
-              ? "bg-amber-700 text-white shadow-sm"
-              : "bg-white text-stone-500 border border-stone-200 hover:border-amber-300"
+              ? "bg-ink text-paper"
+              : "bg-paper text-ink-tertiary border-[0.5px] border-border hover:border-ink"
           }`}
         >
           すべて
         </Link>
-        {categories.map((c) => (
-          <Link
-            key={c}
-            href={`/app/events?category=${c}`}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-              category === c
-                ? "bg-amber-700 text-white shadow-sm"
-                : "bg-white text-stone-500 border border-stone-200 hover:border-amber-300"
-            }`}
-          >
-            {getCategoryIcon(c)} {getCategoryLabel(c)}
-          </Link>
-        ))}
+        {categories.map((c) => {
+          const CategoryIcon = getCategoryIcon(c);
+          return (
+            <Link
+              key={c}
+              href={`/app/events?category=${c}`}
+              className={`flex-shrink-0 font-sans px-4 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
+                category === c
+                  ? "bg-ink text-paper"
+                  : "bg-paper text-ink-tertiary border-[0.5px] border-border hover:border-ink"
+              }`}
+            >
+              <CategoryIcon size={13} />
+              {getCategoryLabel(c)}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="px-4 space-y-6">
         {!hasAnyEvents && (
-          <div className="bg-white rounded-2xl border border-stone-100 p-12 text-center shadow-sm">
-            <p className="text-stone-400 text-sm">開催予定のイベントはありません</p>
+          <div className="py-8 text-center">
+            <p className="font-serif text-sm text-ink-tertiary font-light">開催予定の集いはありません</p>
           </div>
         )}
 
@@ -258,27 +266,33 @@ export default async function AppEventsPage({
         {favoriteTempleIds.length === 0 && (
           <Link
             href="/app/temples"
-            className="flex items-center gap-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-2xl border border-rose-100 px-4 py-4 hover:shadow-md transition-all"
+            className="flex items-center gap-4 bg-paper-soft px-4 py-4 hover:bg-paper-cream transition-colors"
+            style={{ border: "0.5px solid var(--color-border)" }}
           >
-            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-              <Heart size={20} className="text-rose-400" />
+            <div
+              className="w-11 h-11 bg-paper flex items-center justify-center shrink-0"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            >
+              <Heart size={20} className="text-ink-tertiary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-serif text-sm font-bold text-stone-800">お寺をフォローしよう</p>
-              <p className="font-serif text-xs text-stone-500 mt-0.5">
-                フォローするとそのお寺のイベントがここに表示されます
+              <p className="font-serif text-sm text-ink font-light">お寺をフォローしよう</p>
+              <p className="font-serif text-xs text-ink-tertiary font-light mt-0.5">
+                フォローするとそのお寺の集いがここに表示されます
               </p>
             </div>
-            <span className="shrink-0 text-xs font-semibold text-amber-700 bg-white px-3 py-1.5 rounded-full border border-amber-200 shadow-sm whitespace-nowrap">
+            <span
+              className="shrink-0 font-sans text-xs text-ink-secondary bg-paper border-[0.5px] border-border px-3 py-1.5 whitespace-nowrap"
+            >
               お寺を探す
             </span>
           </Link>
         )}
 
-        {/* フォロー中のお寺のイベント */}
+        {/* フォロー中のお寺の集い */}
         {favoriteEvents.length > 0 && (
           <section>
-            <SectionLabel>フォロー中のお寺のイベント</SectionLabel>
+            <SectionLabel>フォロー中のお寺の集い</SectionLabel>
             <div className="space-y-3">
               {favoriteEvents.map((event) => (
                 <EventCard key={event.id} event={event} showTemple={true}
@@ -288,11 +302,11 @@ export default async function AppEventsPage({
           </section>
         )}
 
-        {/* その他のイベント */}
+        {/* その他の集い */}
         {otherEvents.length > 0 && (
           <section>
             {favoriteEvents.length > 0 && (
-              <SectionLabel>すべてのお寺のイベント</SectionLabel>
+              <SectionLabel>すべての集い</SectionLabel>
             )}
             <div className="space-y-3">
               {otherEvents.map((event) => (
@@ -309,12 +323,12 @@ export default async function AppEventsPage({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="h-px flex-1 bg-stone-100" />
-      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest whitespace-nowrap">
+    <div className="flex items-center gap-3 mb-3">
+      <div className="h-px flex-1" style={{ background: "var(--color-border-thin)" }} />
+      <span className="font-serif text-[10px] text-ink-tertiary tracking-section whitespace-nowrap">
         {children}
       </span>
-      <div className="h-px flex-1 bg-stone-100" />
+      <div className="h-px flex-1" style={{ background: "var(--color-border-thin)" }} />
     </div>
   );
 }

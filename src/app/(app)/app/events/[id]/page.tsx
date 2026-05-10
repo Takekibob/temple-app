@@ -8,6 +8,11 @@ import ShareButton from "@/components/shared/ShareButton";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { MapPin, Clock, Users, Coins, ChevronLeft, CheckCircle, Globe, ExternalLink } from "lucide-react";
 
+function CategoryLabel({ category }: { category: string }) {
+  const Icon = getCategoryIcon(category);
+  return <><Icon size={12} className="inline mr-1" />{getCategoryLabel(category)}</>;
+}
+
 const PARTICIPATION_STATUS_LABELS: Record<string, string> = {
   APPLIED: "申込済み（確認待ち）",
   CONFIRMED: "参加確定",
@@ -67,7 +72,7 @@ export default async function AppEventDetailPage({
           </div>
           <div className="absolute bottom-3 left-4 flex gap-1.5">
             <span className="bg-white/90 backdrop-blur-sm text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-              {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+              <CategoryLabel category={event.category} />
             </span>
           </div>
         </div>
@@ -90,7 +95,7 @@ export default async function AppEventDetailPage({
           {!event.imageUrl && (
             <div className="flex gap-1.5 mb-2">
               <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">
-                {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+                <CategoryLabel category={event.category} />
               </span>
             </div>
           )}

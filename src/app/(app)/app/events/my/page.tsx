@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { BookOpen, Clock, ChevronRight, CheckCircle, Users, PenLine } from "lucide-react";
 
+function CategoryLabel({ category }: { category: string }) {
+  const Icon = getCategoryIcon(category);
+  return <><Icon size={12} className="inline mr-1" />{getCategoryLabel(category)}</>;
+}
+
 const STATUS_LABELS: Record<string, string> = {
   APPLIED: "確認待ち",
   CONFIRMED: "参加確定",
@@ -83,7 +88,7 @@ export default async function MyEventsPage() {
             className="block bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-5 shadow-md text-white hover:from-teal-700 hover:to-teal-900 transition-colors"
           >
             <p className="text-xs font-semibold text-teal-200 uppercase tracking-widest mb-2">次のイベント</p>
-            <p className="text-xs text-teal-200 mb-1">{getCategoryIcon(next.event.category)} {getCategoryLabel(next.event.category)}</p>
+            <p className="text-xs text-teal-200 mb-1"><CategoryLabel category={next.event.category} /></p>
             <p className="font-serif text-xl font-bold mb-3 leading-snug">{next.event.title}</p>
             <div className="flex items-center gap-4 text-sm text-teal-100">
               <span className="flex items-center gap-1.5">
@@ -170,7 +175,7 @@ function ParticipationRow({
           </div>
           <div>
             <p className="text-xs text-stone-400 mb-0.5">
-              {getCategoryIcon(p.event.category)} {getCategoryLabel(p.event.category)}
+              <CategoryLabel category={p.event.category} />
             </p>
             <p className={`font-serif text-sm font-semibold leading-snug ${past ? "text-stone-500" : "text-stone-800"}`}>
               {p.event.title}

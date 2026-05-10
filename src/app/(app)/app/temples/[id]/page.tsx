@@ -7,6 +7,11 @@ import { getCategoryLabel, getCategoryIcon } from "@/lib/eventCategories";
 import { MapPin, Phone, Globe, CalendarDays, Home, ChevronLeft, ChevronRight, Users, Stamp, Youtube, Instagram, MessageCircle } from "lucide-react";
 import FollowButton from "./FollowButton";
 
+function CategoryLabel({ category }: { category: string }) {
+  const Icon = getCategoryIcon(category);
+  return <><Icon size={12} className="inline mr-1" />{getCategoryLabel(category)}</>;
+}
+
 export default async function TempleProfilePage({
   params,
 }: {
@@ -206,7 +211,7 @@ export default async function TempleProfilePage({
                   className="flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors">
                   <div>
                     <p className="text-xs text-stone-400 mb-0.5">
-                      {getCategoryIcon(event.category)} {getCategoryLabel(event.category)}
+                      <CategoryLabel category={event.category} />
                     </p>
                     <p className="text-sm font-semibold text-stone-800">{event.title}</p>
                     <p className="text-xs text-stone-400 mt-0.5">
