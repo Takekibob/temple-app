@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { ChevronLeft, CheckCircle2 } from "lucide-react";
 import { resetPassword } from "@/app/auth/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,24 +29,23 @@ export default function ForgotPasswordPage() {
     return (
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-2">🏛</div>
-          <h1 className="text-2xl font-bold text-stone-800">てらログ</h1>
+          <h1 className="font-serif text-4xl text-ink">てらログ</h1>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 text-center space-y-3">
-          <div className="text-3xl">✅</div>
-          <p className="font-semibold text-stone-800">リセットメールを送信しました</p>
-          <p className="text-sm text-stone-500">
+        <div className="bg-paper p-6 text-center space-y-3" style={{ border: "0.5px solid var(--color-border)" }}>
+          <CheckCircle2 size={28} className="text-ink-secondary mx-auto" />
+          <p className="font-serif text-sm font-medium text-ink">リセットメールを送信しました</p>
+          <p className="font-serif text-sm text-ink-secondary leading-relaxed">
             ご登録のメールアドレス宛にパスワード再設定用のリンクをお送りしました。
             <br />
             メール内のリンクをクリックしてください。
           </p>
-          <p className="text-xs text-stone-400 pt-2">
+          <p className="font-serif text-xs text-ink-tertiary pt-2">
             メールが届かない場合は迷惑メールフォルダもご確認ください。
           </p>
         </div>
-        <p className="text-center text-sm text-stone-500 mt-5">
-          <Link href="/" className="text-amber-700 hover:text-amber-800 font-medium">
-            ログイン画面に戻る
+        <p className="font-serif text-center text-sm text-ink-tertiary mt-5">
+          <Link href="/" className="inline-flex items-center gap-1 text-ink-secondary hover:text-ink">
+            <ChevronLeft size={14} />ログイン画面に戻る
           </Link>
         </p>
       </div>
@@ -55,26 +55,25 @@ export default function ForgotPasswordPage() {
   return (
     <div className="w-full max-w-sm">
       <div className="text-center mb-6">
-        <div className="text-4xl mb-2">🏛</div>
-        <h1 className="text-2xl font-bold text-stone-800">てらログ</h1>
-        <p className="text-stone-500 text-sm mt-1">パスワードをお忘れの方</p>
+        <h1 className="font-serif text-4xl text-ink">てらログ</h1>
+        <p className="font-serif text-sm text-ink-secondary mt-2">パスワードをお忘れの方</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+      <div className="bg-paper p-6" style={{ border: "0.5px solid var(--color-border)" }}>
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-paper-soft font-serif text-sm text-ink" style={{ border: "0.5px solid var(--color-border)" }}>
             {errorMsg}
           </div>
         )}
 
-        <p className="text-sm text-stone-500 mb-4">
+        <p className="font-serif text-sm text-ink-secondary mb-4 leading-relaxed">
           ご登録のメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。
         </p>
 
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-stone-700">
-              メールアドレス <span className="text-red-500">*</span>
+            <Label htmlFor="email" className="font-serif text-sm text-ink-secondary">
+              メールアドレス <span className="text-ink-secondary">*</span>
             </Label>
             <Input
               id="email"
@@ -82,23 +81,23 @@ export default function ForgotPasswordPage() {
               type="email"
               required
               placeholder="example@temple.jp"
-              className="border-stone-200 focus-visible:ring-amber-500"
+              className="border-border focus-visible:ring-1 focus-visible:ring-ink font-sans"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isPending}
-            className="w-full bg-amber-700 hover:bg-amber-800 text-white"
+            className="w-full bg-ink text-paper hover:opacity-90 disabled:opacity-40 font-sans"
           >
             {isPending ? "送信中…" : "リセットメールを送る"}
           </Button>
         </form>
       </div>
 
-      <p className="text-center text-sm text-stone-500 mt-5">
-        <Link href="/" className="text-amber-700 hover:text-amber-800 font-medium">
-          ← ログイン画面に戻る
+      <p className="font-serif text-center text-sm text-ink-tertiary mt-5">
+        <Link href="/" className="inline-flex items-center gap-1 text-ink-secondary hover:text-ink">
+          <ChevronLeft size={14} />ログイン画面に戻る
         </Link>
       </p>
     </div>
