@@ -34,7 +34,7 @@ export default async function RootPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-paper-soft flex items-center justify-center p-4">
       <Suspense fallback={<div className="w-full max-w-sm" />}>
         <LoginForm />
       </Suspense>
