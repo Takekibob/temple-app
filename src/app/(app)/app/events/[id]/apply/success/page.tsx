@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { CheckCircle2, AlertTriangle, Smartphone } from "lucide-react";
+import LineFollowPrompt from "@/components/teralog/LineFollowPrompt";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -36,6 +37,7 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
   }
 
   const isPaid = sessionStatus === "paid";
+  const lineAddUrl = process.env.LINE_ADD_FRIEND_URL ?? null;
 
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
@@ -55,7 +57,9 @@ export default async function ApplySuccessPage({ params, searchParams }: Props) 
               <p className="text-xs text-stone-400 mb-6">{eventTitle}</p>
             )}
 
-            <div className="bg-stone-50 rounded-xl p-4 mb-6 text-left space-y-2">
+            <LineFollowPrompt lineUserId={authUser.member?.lineUserId} addUrl={lineAddUrl} />
+
+            <div className="bg-stone-50 rounded-xl p-4 my-6 text-left space-y-2">
               <p className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
                 <Smartphone size={13} />
                 アプリに戻るには
