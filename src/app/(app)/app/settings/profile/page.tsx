@@ -1,40 +1,44 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProfileEditClient from "./ProfileEditClient";
 
 export default async function ProfileEditPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email! },
-    include: { member: true },
+  const member = await prisma.member.findFirst({
+    where: { user: { email: authUser.email } },
+    select: { postalCode: true, address: true, interestTags: true },
   });
-  if (!user) redirect("/");
 
-  const interestTags = Array.isArray(user.member?.interestTags)
-    ? (user.member.interestTags as string[])
+  const interestTags = Array.isArray(member?.interestTags)
+    ? (member!.interestTags as string[])
     : [];
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-100 px-4 py-4 flex items-center gap-2">
-        <Link href="/app/settings" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"><ChevronLeft size={18} /></Link>
-        <h1 className="text-base font-bold text-stone-800">プロフィール編集</h1>
-      </header>
-      <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="pb-28 max-w-lg mx-auto">
+      <div className="px-5 pt-6 pb-5 flex items-center gap-2">
+        <Link
+          href="/app/settings"
+          className="flex items-center gap-1 font-serif text-[11px] text-ink-tertiary hover:text-ink transition-colors"
+        >
+          <ChevronLeft size={13} />
+          設定
+        </Link>
+      </div>
+      <div className="px-5">
+        <p className="font-serif text-[11px] text-ink-tertiary tracking-section mb-4">プロフィール編集</p>
         <ProfileEditClient
-          user={{ name: user.name, email: user.email, phone: user.phone ?? "" }}
-          member={user.member ? {
-            postalCode: user.member.postalCode ?? "",
-            address: user.member.address ?? "",
+          user={{ name: authUser.name, email: authUser.email, phone: authUser.phone ?? "" }}
+          member={member ? {
+            postalCode: member.postalCode ?? "",
+            address: member.address ?? "",
             interestTags,
           } : null}
-          avatarUrl={user.avatarUrl ?? null}
+          avatarUrl={authUser.avatarUrl ?? null}
         />
       </div>
     </div>

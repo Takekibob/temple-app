@@ -110,39 +110,46 @@ export default function NotificationsClient({
   return (
     <div className="space-y-4">
       {pushMsg && (
-        <div className={`p-3 border rounded-lg text-sm ${pushStatus === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-green-50 border-green-200 text-green-700"}`}>
+        <div
+          className={`p-3 font-serif text-sm ${
+            pushStatus === "error" ? "text-ink" : "text-ink-secondary"
+          } bg-paper-soft`}
+          style={{ border: "0.5px solid var(--color-border)" }}
+        >
           {pushMsg}
         </div>
       )}
 
       {/* 通知種別 */}
       {memberId && (
-        <div className="bg-white rounded-2xl border border-stone-100 divide-y divide-stone-50">
-          <div className="px-5 pt-4 pb-2">
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">通知種別</p>
-          </div>
+        <div style={{ border: "0.5px solid var(--color-border)" }}>
           <ToggleRow
             label="イベント通知"
             description="新しいイベントや申込確認の通知"
             checked={notifyEvent}
             onChange={(v) => updateMemberSetting("notifyEvent", v)}
           />
-          <ToggleRow
-            label="お知らせ通知"
-            description="お寺からのお知らせの通知"
-            checked={notifyAnnouncement}
-            onChange={(v) => updateMemberSetting("notifyAnnouncement", v)}
-          />
+          <div style={{ borderTop: "0.5px solid var(--color-border-thin)" }}>
+            <ToggleRow
+              label="お知らせ通知"
+              description="お寺からのお知らせの通知"
+              checked={notifyAnnouncement}
+              onChange={(v) => updateMemberSetting("notifyAnnouncement", v)}
+            />
+          </div>
         </div>
       )}
 
       {/* プッシュ通知 */}
       {supported ? (
-        <div className="bg-white rounded-2xl border border-stone-100 p-5">
+        <div
+          className="bg-paper px-4 py-3.5"
+          style={{ border: "0.5px solid var(--color-border)" }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-serif text-sm font-semibold text-stone-700">プッシュ通知</p>
-              <p className="font-serif text-xs text-stone-400 mt-0.5">ブラウザへのリアルタイム通知</p>
+              <p className="font-serif text-sm text-ink font-light">プッシュ通知</p>
+              <p className="font-serif text-xs text-ink-tertiary mt-0.5">ブラウザへのリアルタイム通知</p>
             </div>
             <button
               type="button"
@@ -150,19 +157,30 @@ export default function NotificationsClient({
               aria-checked={isSubscribed}
               disabled={pushStatus === "loading"}
               onClick={isSubscribed ? handleDisable : handleEnable}
-              className={`relative w-11 h-6 rounded-full transition-colors ${isSubscribed ? "bg-amber-700" : "bg-stone-200"} disabled:opacity-40`}
+              className={`relative w-11 h-6 transition-colors disabled:opacity-40 ${
+                isSubscribed ? "bg-ink" : "bg-paper-soft"
+              }`}
+              style={!isSubscribed ? { border: "0.5px solid var(--color-border)" } : undefined}
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isSubscribed ? "translate-x-5" : ""}`} />
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-paper transition-transform ${
+                  isSubscribed ? "translate-x-5" : ""
+                }`}
+                style={{ border: "0.5px solid var(--color-border)" }}
+              />
             </button>
           </div>
           {!isSubscribed && (
-            <p className="text-xs text-stone-400 mt-3 leading-relaxed">
+            <p className="font-serif text-xs text-ink-tertiary mt-3 leading-relaxed">
               スイッチをオンにするとブラウザの通知許可が求められます。
             </p>
           )}
         </div>
       ) : (
-        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 text-sm text-stone-500">
+        <div
+          className="bg-paper-soft p-5 font-serif text-sm text-ink-tertiary"
+          style={{ border: "0.5px solid var(--color-border)" }}
+        >
           このブラウザはプッシュ通知に対応していません。
         </div>
       )}
@@ -179,19 +197,27 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 py-3.5">
+    <div className="flex items-center justify-between bg-paper px-4 py-3.5">
       <div>
-        <p className="font-serif text-sm font-semibold text-stone-700">{label}</p>
-        <p className="font-serif text-xs text-stone-400 mt-0.5">{description}</p>
+        <p className="font-serif text-sm text-ink font-light">{label}</p>
+        <p className="font-serif text-xs text-ink-tertiary mt-0.5">{description}</p>
       </div>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ml-4 ${checked ? "bg-amber-700" : "bg-stone-200"}`}
+        className={`relative w-11 h-6 transition-colors shrink-0 ml-4 ${
+          checked ? "bg-ink" : "bg-paper-soft"
+        }`}
+        style={!checked ? { border: "0.5px solid var(--color-border)" } : undefined}
       >
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-paper transition-transform ${
+            checked ? "translate-x-5" : ""
+          }`}
+          style={{ border: "0.5px solid var(--color-border)" }}
+        />
       </button>
     </div>
   );

@@ -1,33 +1,18 @@
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { prisma } from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
 import MypageClient from "./MypageClient";
 
-export default async function MypagePage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
+export default async function SettingsPage() {
+  const authUser = await getAuthUser();
   if (!authUser) redirect("/");
-
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email! },
-    include: { member: true },
-  });
-
-  if (!user) redirect("/");
+  if (!authUser.member) redirect("/app");
 
   return (
     <MypageClient
-      user={{ name: user.name, email: user.email, avatarUrl: user.avatarUrl ?? null }}
-      member={
-        user.member
-          ? { id: user.member.id, familyName: user.member.familyName }
-          : null
-      }
-      templeId={user.templeId ?? null}
-      lineLinked={!!user.member?.lineUserId}
+      user={{ name: authUser.name, email: authUser.email, avatarUrl: authUser.avatarUrl ?? null }}
+      member={{ id: authUser.member.id, familyName: authUser.member.familyName }}
+      templeId={authUser.templeId ?? null}
+      lineLinked={!!authUser.member.lineUserId}
     />
   );
 }

@@ -1,41 +1,31 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { prisma } from "@/lib/prisma";
+import { ChevronLeft } from "lucide-react";
+import { getAuthUser } from "@/lib/auth";
 import NotificationsClient from "./NotificationsClient";
 
 export default async function NotificationsPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
   if (!authUser) redirect("/");
 
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email! },
-    select: {
-      pushEnabled: true,
-      member: {
-        select: {
-          id: true,
-          notifyEvent: true,
-          notifyAnnouncement: true,
-        },
-      },
-    },
-  });
-  if (!user) redirect("/");
-
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-100 px-4 py-4 flex items-center gap-2">
-        <Link href="/app/settings" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors">‹</Link>
-        <h1 className="text-base font-bold text-stone-800">通知設定</h1>
-      </header>
-      <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="pb-28 max-w-lg mx-auto">
+      <div className="px-5 pt-6 pb-5 flex items-center gap-2">
+        <Link
+          href="/app/settings"
+          className="flex items-center gap-1 font-serif text-[11px] text-ink-tertiary hover:text-ink transition-colors"
+        >
+          <ChevronLeft size={13} />
+          設定
+        </Link>
+      </div>
+      <div className="px-5">
+        <p className="font-serif text-[11px] text-ink-tertiary tracking-section mb-4">通知設定</p>
         <NotificationsClient
-          pushEnabled={user.pushEnabled}
-          memberId={user.member?.id ?? null}
-          notifyEvent={user.member?.notifyEvent ?? true}
-          notifyAnnouncement={user.member?.notifyAnnouncement ?? true}
+          pushEnabled={authUser.pushEnabled}
+          memberId={authUser.member?.id ?? null}
+          notifyEvent={authUser.member?.notifyEvent ?? true}
+          notifyAnnouncement={authUser.member?.notifyAnnouncement ?? true}
         />
       </div>
     </div>

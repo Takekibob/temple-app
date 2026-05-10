@@ -68,27 +68,34 @@ export default function ProfileEditClient({ user, member, avatarUrl: initialAvat
   return (
     <div className="space-y-4">
       {successMsg && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">{successMsg}</div>
+        <div className="p-3 bg-paper-soft font-serif text-sm text-ink-secondary" style={{ border: "0.5px solid var(--color-border)" }}>
+          {successMsg}
+        </div>
       )}
       {errorMsg && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{errorMsg}</div>
+        <div className="p-3 bg-paper-soft font-serif text-sm text-ink" style={{ border: "0.5px solid var(--color-border)" }}>
+          {errorMsg}
+        </div>
       )}
 
       {/* アバター */}
-      <div className="bg-white rounded-2xl border border-stone-100 p-5 flex flex-col items-center gap-3">
+      <div
+        className="bg-paper p-5 flex flex-col items-center gap-3"
+        style={{ border: "0.5px solid var(--color-border)" }}
+      >
         <div className="relative">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-sm">
+          <div className="w-20 h-20 overflow-hidden bg-paper-soft flex items-center justify-center">
             {avatarUrl ? (
               <Image src={avatarUrl} alt="プロフィール画像" fill className="object-cover" />
             ) : (
-              <span className="text-white font-bold text-3xl">{user.name.charAt(0)}</span>
+              <span className="font-serif text-3xl text-ink-secondary">{user.name.charAt(0)}</span>
             )}
           </div>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={avatarUploading}
-            className="absolute -bottom-1 -right-1 w-7 h-7 bg-amber-700 hover:bg-amber-800 text-white rounded-full flex items-center justify-center shadow-md transition-colors disabled:opacity-60"
+            className="absolute -bottom-1 -right-1 w-7 h-7 bg-ink hover:opacity-90 text-paper flex items-center justify-center transition-opacity disabled:opacity-40"
           >
             {avatarUploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
           </button>
@@ -100,63 +107,97 @@ export default function ProfileEditClient({ user, member, avatarUrl: initialAvat
           onChange={handleAvatarChange}
           className="hidden"
         />
-        <p className="font-serif text-xs text-stone-400">タップして写真を変更（3MB以下）</p>
+        <p className="font-serif text-xs text-ink-tertiary">タップして写真を変更（3MB以下）</p>
       </div>
 
-      {/* その他の情報 */}
-      <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
+      {/* フォーム */}
+      <div
+        className="bg-paper p-5 space-y-4"
+        style={{ border: "0.5px solid var(--color-border)" }}
+      >
         <form action={handleSubmit} className="space-y-4">
           <div>
-            <label className="font-serif block text-sm font-medium text-stone-700 mb-1.5">
-              お名前 <span className="text-red-500">*</span>
+            <label className="font-serif block text-sm text-ink-secondary mb-1.5">
+              お名前 <span className="text-ink-secondary">*</span>
             </label>
-            <input name="name" defaultValue={user.name} required
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <input
+              name="name"
+              defaultValue={user.name}
+              required
+              className="w-full px-3 py-2.5 font-sans text-sm text-ink bg-paper focus:outline-none focus:ring-1 focus:ring-ink"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            />
           </div>
 
           <div>
-            <label className="font-serif block text-sm font-medium text-stone-700 mb-1.5">電話番号</label>
-            <input name="phone" type="tel" defaultValue={user.phone} placeholder="090-0000-0000"
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <label className="font-serif block text-sm text-ink-secondary mb-1.5">電話番号</label>
+            <input
+              name="phone"
+              type="tel"
+              defaultValue={user.phone}
+              placeholder="090-0000-0000"
+              className="w-full px-3 py-2.5 font-sans text-sm text-ink bg-paper focus:outline-none focus:ring-1 focus:ring-ink placeholder:text-ink-tertiary"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            />
           </div>
 
           <div>
-            <label className="font-serif block text-sm font-medium text-stone-700 mb-1.5">郵便番号</label>
-            <input name="postalCode" defaultValue={member?.postalCode ?? ""} placeholder="000-0000"
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <label className="font-serif block text-sm text-ink-secondary mb-1.5">郵便番号</label>
+            <input
+              name="postalCode"
+              defaultValue={member?.postalCode ?? ""}
+              placeholder="000-0000"
+              className="w-full px-3 py-2.5 font-sans text-sm text-ink bg-paper focus:outline-none focus:ring-1 focus:ring-ink placeholder:text-ink-tertiary"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            />
           </div>
 
           <div>
-            <label className="font-serif block text-sm font-medium text-stone-700 mb-1.5">住所</label>
-            <input name="address" defaultValue={member?.address ?? ""} placeholder="東京都〇〇区..."
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <label className="font-serif block text-sm text-ink-secondary mb-1.5">住所</label>
+            <input
+              name="address"
+              defaultValue={member?.address ?? ""}
+              placeholder="東京都〇〇区..."
+              className="w-full px-3 py-2.5 font-sans text-sm text-ink bg-paper focus:outline-none focus:ring-1 focus:ring-ink placeholder:text-ink-tertiary"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            />
           </div>
 
           {member && (
             <div>
-              <p className="font-serif text-sm font-medium text-stone-700 mb-2">興味・関心</p>
+              <p className="font-serif text-sm text-ink-secondary mb-2">興味・関心</p>
               <div className="grid grid-cols-2 gap-2">
                 {INTEREST_TAGS.map((tag) => (
                   <label key={tag} className="flex items-center gap-2 cursor-pointer py-1">
-                    <input type="checkbox" checked={selectedTags.has(tag)} onChange={() => toggleTag(tag)}
-                      className="accent-amber-700 w-4 h-4" />
-                    <span className="text-sm text-stone-700">{tag}</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedTags.has(tag)}
+                      onChange={() => toggleTag(tag)}
+                      className="w-4 h-4"
+                    />
+                    <span className="font-serif text-sm text-ink font-light">{tag}</span>
                   </label>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="pt-1 border-t border-stone-100">
-            <p className="text-xs text-stone-400 mb-1">メールアドレス</p>
-            <p className="text-sm text-stone-600">{user.email}</p>
-            <a href="/auth/forgot-password" className="text-xs text-amber-700 hover:underline mt-3 inline-block">
-              パスワードを変更する →
+          <div className="pt-3" style={{ borderTop: "0.5px solid var(--color-border-thin)" }}>
+            <p className="font-serif text-xs text-ink-tertiary mb-1">メールアドレス</p>
+            <p className="font-serif text-sm text-ink-secondary">{user.email}</p>
+            <a
+              href="/auth/forgot-password"
+              className="font-serif text-xs text-ink-tertiary hover:text-ink mt-3 inline-block border-b-[0.5px] border-border"
+            >
+              パスワードを変更する
             </a>
           </div>
 
-          <button type="submit" disabled={isPending}
-            className="w-full py-3 bg-amber-700 text-white text-sm font-medium rounded-xl hover:bg-amber-800 disabled:opacity-40 transition-colors">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full py-3 bg-ink text-paper font-sans text-sm hover:opacity-90 disabled:opacity-40 transition-opacity"
+          >
             {isPending ? "保存中…" : "変更を保存"}
           </button>
         </form>
