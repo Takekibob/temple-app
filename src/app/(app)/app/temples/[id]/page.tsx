@@ -82,54 +82,63 @@ export default async function TempleProfilePage({
 
   const isFollowing = !!isFollowingRaw;
 
-
   return (
     <div className="max-w-lg mx-auto pb-28">
       {/* カバー画像 */}
       {temple.coverImageUrl ? (
-        <div className="relative h-52 bg-stone-200 overflow-hidden">
+        <div className="relative h-52 bg-paper-soft overflow-hidden">
           <Image src={temple.coverImageUrl} alt={temple.name} fill className="object-cover" />
           <div className="absolute top-4 left-4">
             <Link
               href="/app/events"
-              className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+              className="w-9 h-9 bg-paper/90 flex items-center justify-center"
+              style={{ border: "0.5px solid var(--color-border)" }}
             >
-              <ChevronLeft size={18} className="text-stone-700" />
+              <ChevronLeft size={18} className="text-ink-secondary" />
             </Link>
           </div>
         </div>
       ) : (
-        <div className="h-28 bg-gradient-to-b from-amber-50 to-stone-50 relative px-4 flex items-center">
+        <div
+          className="h-24 bg-paper-soft relative px-4 flex items-center"
+          style={{ borderBottom: "0.5px solid var(--color-border)" }}
+        >
           <Link
             href="/app/events"
-            className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
+            className="inline-flex items-center gap-1 font-serif text-sm text-ink-tertiary hover:text-ink"
           >
             <ChevronLeft size={16} />
-            イベント一覧
+            集い一覧
           </Link>
         </div>
       )}
 
-      <div className="px-4 pt-4 space-y-4">
+      <div className="px-4 pt-4 space-y-5">
         {/* 寺院基本情報 */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+        <div className="bg-paper p-4" style={{ border: "0.5px solid var(--color-border)" }}>
           <div className="flex items-start gap-4 mb-4">
             {temple.logoUrl ? (
-              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0 shadow-sm">
+              <div
+                className="relative w-16 h-16 overflow-hidden flex-shrink-0"
+                style={{ border: "0.5px solid var(--color-border)" }}
+              >
                 <Image src={temple.logoUrl} alt={temple.name} fill className="object-cover" />
               </div>
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl flex-shrink-0">
-                🏯
+              <div
+                className="w-16 h-16 bg-paper-soft flex items-center justify-center flex-shrink-0"
+                style={{ border: "0.5px solid var(--color-border)" }}
+              >
+                <span className="font-serif text-xl text-ink-tertiary">{temple.name.charAt(0)}</span>
               </div>
             )}
             <div className="flex-1">
-              <h1 className="font-serif text-xl font-bold text-stone-800">{temple.name}</h1>
+              <h1 className="font-serif text-xl text-ink font-medium">{temple.name}</h1>
               {temple.denomination && (
-                <p className="font-serif text-sm text-amber-700 font-medium mt-0.5">{temple.denomination}</p>
+                <p className="font-serif text-sm text-ink-secondary font-light mt-0.5">{temple.denomination}</p>
               )}
               {followerCount > 0 && (
-                <p className="text-xs text-stone-400 mt-1 flex items-center gap-1">
+                <p className="font-sans text-xs text-ink-tertiary mt-1 flex items-center gap-1">
                   <Users size={11} />
                   {followerCount}人がフォロー中
                 </p>
@@ -138,17 +147,20 @@ export default async function TempleProfilePage({
           </div>
 
           {/* 連絡先 */}
-          <div className="divide-y divide-stone-50">
+          <div>
             {temple.address && (
-              <div className="flex items-start gap-3 py-2.5">
-                <MapPin size={14} className="text-stone-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-stone-600">{temple.address}</span>
+              <div
+                className="flex items-start gap-3 py-2.5"
+                style={temple.phone ? { borderBottom: "0.5px solid var(--color-border-thin)" } : undefined}
+              >
+                <MapPin size={14} className="text-ink-tertiary shrink-0 mt-0.5" />
+                <span className="font-serif text-sm text-ink-secondary font-light">{temple.address}</span>
               </div>
             )}
             {temple.phone && (
               <div className="flex items-center gap-3 py-2.5">
-                <Phone size={14} className="text-stone-400 shrink-0" />
-                <a href={`tel:${temple.phone}`} className="text-sm text-amber-700 hover:underline">
+                <Phone size={14} className="text-ink-tertiary shrink-0" />
+                <a href={`tel:${temple.phone}`} className="font-sans text-sm text-ink-secondary hover:text-ink">
                   {temple.phone}
                 </a>
               </div>
@@ -157,28 +169,32 @@ export default async function TempleProfilePage({
 
           {/* リンク集 */}
           {(temple.websiteUrl || temple.instagramUrl || temple.lineOfficialUrl || temple.youtubeUrl) && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div
+              className="grid grid-cols-2 gap-2 pt-3 mt-1"
+              style={{ borderTop: "0.5px solid var(--color-border-thin)" }}
+            >
               {temple.websiteUrl && (
                 <Link href={temple.websiteUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-stone-700 hover:bg-stone-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  className="flex items-center justify-center gap-2 bg-ink text-paper font-sans text-xs py-2.5 hover:opacity-80 transition-opacity">
                   <Globe size={14} />公式サイト
                 </Link>
               )}
               {temple.instagramUrl && (
                 <Link href={temple.instagramUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  className="flex items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-sans text-xs py-2.5 transition-colors">
                   <Instagram size={14} />Instagram
                 </Link>
               )}
               {temple.lineOfficialUrl && (
                 <Link href={temple.lineOfficialUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05b34a] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  className="flex items-center justify-center gap-2 text-white font-sans text-xs py-2.5"
+                  style={{ background: "#06C755" }}>
                   <MessageCircle size={14} />LINE公式
                 </Link>
               )}
               {temple.youtubeUrl && (
                 <Link href={temple.youtubeUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-sans text-xs py-2.5 transition-colors">
                   <Youtube size={14} />YouTube
                 </Link>
               )}
@@ -188,42 +204,49 @@ export default async function TempleProfilePage({
 
         {/* 説明文 */}
         {temple.description && (
-          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <h2 className="font-serif text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">お寺について</h2>
-            <p className="font-serif text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
+          <div className="bg-paper p-4" style={{ border: "0.5px solid var(--color-border)" }}>
+            <p className="font-serif text-[11px] text-ink-tertiary tracking-section mb-3">お 寺 に つ い て</p>
+            <p className="font-serif text-sm text-ink-secondary font-light leading-relaxed whitespace-pre-wrap">
               {temple.description}
             </p>
           </div>
         )}
 
-        {/* 開催予定イベント */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-          <div className="px-4 pt-4 pb-3 border-b border-stone-50 flex items-center gap-2">
-            <CalendarDays size={14} className="text-amber-600" />
-            <h2 className="font-serif text-sm font-bold text-stone-700">開催予定のイベント</h2>
+        {/* 開催予定の集い */}
+        <div className="bg-paper overflow-hidden" style={{ border: "0.5px solid var(--color-border)" }}>
+          <div
+            className="px-4 pt-4 pb-3 flex items-center gap-2"
+            style={{ borderBottom: "0.5px solid var(--color-border-thin)" }}
+          >
+            <CalendarDays size={14} className="text-ink-tertiary" />
+            <h2 className="font-serif text-sm text-ink font-medium">開催予定の集い</h2>
           </div>
           {events.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-6">開催予定のイベントはありません</p>
+            <p className="font-serif text-sm text-ink-tertiary font-light text-center py-6">開催予定の集いはありません</p>
           ) : (
-            <div className="divide-y divide-stone-50">
-              {events.map((event) => (
-                <Link key={event.id} href={`/app/events/${event.id}`}
-                  className="flex items-center justify-between px-4 py-3.5 hover:bg-stone-50 transition-colors">
+            <div>
+              {events.map((event, i) => (
+                <Link
+                  key={event.id}
+                  href={`/app/events/${event.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-paper-soft transition-colors"
+                  style={i < events.length - 1 ? { borderBottom: "0.5px solid var(--color-border-thin)" } : undefined}
+                >
                   <div>
-                    <p className="text-xs text-stone-400 mb-0.5">
+                    <p className="font-sans text-[10px] text-ink-tertiary mb-0.5">
                       <CategoryLabel category={event.category} />
                     </p>
-                    <p className="text-sm font-semibold text-stone-800">{event.title}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">
+                    <p className="font-serif text-sm text-ink font-light">{event.title}</p>
+                    <p className="font-sans text-xs text-ink-tertiary mt-0.5">
                       {event.eventDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}{" "}
                       {event.startTime}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
-                    <span className="text-xs font-bold text-amber-700">
+                    <span className="font-sans text-xs text-ink">
                       {event.fee === 0 ? "無料" : `¥${event.fee.toLocaleString()}`}
                     </span>
-                    <ChevronRight size={14} className="text-stone-300" />
+                    <ChevronRight size={14} className="text-ink-tertiary" />
                   </div>
                 </Link>
               ))}
@@ -234,34 +257,35 @@ export default async function TempleProfilePage({
         {/* お寺の声 */}
         {recentPosts.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-serif text-sm font-bold text-stone-700">お寺の声</h2>
-              <Link href="/app/posts" className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
-                すべて<ChevronRight size={12} />
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="font-serif text-[11px] text-ink-tertiary tracking-section">お 寺 の 声</p>
+              <Link href="/app/posts" className="font-serif text-[11px] text-ink-tertiary tracking-section flex items-center gap-0.5">
+                すべて見る<ChevronRight size={11} />
               </Link>
             </div>
-            <div className="space-y-2">
-              {recentPosts.map((post) => (
+            <div>
+              {recentPosts.map((post, i) => (
                 <Link
                   key={post.id}
                   href={`/app/posts/${post.id}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                  className="flex items-start gap-3 py-3.5 hover:bg-paper-soft transition-colors"
+                  style={i < recentPosts.length - 1 ? { borderBottom: "0.5px solid var(--color-border-thin)" } : undefined}
                 >
                   {post.photos[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.photos[0].url} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    <img src={post.photos[0].url} alt="" className="w-12 h-12 object-cover shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 bg-stone-50 rounded-lg shrink-0" />
+                    <div className="w-12 h-12 bg-paper-soft shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-800 truncate">
+                    <p className="font-serif text-sm text-ink font-light truncate">
                       {post.title ?? post.body.slice(0, 28) + (post.body.length > 28 ? "…" : "")}
                     </p>
-                    <p className="text-xs text-stone-400 mt-0.5">
+                    <p className="font-sans text-xs text-ink-tertiary mt-0.5">
                       {post.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                     </p>
                   </div>
-                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                  <ChevronRight size={14} className="text-ink-tertiary shrink-0 mt-1" />
                 </Link>
               ))}
             </div>
@@ -271,34 +295,35 @@ export default async function TempleProfilePage({
         {/* 学びの記事 */}
         {recentArticles.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-serif text-sm font-bold text-stone-700">学びの記事</h2>
-              <Link href="/app/articles" className="text-xs text-amber-700 font-medium hover:underline flex items-center gap-0.5">
-                すべて<ChevronRight size={12} />
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="font-serif text-[11px] text-ink-tertiary tracking-section">学 び の 記 事</p>
+              <Link href="/app/articles" className="font-serif text-[11px] text-ink-tertiary tracking-section flex items-center gap-0.5">
+                すべて見る<ChevronRight size={11} />
               </Link>
             </div>
-            <div className="space-y-2">
-              {recentArticles.map((article) => (
+            <div>
+              {recentArticles.map((article, i) => (
                 <Link
                   key={article.slug}
                   href={`/app/articles/${article.slug}`}
-                  className="flex items-center gap-3 bg-white border border-stone-100 rounded-xl px-4 py-3 shadow-sm hover:border-stone-200 hover:shadow-md transition-all"
+                  className="flex items-start gap-3 py-3.5 hover:bg-paper-soft transition-colors"
+                  style={i < recentArticles.length - 1 ? { borderBottom: "0.5px solid var(--color-border-thin)" } : undefined}
                 >
                   {article.coverImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={article.coverImage} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    <img src={article.coverImage} alt="" className="w-12 h-12 object-cover shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 bg-amber-50 rounded-lg shrink-0" />
+                    <div className="w-12 h-12 bg-paper-soft shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-800 truncate">{article.title}</p>
+                    <p className="font-serif text-sm text-ink font-light truncate">{article.title}</p>
                     {article.publishedAt && (
-                      <p className="text-xs text-stone-400 mt-0.5">
+                      <p className="font-sans text-xs text-ink-tertiary mt-0.5">
                         {article.publishedAt.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                       </p>
                     )}
                   </div>
-                  <ChevronRight size={14} className="text-stone-300 shrink-0" />
+                  <ChevronRight size={14} className="text-ink-tertiary shrink-0 mt-1" />
                 </Link>
               ))}
             </div>
@@ -310,7 +335,7 @@ export default async function TempleProfilePage({
           {memberId && (
             <Link
               href={`/app/temples/${id}/visit`}
-              className="flex items-center justify-center gap-2 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-3.5 rounded-2xl shadow-sm transition-colors"
+              className="flex items-center justify-center gap-2 w-full bg-ink text-paper font-sans text-sm py-3.5 hover:opacity-80 transition-opacity"
             >
               <Stamp size={16} />
               参拝を記録する
@@ -320,9 +345,12 @@ export default async function TempleProfilePage({
             <FollowButton templeId={id} initialFollowing={isFollowing} />
           )}
           {isMyTemple && (
-            <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-200">
-              <Home size={16} className="text-amber-700" />
-              <span className="text-amber-800 text-sm font-semibold">あなたの所属寺院です</span>
+            <div
+              className="flex items-center justify-center gap-2 p-4 bg-paper-soft"
+              style={{ border: "0.5px solid var(--color-border)" }}
+            >
+              <Home size={16} className="text-ink-secondary" />
+              <span className="font-serif text-sm text-ink-secondary font-light">あなたの所属寺院です</span>
             </div>
           )}
         </div>

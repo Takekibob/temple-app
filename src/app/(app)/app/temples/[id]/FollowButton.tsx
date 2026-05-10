@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface Props {
   templeId: string;
@@ -41,13 +41,13 @@ export default function FollowButton({ templeId, initialFollowing, redirectAfter
     <button
       onClick={toggle}
       disabled={loading}
-      className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold shadow-sm transition-all disabled:opacity-60 ${
+      className={`flex items-center justify-center gap-2 w-full py-3.5 font-sans text-sm disabled:opacity-60 transition-colors ${
         following
-          ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100"
-          : "bg-white text-stone-700 border border-stone-200 hover:border-rose-300 hover:text-rose-500"
+          ? "bg-paper-soft text-ink-secondary border-[0.5px] border-border hover:bg-paper-cream"
+          : "bg-paper text-ink border-[0.5px] border-border hover:bg-paper-soft"
       }`}
     >
-      <Heart size={16} className={following ? "fill-rose-500 text-rose-500" : ""} />
+      {following && <Check size={16} />}
       {following ? "フォロー中" : "このお寺をフォローする"}
     </button>
   );
