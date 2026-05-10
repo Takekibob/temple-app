@@ -37,7 +37,7 @@ export default async function LineSettingsPage() {
   if (!user.member) {
     return (
       <div className="min-h-screen bg-stone-50">
-        <BackHeader title="LINE設定" />
+        <BackHeader title="LINE 連携" />
         <div className="max-w-lg mx-auto px-4 py-6">
           <p className="text-sm text-stone-500">フォロー後にご利用いただけます。</p>
         </div>
@@ -47,7 +47,7 @@ export default async function LineSettingsPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <BackHeader title="LINE設定" />
+      <BackHeader title="LINE 連携" />
       <div className="max-w-lg mx-auto px-4 py-6">
         <LineSettingsClient
           memberId={user.member.id}

@@ -167,7 +167,7 @@ export default function LineSettingsClient({
       <div className="bg-paper p-5 space-y-3" style={{ border: "0.5px solid var(--color-border)" }}>
         <div className="flex items-center gap-2">
           <Smartphone size={16} className="text-ink-tertiary" />
-          <p className="font-serif text-sm text-ink font-medium">LINE連携</p>
+          <p className="font-serif text-sm text-ink font-medium">TeraLog 公式 LINE 連携</p>
           {lineLinked ? (
             <span className="ml-auto font-sans text-xs bg-paper-soft text-ink-secondary px-2 py-0.5">
               連携済み
@@ -182,7 +182,7 @@ export default function LineSettingsClient({
         {!lineLinked && (
           <div className="space-y-3 pt-1">
             <p className="font-serif text-xs text-ink-tertiary leading-relaxed">
-              LINEを連携するとイベントや行事のリマインドが届きます。
+              TeraLog 公式 LINE と連携すると、参加する集いのリマインドが届きます。
             </p>
 
             {code && remainingSec > 0 ? (
@@ -213,7 +213,7 @@ export default function LineSettingsClient({
                   className="flex items-center justify-center gap-2 w-full py-2.5 text-white font-sans text-sm hover:opacity-90 transition-opacity"
                   style={{ background: "#06C755" }}
                 >
-                  LINEで友達追加する
+                  TeraLog 公式 LINE を友だち追加する
                 </a>
               )}
               <button
@@ -236,7 +236,7 @@ export default function LineSettingsClient({
             >
               <p className="font-serif text-xs text-ink-secondary">連携手順</p>
               <ol className="font-sans text-xs text-ink-tertiary space-y-1 list-decimal list-inside">
-                <li>「LINEで友達追加する」をタップしてLINEを友達登録</li>
+                <li>「TeraLog 公式 LINE を友だち追加する」をタップ</li>
                 <li>「連携コードを発行する」をタップして6桁のコードを取得</li>
                 <li>LINEのトーク画面でコードを送信</li>
                 <li>連携完了のメッセージが届いたら完了です</li>
@@ -246,7 +246,7 @@ export default function LineSettingsClient({
         )}
 
         {lineLinked && (
-          <p className="font-serif text-xs text-ink-tertiary">LINEと連携済みです。下記の通知頻度を設定できます。</p>
+          <p className="font-serif text-xs text-ink-tertiary">TeraLog 公式 LINE と連携済みです。下記の通知頻度を設定できます。</p>
         )}
       </div>
 
