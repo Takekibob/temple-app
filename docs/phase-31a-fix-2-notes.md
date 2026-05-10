@@ -1,4 +1,16 @@
-# Phase 31a-fix-2 Notes
+# Phase 31a-fix-2 Notes（更新版 2026-05-10）
+
+> 初回実装からの差分を記録。
+
+## 変更点サマリー（更新実装）
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `src/lib/greetings.ts`（新規） | 朝/昼/夜の時間帯ベースあいさつ、Asia/Tokyo判定 |
+| `src/components/teralog/NotificationBell.tsx`（新規） | ドットのみ表示の通知ベル、7日以内未読判定 |
+| `src/components/teralog/FloatingActionButton.tsx` | テキスト削除→アイコンのみ円形ボタン |
+| `src/components/shared/BottomNav.tsx` | マイページタブを /app/mypage にも対応 |
+| `src/app/(app)/app/page.tsx` | getGreeting()・NotificationBell に切り替え、空状態テキスト更新 |
 
 ## Summary of Changes
 
