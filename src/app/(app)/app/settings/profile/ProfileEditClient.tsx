@@ -60,7 +60,7 @@ export default function ProfileEditClient({ user, member, avatarUrl: initialAvat
         setErrorMsg(result.error);
       } else {
         setSuccessMsg("プロフィールを更新しました");
-        setTimeout(() => router.push("/app/mypage"), 1000);
+        setTimeout(() => router.push("/app/settings"), 1000);
       }
     });
   }

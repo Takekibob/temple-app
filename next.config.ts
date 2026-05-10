@@ -45,6 +45,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/app/mypage",
+        destination: "/app/settings",
+        permanent: true,
+      },
+      {
+        source: "/app/mypage/:path*",
+        destination: "/app/settings/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

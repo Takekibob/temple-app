@@ -128,7 +128,7 @@ export default async function MyPage() {
             </div>
           </div>
           <Link
-            href="/app/mypage/profile"
+            href="/app/settings/profile"
             className="flex items-center gap-1 font-serif text-[11px] text-ink-tertiary tracking-section border-b-[0.5px] border-border"
           >
             <Pencil size={10} />
@@ -312,10 +312,10 @@ export default async function MyPage() {
         {/* ─── 設定リンク ─── */}
         <div className="pt-2" style={{ borderTop: "0.5px solid var(--color-border)" }}>
           <Link
-            href="/app/mypage"
+            href="/app/settings"
             className="font-serif text-[11px] text-ink-tertiary tracking-section"
           >
-            通知・LINE設定 →
+            設定 →
           </Link>
         </div>
       </div>

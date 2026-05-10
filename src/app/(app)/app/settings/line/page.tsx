@@ -6,7 +6,7 @@ import LineSettingsClient from "./LineSettingsClient";
 
 const BackHeader = ({ title }: { title: string }) => (
   <header className="bg-white border-b border-stone-100 px-4 py-4 flex items-center gap-2">
-    <Link href="/app/mypage" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors">‹</Link>
+    <Link href="/app/settings" className="w-8 h-8 flex items-center justify-center rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors">‹</Link>
     <h1 className="text-base font-bold text-stone-800">{title}</h1>
   </header>
 );

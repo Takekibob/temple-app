@@ -18,7 +18,7 @@ export default function BottomNav() {
     if (href === "/app") return pathname === "/app";
     if (href === "/app/events") return pathname.startsWith("/app/events");
     if (href === "/app/journal") return pathname.startsWith("/app/journal");
-    if (href === "/app/my") return pathname === "/app/my" || pathname.startsWith("/app/my/") || pathname === "/app/mypage" || pathname.startsWith("/app/mypage/");
+    if (href === "/app/my") return pathname === "/app/my" || pathname.startsWith("/app/my/") || pathname === "/app/settings" || pathname.startsWith("/app/settings/");
     return false;
   };
 

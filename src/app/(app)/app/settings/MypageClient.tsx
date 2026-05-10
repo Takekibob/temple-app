@@ -53,7 +53,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
                 <p className="font-serif font-bold text-stone-800 text-base">{user.name}</p>
                 <p className="font-serif text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
               </div>
-              <Link href="/app/mypage/profile"
+              <Link href="/app/settings/profile"
                 className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl border border-stone-200 text-stone-400 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-all">
                 <Pencil size={14} />
               </Link>
@@ -64,7 +64,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
         {/* LINE未連携バナー */}
         {!lineLinked && (
           <Link
-            href="/app/mypage/line"
+            href="/app/settings/line"
             className="flex items-center gap-3.5 bg-[#06C755] rounded-2xl px-4 py-3.5 shadow-sm hover:brightness-95 transition-all"
           >
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
@@ -95,7 +95,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
         {/* アカウント情報 */}
         <NavSection title="アカウント情報">
           <NavItem
-            href="/app/mypage/line"
+            href="/app/settings/line"
             icon={Smartphone}
             label="LINE連携"
             iconColor="text-green-600 bg-green-50"
@@ -105,7 +105,7 @@ export default function MypageClient({ user, member, templeId, lineLinked }: Pro
                 : <Badge color="amber">未連携</Badge>
             }
           />
-          <NavItem href="/app/mypage/notifications" icon={Bell} label="通知設定" iconColor="text-sky-600 bg-sky-50" />
+          <NavItem href="/app/settings/notifications" icon={Bell} label="通知設定" iconColor="text-sky-600 bg-sky-50" />
         </NavSection>
 
       </div>

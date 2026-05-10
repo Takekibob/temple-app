@@ -61,7 +61,7 @@ export async function updateProfile(formData: FormData) {
     });
   }
 
-  revalidatePath("/app/mypage");
+  revalidatePath("/app/settings");
   return { success: true };
 }
 
@@ -78,6 +78,6 @@ export async function updatePushEnabled(enabled: boolean) {
     data: { pushEnabled: enabled },
   });
 
-  revalidatePath("/app/mypage/notifications");
+  revalidatePath("/app/settings/notifications");
   return { success: true };
 }
