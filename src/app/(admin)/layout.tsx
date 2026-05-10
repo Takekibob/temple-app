@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(authUser.role);
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
+    <div className="flex min-h-screen bg-paper-soft">
       <Sidebar
         templeName={temple?.name ?? "てらログ"}
         userName={authUser.name}
