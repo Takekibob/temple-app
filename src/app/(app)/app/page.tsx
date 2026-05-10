@@ -5,15 +5,9 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabel } from "@/lib/eventCategories";
 import { getArticleCategoryLabel } from "@/lib/articleCategories";
-import { Bell, BookOpen, ChevronRight, PenLine } from "lucide-react";
-
-const SUB_MESSAGES = [
-  "今日も一日、丁寧に。",
-  "呼吸を整えて、はじめましょう。",
-  "いまここに、ありますか。",
-  "小さな気づきを、大切に。",
-  "ご縁に感謝して。",
-] as const;
+import { BookOpen, ChevronRight, PenLine } from "lucide-react";
+import { getGreeting } from "@/lib/greetings";
+import NotificationBell from "@/components/teralog/NotificationBell";
 
 export default async function AppHomePage() {
   const authUser = await getAuthUser();
@@ -22,10 +16,7 @@ export default async function AppHomePage() {
   const memberId = authUser.member?.id;
   const now = new Date();
 
-  const dayOfYear = Math.floor(
-    (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000
-  );
-  const subMessage = SUB_MESSAGES[dayOfYear % SUB_MESSAGES.length];
+  const subMessage = getGreeting();
 
   const followedTempleIds: string[] = memberId
     ? await prisma.memberFavoriteTemple
@@ -44,7 +35,6 @@ export default async function AppHomePage() {
     discoveryTemples,
     latestPosts,
     latestArticles,
-    unreadNewsCount,
   ] = await Promise.all([
     // 参加予定のイベント (up to 3)
     memberId
@@ -153,16 +143,6 @@ export default async function AppHomePage() {
       take: 3,
     }),
 
-    // 未読お知らせ数
-    memberId && allTempleIds.length > 0
-      ? prisma.announcement.count({
-          where: {
-            templeId: { in: allTempleIds },
-            publishedAt: { not: null, lte: now },
-            reads: { none: { memberId } },
-          },
-        })
-      : Promise.resolve(0),
   ]);
 
   // 集いセクション: 参加予定 > フォロー中未参加 > 全体
@@ -201,14 +181,7 @@ export default async function AppHomePage() {
           <h1 className="font-serif text-xl text-ink font-medium">{authUser.name}</h1>
           <p className="font-serif text-sm text-ink-tertiary font-light mt-0.5">{subMessage}</p>
         </div>
-        <Link href="/app/news" className="relative mt-1 p-1.5" aria-label="お知らせ">
-          <Bell size={20} strokeWidth={1.6} className="text-ink-tertiary" />
-          {unreadNewsCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
-              {unreadNewsCount > 99 ? "99+" : unreadNewsCount}
-            </span>
-          )}
-        </Link>
+        <NotificationBell />
       </div>
 
       <div className="px-5 space-y-8">
@@ -217,12 +190,12 @@ export default async function AppHomePage() {
           <SectionHeaderLink label="集 い" href="/app/events" moreLabel="すべて見る" />
           {eventsToShow.length === 0 ? (
             <div className="mt-3 py-6 text-center">
-              <p className="font-serif text-sm text-ink-tertiary font-light">近日の集いはありません</p>
+              <p className="font-serif text-sm text-ink-tertiary font-light">あなたのペースで、お寺を探してみませんか</p>
               <Link
                 href="/app/events"
                 className="font-serif text-sm text-ink font-light border-b-[0.5px] border-ink mt-3 inline-block"
               >
-                集いを探す
+                集いを見る
               </Link>
             </div>
           ) : (
