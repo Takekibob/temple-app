@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Users, CreditCard, CheckCircle2, Clock } from "lucide-react";
+import LineFollowPrompt from "@/components/teralog/LineFollowPrompt";
 
 interface EventInfo {
   id: string;
@@ -17,7 +18,15 @@ interface EventInfo {
   isFull: boolean;
 }
 
-export default function ApplyClient({ event }: { event: EventInfo }) {
+export default function ApplyClient({
+  event,
+  lineUserId,
+  lineAddUrl,
+}: {
+  event: EventInfo;
+  lineUserId: string | null;
+  lineAddUrl: string | null;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [numGuests, setNumGuests] = useState(1);
@@ -83,11 +92,16 @@ export default function ApplyClient({ event }: { event: EventInfo }) {
           <h2 className="font-serif text-xl font-bold text-stone-800 mb-2">
             {resultStatus === "WAITLISTED" ? "キャンセル待ち登録完了" : "申込が完了しました"}
           </h2>
-          <p className="font-serif text-sm text-stone-500 mb-8 leading-relaxed">
+          <p className="font-serif text-sm text-stone-500 mb-4 leading-relaxed">
             {resultStatus === "WAITLISTED"
               ? "定員に達しているためキャンセル待ちに登録しました。空きが出た場合にご連絡します。"
               : "お寺より確認のご連絡をさせていただく場合があります。"}
           </p>
+          {resultStatus !== "WAITLISTED" && (
+            <div className="mb-4 text-left">
+              <LineFollowPrompt lineUserId={lineUserId} addUrl={lineAddUrl} />
+            </div>
+          )}
           <div className="flex flex-col gap-2.5">
             <Link
               href="/app/events/my"

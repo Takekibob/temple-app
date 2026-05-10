@@ -63,6 +63,8 @@ export default async function EventApplyPage({
         participantCount: event._count.participations,
         isFull,
       }}
+      lineUserId={authUser.member.lineUserId ?? null}
+      lineAddUrl={process.env.LINE_ADD_FRIEND_URL ?? null}
     />
   );
 }
